@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { HeroDrawdown, type HeroData } from "@/components/HeroDrawdown";
 import { getProvider } from "@/lib/providers";
 import { computeATH, computeOneYearHigh } from "@/lib/peaks";
@@ -7,6 +8,7 @@ import { daysSince, isStale } from "@/lib/freshness";
 export const dynamic = "force-dynamic";
 
 async function loadHeroData(): Promise<HeroData> {
+  noStore();
   try {
     const provider = getProvider();
     const [latest, closes, seed] = await Promise.all([

@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { readAllCloses, readSeed, readAdjustments, isKvConfigured } from "@/lib/kv";
 import { ClosePriceForm } from "@/components/admin/ClosePriceForm";
 import { SeedHighsForm } from "@/components/admin/SeedHighsForm";
@@ -16,6 +17,7 @@ const todayISO = (): string => {
 };
 
 export default async function AdminPage() {
+  noStore();
   const [closes, seed, adjustments] = await Promise.all([
     readAllCloses(),
     readSeed(),

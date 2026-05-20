@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #0a0a0a;
+  color: #e5e5e5;
+  min-height: 100%;
+}
+
+/* 메인 페이지 3단 레이아웃.
+   --sidebar-width / --sidebar-gap 는 HeroDrawdown 에서 inline style 로 주입한다
+   (src/constants/layout.ts 의 SIDEBAR_WIDTH / SIDEBAR_GAP). */
+.three-col-grid {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1024px) {
+  .three-col-grid {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--sidebar-width);
+    column-gap: var(--sidebar-gap);
+  }
+}

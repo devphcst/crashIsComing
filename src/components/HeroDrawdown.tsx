@@ -27,6 +27,11 @@ export type HeroData =
     }
   | { ready: false };
 
+export type VisitorInfo = {
+  show: boolean;
+  count: number;
+};
+
 const LANG_STORAGE_KEY = "tqqq.lang";
 
 const colorClassFor = (level: DrawdownLevel): string => {
@@ -40,7 +45,13 @@ const colorClassFor = (level: DrawdownLevel): string => {
   }
 };
 
-export function HeroDrawdown({ data }: { data: HeroData }) {
+export function HeroDrawdown({
+  data,
+  visitor,
+}: {
+  data: HeroData;
+  visitor: VisitorInfo;
+}) {
   const [lang, setLang] = useState<Lang>("ko");
   const [hydrated, setHydrated] = useState(false);
 
@@ -119,6 +130,11 @@ export function HeroDrawdown({ data }: { data: HeroData }) {
 
       <footer className="border-t border-neutral-900 pb-8 pt-6">
         <Disclaimer text={d.disclaimer} />
+        {visitor.show ? (
+          <p className="mt-3 text-center text-xs text-neutral-600">
+            {d.visitorCount(visitor.count.toLocaleString())}
+          </p>
+        ) : null}
       </footer>
     </main>
   );

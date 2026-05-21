@@ -1,11 +1,32 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { HeroDrawdown, type HeroData } from "@/components/HeroDrawdown";
+import { VisitorBeacon } from "@/components/VisitorBeacon";
 import { getProvider } from "@/lib/providers";
 import { computeATH, computeOneYearHigh } from "@/lib/peaks";
 import { calcDrawdown } from "@/lib/drawdown";
 import { daysSince, isStale } from "@/lib/freshness";
+import { readSettings, readVisitorCount } from "@/lib/kv";
 
 export const dynamic = "force-dynamic";
+
+type VisitorInfo = {
+  show: boolean;
+  count: number;
+};
+
+async function loadVisitorInfo(): Promise<VisitorInfo> {
+  noStore();
+  try {
+    const [settings, count] = await Promise.all([
+      readSettings(),
+      readVisitorCount(),
+    ]);
+    return { show: settings.showVisitorCount, count };
+  } catch (err) {
+    console.error("loadVisitorInfo failed:", err);
+    return { show: false, count: 0 };
+  }
+}
 
 async function loadHeroData(): Promise<HeroData> {
   noStore();
@@ -46,6 +67,14 @@ async function loadHeroData(): Promise<HeroData> {
 }
 
 export default async function Page() {
-  const data = await loadHeroData();
-  return <HeroDrawdown data={data} />;
+  const [data, visitor] = await Promise.all([
+    loadHeroData(),
+    loadVisitorInfo(),
+  ]);
+  return (
+    <>
+      <HeroDrawdown data={data} visitor={visitor} />
+      <VisitorBeacon />
+    </>
+  );
 }

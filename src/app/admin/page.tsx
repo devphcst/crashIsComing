@@ -1,10 +1,22 @@
 import { unstable_noStore as noStore } from "next/cache";
-import { readAllCloses, readSeed, readAdjustments, isKvConfigured } from "@/lib/kv";
+import Link from "next/link";
+import {
+  readAllCloses,
+  readSeed,
+  readAdjustments,
+  readSettings,
+  readVisitorCount,
+  isKvConfigured,
+} from "@/lib/kv";
 import { ClosePriceForm } from "@/components/admin/ClosePriceForm";
 import { SeedHighsForm } from "@/components/admin/SeedHighsForm";
 import { SplitAdjustmentForm } from "@/components/admin/SplitAdjustmentForm";
 import { RecentClosesTable } from "@/components/admin/RecentClosesTable";
+import { SettingsForm } from "@/components/admin/SettingsForm";
 import { logoutAction } from "./actions";
+import { dictionaries } from "@/lib/i18n";
+
+const t = dictionaries.ko.admin;
 
 export const dynamic = "force-dynamic";
 
@@ -18,25 +30,37 @@ const todayISO = (): string => {
 
 export default async function AdminPage() {
   noStore();
-  const [closes, seed, adjustments] = await Promise.all([
+  const [closes, seed, adjustments, settings, visitorCount] = await Promise.all([
     readAllCloses(),
     readSeed(),
     readAdjustments(5),
+    readSettings(),
+    readVisitorCount(),
   ]);
   const kvOn = isKvConfigured();
 
   return (
     <main className="mx-auto max-w-3xl space-y-8 px-6 py-10">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-neutral-100">관리자</h1>
-        <form action={logoutAction}>
-          <button
-            type="submit"
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            target="_blank"
+            rel="noopener"
             className="rounded-md border border-neutral-700 px-3 py-1 text-xs text-neutral-400 hover:text-neutral-200"
           >
-            로그아웃
-          </button>
-        </form>
+            {t.viewMain} ↗
+          </Link>
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              className="rounded-md border border-neutral-700 px-3 py-1 text-xs text-neutral-400 hover:text-neutral-200"
+            >
+              로그아웃
+            </button>
+          </form>
+        </div>
       </header>
 
       {!kvOn ? (
@@ -76,6 +100,11 @@ export default async function AdminPage() {
             ))}
           </div>
         ) : null}
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
+        <h2 className="text-sm font-medium text-neutral-200">{t.siteSettings}</h2>
+        <SettingsForm settings={settings} visitorCount={visitorCount} />
       </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AnalyticsWrapper } from "@/components/AnalyticsWrapper";
 
 export const metadata: Metadata = {
   title: "TQQQ Drawdown Monitor",
@@ -14,7 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className="font-mono antialiased">{children}</body>
+      <body className="font-mono antialiased">
+        {children}
+        <AnalyticsWrapper />
+      </body>
     </html>
   );
 }

@@ -18,6 +18,7 @@ import {
   writeManyCloses,
   writeSeed,
   pushAdjustment,
+  writeSettings,
 } from "@/lib/kv";
 import {
   applySplitToCloses,
@@ -222,4 +223,22 @@ export async function applySplitAction(
     message: `${changed.length}건이 보정되었습니다.`,
     affectedCount: changed.length,
   };
+}
+
+export async function setSettingsAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  if (!checkAuth()) return unauthorized();
+  // checkbox 미체크 시 formData에 키 자체가 없음. 'on' 이면 true.
+  const showVisitorCount = formData.get("showVisitorCount") === "on";
+  try {
+    await writeSettings({ showVisitorCount });
+    revalidatePath("/");
+    revalidatePath("/admin");
+    return { ok: true, message: "저장되었습니다." };
+  } catch (err) {
+    console.error("setSettingsAction failed:", err);
+    return { ok: false, message: "저장소가 연결되어 있지 않습니다." };
+  }
 }

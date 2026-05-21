@@ -15,6 +15,7 @@ export type Dict = {
   notReadyHint: string;
   disclaimer: string;
   langToggleAria: string;
+  visitorCount: (count: string) => string;
   about: {
     title: string;
     paragraphs: string[];
@@ -74,6 +75,12 @@ export type Dict = {
     savedAt: (when: string) => string;
     success: string;
     error: string;
+    viewMain: string;
+    siteSettings: string;
+    showVisitorCount: string;
+    showVisitorCountHint: string;
+    visitorCountCurrent: (count: string) => string;
+    saveSettings: string;
   };
 };
 
@@ -94,6 +101,7 @@ const ko: Dict = {
   disclaimer:
     '투자 자문이 아니며, 데이터는 관리자가 수동 입력한 종가 기준이고, 정확성을 보장하지 않습니다.',
   langToggleAria: '언어 전환',
+  visitorCount: (count) => `누적 방문자 ${count}명`,
   about: {
     title: '서비스 소개',
     paragraphs: [
@@ -172,6 +180,13 @@ const ko: Dict = {
     savedAt: (when) => `${when} 저장됨`,
     success: '저장되었습니다.',
     error: '오류가 발생했습니다.',
+    viewMain: '메인 페이지로 가기',
+    siteSettings: '사이트 설정',
+    showVisitorCount: '공개 방문자 수 표시',
+    showVisitorCountHint:
+      '체크 시 메인 페이지 푸터에 누적 방문자 수가 보입니다. 체크 여부와 상관없이 카운트는 항상 누적됩니다.',
+    visitorCountCurrent: (count) => `현재 누적 ${count}명`,
+    saveSettings: '설정 저장',
   },
 };
 
@@ -192,6 +207,7 @@ const en: Dict = {
   disclaimer:
     'Not investment advice. Data is manually entered closing prices and accuracy is not guaranteed.',
   langToggleAria: 'Toggle language',
+  visitorCount: (count) => `${count} visitors so far`,
   about: {
     title: 'About this site',
     paragraphs: [
@@ -270,6 +286,13 @@ const en: Dict = {
     savedAt: (when) => `saved at ${when}`,
     success: 'Saved.',
     error: 'An error occurred.',
+    viewMain: 'Open main site',
+    siteSettings: 'Site settings',
+    showVisitorCount: 'Show public visitor count',
+    showVisitorCountHint:
+      'When checked, the cumulative visitor count is shown in the main page footer. Counting itself runs continuously regardless of this checkbox.',
+    visitorCountCurrent: (count) => `Current total: ${count}`,
+    saveSettings: 'Save settings',
   },
 };
 

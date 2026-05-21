@@ -7,7 +7,17 @@ export const KV_KEYS = {
   closes: "tqqq:closes",
   seed: "tqqq:seed",
   adjustments: "tqqq:adjustments",
+  visitorCount: "tqqq:visitor:count",
+  settings: "tqqq:settings",
 } as const;
+
+export type SiteSettings = {
+  showVisitorCount: boolean;
+};
+
+const DEFAULT_SETTINGS: SiteSettings = {
+  showVisitorCount: false,
+};
 
 export const isKvConfigured = (): boolean =>
   !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
@@ -16,11 +26,18 @@ type DevStore = {
   closes: Record<string, Close>;
   seed?: SeedHighs;
   adjustments: AdjustmentLog[];
+  visitorCount: number;
+  settings: SiteSettings;
 };
 
 const DEV_STORE_PATH = path.join(process.cwd(), ".dev-store.json");
 
-const emptyStore = (): DevStore => ({ closes: {}, adjustments: [] });
+const emptyStore = (): DevStore => ({
+  closes: {},
+  adjustments: [],
+  visitorCount: 0,
+  settings: DEFAULT_SETTINGS,
+});
 
 const readDevStore = async (): Promise<DevStore> => {
   try {
@@ -30,6 +47,8 @@ const readDevStore = async (): Promise<DevStore> => {
       closes: parsed.closes ?? {},
       seed: parsed.seed,
       adjustments: parsed.adjustments ?? [],
+      visitorCount: parsed.visitorCount ?? 0,
+      settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
     };
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") return emptyStore();
@@ -136,4 +155,49 @@ export const pushAdjustment = async (log: AdjustmentLog): Promise<void> => {
     return;
   }
   await kv.lpush(KV_KEYS.adjustments, JSON.stringify(log));
+};
+
+export const readVisitorCount = async (): Promise<number> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    return s.visitorCount;
+  }
+  const v = await kv.get<number>(KV_KEYS.visitorCount);
+  return typeof v === "number" ? v : 0;
+};
+
+export const incrementVisitorCount = async (): Promise<number> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    s.visitorCount += 1;
+    await writeDevStore(s);
+    return s.visitorCount;
+  }
+  return (await kv.incr(KV_KEYS.visitorCount)) ?? 0;
+};
+
+export const readSettings = async (): Promise<SiteSettings> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    return s.settings;
+  }
+  const v = await kv.get<SiteSettings | string>(KV_KEYS.settings);
+  if (!v) return DEFAULT_SETTINGS;
+  const parsed = typeof v === "string" ? (JSON.parse(v) as SiteSettings) : v;
+  return { ...DEFAULT_SETTINGS, ...parsed };
+};
+
+export const writeSettings = async (
+  patch: Partial<SiteSettings>,
+): Promise<SiteSettings> => {
+  const current = await readSettings();
+  const next: SiteSettings = { ...current, ...patch };
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    s.settings = next;
+    await writeDevStore(s);
+    return next;
+  }
+  await kv.set(KV_KEYS.settings, JSON.stringify(next));
+  return next;
 };

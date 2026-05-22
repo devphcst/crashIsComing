@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true },
   },
   verification: {
-    google: "_5jFsOlN8J3ZlU3HFS0BtZ0y3Oa8e2hDNtFT6aCb-dA",
+    google: "ZP18RhVMow51FTNE8R9_mOCZ8Gc3_CTYqUAXjCqyxU4",
     other: {
       "naver-site-verification": "80065ee72c07be122150434f535e3da96f016ff3",
     },

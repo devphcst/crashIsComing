@@ -1,4 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache";
+import { cookies } from "next/headers";
+import type { Metadata } from "next";
 import { HeroDrawdown, type HeroData } from "@/components/HeroDrawdown";
 import { VisitorBeacon } from "@/components/VisitorBeacon";
 import { getProvider } from "@/lib/providers";
@@ -6,8 +8,53 @@ import { computeATH, computeOneYearHigh } from "@/lib/peaks";
 import { calcDrawdown } from "@/lib/drawdown";
 import { daysSince, isStale } from "@/lib/freshness";
 import { readSettings, readVisitorCount } from "@/lib/kv";
+import type { Lang } from "@/lib/i18n";
+import {
+  SEO_TEXT,
+  SITE_URL,
+  OG_IMAGE_ALT,
+  buildJsonLd,
+  LANG_COOKIE,
+} from "@/constants/seo";
 
 export const dynamic = "force-dynamic";
+
+const readLangFromCookie = (): Lang => {
+  const v = cookies().get(LANG_COOKIE)?.value;
+  return v === "en" ? "en" : "ko";
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = readLangFromCookie();
+  const t = SEO_TEXT[lang];
+  return {
+    title: t.title,
+    description: t.description,
+    keywords: t.keywords,
+    openGraph: {
+      type: "website",
+      url: SITE_URL,
+      title: t.title,
+      description: t.description,
+      siteName: "TQQQ Drawdown Monitor",
+      locale: lang === "ko" ? "ko_KR" : "en_US",
+      images: [
+        {
+          url: "/opengraph-image",
+          width: 1200,
+          height: 630,
+          alt: OG_IMAGE_ALT,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t.title,
+      description: t.description,
+      images: ["/opengraph-image"],
+    },
+  };
+}
 
 type VisitorInfo = {
   show: boolean;
@@ -67,12 +114,19 @@ async function loadHeroData(): Promise<HeroData> {
 }
 
 export default async function Page() {
+  const lang = readLangFromCookie();
   const [data, visitor] = await Promise.all([
     loadHeroData(),
     loadVisitorInfo(),
   ]);
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(buildJsonLd(lang)),
+        }}
+      />
       <HeroDrawdown data={data} visitor={visitor} />
       <VisitorBeacon />
     </>

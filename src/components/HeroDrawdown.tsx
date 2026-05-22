@@ -64,6 +64,8 @@ export function HeroDrawdown({
   const handleLang = (l: Lang) => {
     setLang(l);
     window.localStorage.setItem(LANG_STORAGE_KEY, l);
+    // 서버에서 generateMetadata가 읽어 SEO 메타를 ko/en 분기 — 봇은 쿠키 없어 ko 기본
+    document.cookie = `tqqq.lang=${l}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
     document.documentElement.lang = l;
   };
 

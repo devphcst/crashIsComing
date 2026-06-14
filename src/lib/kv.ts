@@ -1,7 +1,12 @@
 import { kv } from "@vercel/kv";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { Close, SeedHighs, AdjustmentLog } from "./providers/types";
+import type {
+  Close,
+  SeedHighs,
+  AdjustmentLog,
+  IngestStatus,
+} from "./providers/types";
 
 export const KV_KEYS = {
   closes: "tqqq:closes",
@@ -9,6 +14,7 @@ export const KV_KEYS = {
   adjustments: "tqqq:adjustments",
   visitorCount: "tqqq:visitor:count",
   settings: "tqqq:settings",
+  ingestStatus: "tqqq:ingest:status",
 } as const;
 
 export type SiteSettings = {
@@ -28,6 +34,7 @@ type DevStore = {
   adjustments: AdjustmentLog[];
   visitorCount: number;
   settings: SiteSettings;
+  ingestStatus?: IngestStatus;
 };
 
 const DEV_STORE_PATH = path.join(process.cwd(), ".dev-store.json");
@@ -49,6 +56,7 @@ const readDevStore = async (): Promise<DevStore> => {
       adjustments: parsed.adjustments ?? [],
       visitorCount: parsed.visitorCount ?? 0,
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
+      ingestStatus: parsed.ingestStatus,
     };
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") return emptyStore();
@@ -200,4 +208,26 @@ export const writeSettings = async (
   }
   await kv.set(KV_KEYS.settings, JSON.stringify(next));
   return next;
+};
+
+export const readIngestStatusRaw = async (): Promise<IngestStatus | null> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    return s.ingestStatus ?? null;
+  }
+  const v = await kv.get<IngestStatus | string>(KV_KEYS.ingestStatus);
+  if (!v) return null;
+  return typeof v === "string" ? (JSON.parse(v) as IngestStatus) : v;
+};
+
+export const writeIngestStatusRaw = async (
+  status: IngestStatus,
+): Promise<void> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    s.ingestStatus = status;
+    await writeDevStore(s);
+    return;
+  }
+  await kv.set(KV_KEYS.ingestStatus, JSON.stringify(status));
 };

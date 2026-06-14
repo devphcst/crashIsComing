@@ -11,6 +11,7 @@ export type Dict = {
   asOf: (date: string) => string;
   updateSchedule: string;
   staleWarning: (days: number) => string;
+  staleCritical: (date: string, hours: number) => string;
   notReady: string;
   notReadyHint: string;
   disclaimer: string;
@@ -81,6 +82,15 @@ export type Dict = {
     showVisitorCountHint: string;
     visitorCountCurrent: (count: string) => string;
     saveSettings: string;
+    ingest: {
+      title: string;
+      healthy: string;
+      consecutiveFailures: (n: number) => string;
+      lastSuccess: (when: string, date: string, price: string) => string;
+      lastError: (when: string, message: string) => string;
+      noActivity: string;
+      providerLabel: (provider: string) => string;
+    };
   };
 };
 
@@ -95,6 +105,8 @@ const ko: Dict = {
   asOf: (date) => `${date} 종가 기준 (대한민국 시간 기준)`,
   updateSchedule: '매일 오전 6시 미국주식시장 마감 후 업데이트 됩니다.',
   staleWarning: (days) => `⚠ 데이터가 오래되었습니다 (${days}일 전 입력)`,
+  staleCritical: (date, hours) =>
+    `⚠ 데이터 갱신 실패 — 마지막 거래일(${date}) 종가가 ${hours}시간째 미반영`,
   notReady: '데이터를 준비 중입니다',
   notReadyHint:
     '관리자가 초기 ATH와 52주 고점 시드를 입력하면 화면에 수치가 표시됩니다.',
@@ -187,6 +199,16 @@ const ko: Dict = {
       '체크 시 메인 페이지 푸터에 누적 방문자 수가 보입니다. 체크 여부와 상관없이 카운트는 항상 누적됩니다.',
     visitorCountCurrent: (count) => `현재 누적 ${count}명`,
     saveSettings: '설정 저장',
+    ingest: {
+      title: '수집 상태',
+      healthy: '정상',
+      consecutiveFailures: (n) => `연속 실패 ${n}회`,
+      lastSuccess: (when, date, price) =>
+        `최근 성공: ${when} · ${date} 종가 ${price}`,
+      lastError: (when, message) => `최근 실패: ${when} · ${message}`,
+      noActivity: '아직 자동 수집 실행 기록이 없습니다.',
+      providerLabel: (provider) => `현재 provider: ${provider}`,
+    },
   },
 };
 
@@ -201,6 +223,8 @@ const en: Dict = {
   asOf: (date) => `As of ${date} close (KST)`,
   updateSchedule: 'Updated daily at 6 AM KST, after the U.S. market closes.',
   staleWarning: (days) => `⚠ Data is stale (last input ${days} day(s) ago)`,
+  staleCritical: (date, hours) =>
+    `⚠ Auto-update failed — close for ${date} missing for ${hours}h`,
   notReady: 'Data not ready yet',
   notReadyHint:
     'Once the admin seeds the initial ATH and 52-week high, numbers will appear here.',
@@ -293,6 +317,16 @@ const en: Dict = {
       'When checked, the cumulative visitor count is shown in the main page footer. Counting itself runs continuously regardless of this checkbox.',
     visitorCountCurrent: (count) => `Current total: ${count}`,
     saveSettings: 'Save settings',
+    ingest: {
+      title: 'Ingest status',
+      healthy: 'Healthy',
+      consecutiveFailures: (n) => `${n} consecutive failure${n === 1 ? '' : 's'}`,
+      lastSuccess: (when, date, price) =>
+        `Last success: ${when} · close ${date} ${price}`,
+      lastError: (when, message) => `Last failure: ${when} · ${message}`,
+      noActivity: 'No auto-ingest activity yet.',
+      providerLabel: (provider) => `Provider: ${provider}`,
+    },
   },
 };
 

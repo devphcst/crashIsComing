@@ -2,9 +2,11 @@
 
 TQQQ가 전고점에서 현재 몇 % 빠졌는지를 큰 숫자 하나로 보여주는 단일 페이지. 기획서는 `crash-is-coming.md`.
 
-## 1단계 MVP 데이터 정책
+## 데이터 정책
 
-1단계에서는 외부 시세 API를 사용하지 않고, 관리자가 **매일 TQQQ split-adjusted 종가**를 `/admin`에서 직접 입력한다. ATH·1년 고점은 누적 입력값과 시드값을 합쳐 계산된다. 약관 문제를 우회하기 위한 의도적 선택. provider 추상화를 통해 향후 유료 API로 교체 가능.
+기본은 운영자가 `/admin`에서 매일 TQQQ split-adjusted 종가를 직접 입력하는 manual 모드. `DATA_PROVIDER=yahoo`로 전환하면 Vercel Cron이 매일 Yahoo Finance에서 adjusted close를 가져와 동일한 KV에 저장한다. 두 경로 모두 같은 `tqqq:closes`에 쓰므로 yahoo 모드 중에도 `/admin` 수동 입력으로 즉시 보정할 수 있다 (자동화가 깨졌을 때의 fallback).
+
+ATH·1년 고점은 누적 종가와 시드값을 합쳐 계산된다. 시드값은 항상 **종가(Adjusted Close) 기준**으로 입력한다 — 아래 「시드 ATH 정책」 참조.
 
 ## 로컬 실행
 
@@ -32,8 +34,9 @@ npm run lint      # ESLint
 2. **Storage 추가** — Marketplace에서 Redis 통합(이전의 Vercel KV) 설치. `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN`이 자동 주입됨
 3. **환경변수 설정**:
    - `ADMIN_TOKEN` = 예측 불가능한 긴 랜덤 문자열 (예: `openssl rand -base64 32`)
-   - `DATA_PROVIDER` = `manual`
-4. **배포** — `git push` 또는 `vercel --prod`
+   - `DATA_PROVIDER` = `manual` (기본) 또는 `yahoo` (자동 수집)
+   - `CRON_SECRET` = `yahoo` 사용 시 필수. Vercel Cron이 `Authorization: Bearer <secret>`으로 cron 엔드포인트를 호출
+4. **배포** — `git push` 또는 `vercel --prod`. `vercel.json`의 cron이 자동 등록됨
 
 > 참고: `@vercel/kv` SDK는 deprecated되었지만 현재도 동작한다. 통합은 자동으로 Upstash Redis로 매핑된다. 추후 `@upstash/redis`로 마이그레이션 시 `src/lib/kv.ts`만 교체하면 된다 — 다른 모듈에 영향 없음.
 
@@ -55,6 +58,14 @@ npm run lint      # ESLint
 3. **1년 고점**: 최근 365일의 split-adjusted 최고 종가와 날짜
 4. 누적 입력값이 시드를 초과하면 ATH·1년 고점이 자동으로 갱신된다 (시드는 부트스트랩용)
 
+### 시드 ATH 정책 (종가 기준 통일)
+
+ATH·1년 고점 시드값은 **항상 split-adjusted 종가(Adjusted Close)** 기준으로 입력한다. 장중 고점(intraday high)이 아니다.
+
+- 누적 종가와 시드를 같은 측정 기준으로 비교해야 드로다운 계산이 일관된다. Yahoo 자동 수집 모드에서 들어오는 값도 adjusted close이므로 시드만 intraday high를 쓰면 ATH가 자동 갱신되지 않거나 어색하게 고정된다.
+- 차후 시드값을 재입력할 때(예: 데이터 초기화, 분할 보정 후 일관성 검증)도 **그 시점까지의 종가 기준 역대 최고치**를 사용한다.
+- 출처: Yahoo Finance 종목 페이지의 "Historical Data" → "Adj Close" 컬럼.
+
 ### 분할(스플릿) 발생 시 보정 절차 ★중요★
 
 TQQQ는 과거에 분할이 있었고 앞으로 또 발생할 수 있다. **분할 발효일 이전에 입력해둔 종가는 옛 기준**이므로, 보정하지 않으면 ATH와 모든 드로다운 계산이 완전히 틀어진다.
@@ -71,6 +82,25 @@ TQQQ는 과거에 분할이 있었고 앞으로 또 발생할 수 있다. **분�
 
 > 분할 보정은 단방향 작업이며, 실수로 두 번 적용하면 가격이 두 번 나눠진다. 미리보기 단계에서 반드시 확인하자.
 
+## Provider 전환 (manual ↔ yahoo)
+
+`DATA_PROVIDER` 환경변수로 어느 경로가 KV에 데이터를 채울지 선택한다.
+
+- `manual` (기본): 운영자가 `/admin`에서 매일 직접 입력. `vercel.json`의 cron은 등록되어 있어도 핸들러 내부에서 200 OK + no-op로 빠져나옴.
+- `yahoo`: 매일 **22:00 UTC** (= 한국 시간 오전 7시)에 `/api/cron/yahoo`가 Yahoo Finance `query1.finance.yahoo.com/v8/finance/chart/TQQQ`에서 adjusted close를 가져와 `tqqq:closes`에 저장. `/admin` 수동 입력 경로는 그대로 살아 있어, 자동화가 깨졌을 때 손으로 입력해 즉시 복구할 수 있다.
+
+### Yahoo 자동 수집 운영
+
+1. Vercel 환경변수: `DATA_PROVIDER=yahoo`, `CRON_SECRET=<랜덤 문자열>`
+2. `vercel.json`의 cron이 배포와 함께 자동 등록됨. Vercel 대시보드 → Crons 탭에서 활성 상태 확인
+3. **수집 상태 카드** — `/admin` 최상단의 "수집 상태" 카드에서 마지막 성공/실패 시각·메시지·연속 실패 횟수 확인. 운영자가 매일 한 번 점검하면 충분
+4. **stale 큰 경고 (메인 페이지)** — 직전 미국 거래일 마감 + `STALE_CRITICAL_HOURS_AFTER_CLOSE`(기본 5시간)가 지났는데도 KV에 그날 종가가 없으면 메인 페이지 상단에 빨간 배너가 자동 노출. NYSE 휴장일·주말은 거래일에서 제외되므로 토·일·휴일 오탐 없음. `/admin`에서 수동 입력하면 즉시 사라짐
+5. **수동 입력은 항상 유효** — yahoo 모드 중에도 `/admin`의 종가 입력 폼은 그대로 동작하고, 같은 KV에 쓰므로 cron이 채운 값을 운영자가 덮어쓸 수 있다. 자동화 fallback 경로
+
+### 외부 알림(이메일·webhook)은 의도적 미도입
+
+운영자가 admin 카드와 메인 stale 배너로 인지하는 두 채널로 충분하다고 판단했다. 추후 필요해지면 `src/lib/ingest/status.ts`의 `recordFailure` 직후에 채널을 추가하면 된다.
+
 ## 의도적 제약 (기획서 §9)
 
 - TQQQ 외 종목 추가 ❌
@@ -82,10 +112,14 @@ TQQQ는 과거에 분할이 있었고 앞으로 또 발생할 수 있다. **분�
 ## 디렉토리
 
 `crash-is-coming.md` — 기획서  
-`src/app/` — 페이지·서버 액션  
-`src/components/` — UI 컴포넌트  
-`src/lib/providers/` — 데이터 소스 추상화 (`manual.ts`는 KV 기반)  
+`src/app/` — 페이지·서버 액션 (`api/cron/yahoo/route.ts`는 일일 스크래핑 cron 핸들러)  
+`src/components/` — UI 컴포넌트 (`StaleCriticalBanner`, `admin/IngestStatusCard`)  
+`src/lib/providers/` — 데이터 소스 추상화 (`manual.ts`, `yahoo.ts`는 둘 다 KV 기반 read; `yahoo.ts`만 `getIngestStatus()` 노출)  
+`src/lib/ingest/` — Yahoo fetch·파싱, 수집 상태 KV 갱신  
+`src/lib/nyse-calendar.ts` — NYSE 휴장일 (하드코딩 2026–2028) + 거래일 유틸  
+`src/lib/staleness.ts` — 거래일 기준 fresh/soft/critical 판정  
 `src/lib/` — 순수 계산·검증·포맷 모듈 (테스트 동봉)  
 `src/constants/` — 색상 임계값, 신선도 임계값  
-`src/middleware.ts` — `/admin` 접근 제어
+`src/middleware.ts` — `/admin` 접근 제어  
+`vercel.json` — daily cron 스케줄 (`0 22 * * *`)
 # crashIsComing

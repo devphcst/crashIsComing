@@ -11,6 +11,7 @@ import { Disclaimer } from "./Disclaimer";
 import { AboutSection } from "./AboutSection";
 import { AllInWarningSection } from "./AllInWarningSection";
 import { ProductAdSidebar, ProductAdBanner } from "./ProductAd";
+import { StaleCriticalBanner } from "./StaleCriticalBanner";
 import {
   SIDEBAR_WIDTH,
   SIDEBAR_GAP,
@@ -23,9 +24,10 @@ export type HeroData =
       current: { date: string; price: number };
       ath: { date: string; price: number; drawdownPct: number };
       oneYear: { date: string; price: number; drawdownPct: number };
-      staleDays: number | null; // null = fresh
+      staleDays: number | null; // null = fresh (soft warning when not null)
+      staleCritical: { expectedTradingDate: string; hoursSince: number } | null;
     }
-  | { ready: false };
+  | { ready: false; staleCritical?: null };
 
 export type VisitorInfo = {
   show: boolean;
@@ -75,8 +77,18 @@ export function HeroDrawdown({
 
   const d = getDict(lang);
 
+  const criticalStale = data.ready ? data.staleCritical : null;
+
   return (
     <main className="flex flex-col">
+      {criticalStale ? (
+        <StaleCriticalBanner
+          message={d.staleCritical(
+            criticalStale.expectedTradingDate,
+            criticalStale.hoursSince,
+          )}
+        />
+      ) : null}
       <header className="flex items-center justify-between px-6 pt-6">
         <span className="text-sm text-neutral-500">{d.brand}</span>
         <LangToggle

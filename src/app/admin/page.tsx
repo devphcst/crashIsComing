@@ -8,11 +8,13 @@ import {
   readVisitorCount,
   isKvConfigured,
 } from "@/lib/kv";
+import { readIngestStatus } from "@/lib/ingest/status";
 import { ClosePriceForm } from "@/components/admin/ClosePriceForm";
 import { SeedHighsForm } from "@/components/admin/SeedHighsForm";
 import { SplitAdjustmentForm } from "@/components/admin/SplitAdjustmentForm";
 import { RecentClosesTable } from "@/components/admin/RecentClosesTable";
 import { SettingsForm } from "@/components/admin/SettingsForm";
+import { IngestStatusCard } from "@/components/admin/IngestStatusCard";
 import { logoutAction } from "./actions";
 import { dictionaries } from "@/lib/i18n";
 
@@ -30,14 +32,17 @@ const todayISO = (): string => {
 
 export default async function AdminPage() {
   noStore();
-  const [closes, seed, adjustments, settings, visitorCount] = await Promise.all([
-    readAllCloses(),
-    readSeed(),
-    readAdjustments(5),
-    readSettings(),
-    readVisitorCount(),
-  ]);
+  const [closes, seed, adjustments, settings, visitorCount, ingestStatus] =
+    await Promise.all([
+      readAllCloses(),
+      readSeed(),
+      readAdjustments(5),
+      readSettings(),
+      readVisitorCount(),
+      readIngestStatus(),
+    ]);
   const kvOn = isKvConfigured();
+  const providerName = (process.env.DATA_PROVIDER || "manual").trim();
 
   return (
     <main className="mx-auto max-w-3xl space-y-8 px-6 py-10">
@@ -70,6 +75,8 @@ export default async function AdminPage() {
           운영(Vercel)에서는 KV가 자동 주입되어 이 파일은 사용되지 않습니다.
         </div>
       ) : null}
+
+      <IngestStatusCard status={ingestStatus} provider={providerName} />
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
         <h2 className="text-sm font-medium text-neutral-200">종가 추가</h2>

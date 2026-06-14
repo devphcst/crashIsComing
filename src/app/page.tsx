@@ -6,7 +6,7 @@ import { VisitorBeacon } from "@/components/VisitorBeacon";
 import { getProvider } from "@/lib/providers";
 import { computeATH, computeOneYearHigh } from "@/lib/peaks";
 import { calcDrawdown } from "@/lib/drawdown";
-import { daysSince, isStale } from "@/lib/freshness";
+import { computeStaleness } from "@/lib/staleness";
 import { readSettings, readVisitorCount } from "@/lib/kv";
 import type { Lang } from "@/lib/i18n";
 import {
@@ -90,7 +90,15 @@ async function loadHeroData(): Promise<HeroData> {
 
     if (!latest || !ath || !oneYear) return { ready: false };
 
-    const stale = isStale(latest.date) ? daysSince(latest.date) : null;
+    const stale = computeStaleness(latest.date);
+    const staleDays = stale.kind === "soft" ? stale.daysSinceInput : null;
+    const staleCritical =
+      stale.kind === "critical"
+        ? {
+            expectedTradingDate: stale.expectedTradingDate,
+            hoursSince: stale.hoursSince,
+          }
+        : null;
 
     return {
       ready: true,
@@ -105,7 +113,8 @@ async function loadHeroData(): Promise<HeroData> {
         price: oneYear.price,
         drawdownPct: calcDrawdown(latest.price, oneYear.price),
       },
-      staleDays: stale,
+      staleDays,
+      staleCritical,
     };
   } catch (err) {
     console.error("loadHeroData failed:", err);

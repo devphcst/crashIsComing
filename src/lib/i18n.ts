@@ -145,7 +145,7 @@ const ko: Dict = {
     tagline: '폭락장이 와도 피부는 관리해야지',
     productName: '큐레이티드:유 모이스처 플러스',
     description:
-      '💊 현직 약사이자 이 사이트 제작자가 직접 기획, 개발했어요. \n 💊 피부보습에 도움을 줄 수 있어요. \n 💊 자외선에 의한 피부손상으로부터 피부건간에 도움을 줄 수 있아요. \n ❤️ 많은 관심 부탁드려요. ❤️',
+      '💊 현직 약사이자 이 사이트 제작자가 직접 기획, 개발했어요. \n 💊 피부보습에 도움을 줄 수 있어요. \n 💊 자외선에 의한 피부손상으로부터 피부건강에 도움을 줄 수 있아요.',
     ctaLabel: '구경가기',
     imageFallback: '이미지',
   },
@@ -320,7 +320,8 @@ const en: Dict = {
     ingest: {
       title: 'Ingest status',
       healthy: 'Healthy',
-      consecutiveFailures: (n) => `${n} consecutive failure${n === 1 ? '' : 's'}`,
+      consecutiveFailures: (n) =>
+        `${n} consecutive failure${n === 1 ? '' : 's'}`,
       lastSuccess: (when, date, price) =>
         `Last success: ${when} · close ${date} ${price}`,
       lastError: (when, message) => `Last failure: ${when} · ${message}`,

@@ -123,19 +123,30 @@ export default async function AdminPage({
         <h2 className="text-sm font-medium text-neutral-200">
           {t.symbols.metaSectionTitle} — {currentMeta.displayName}
         </h2>
-        <MetaEditForm meta={currentMeta} />
+        {/* key={ticker}: 탭 전환 시 컴포넌트 강제 remount하여 useState/defaultValue가
+            새 종목의 값으로 재초기화되도록. 없으면 폼이 이전 종목의 stale state를
+            그대로 보유한 채 저장돼 종목 간 값이 섞임. */}
+        <MetaEditForm key={currentSymbol} meta={currentMeta} />
       </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
         <h2 className="text-sm font-medium text-neutral-200">종가 추가</h2>
-        <ClosePriceForm defaultDate={todayISO()} ticker={currentSymbol} />
+        <ClosePriceForm
+          key={currentSymbol}
+          defaultDate={todayISO()}
+          ticker={currentSymbol}
+        />
       </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
         <h2 className="text-sm font-medium text-neutral-200">
           시드값 (초기 ATH / 1년 고점)
         </h2>
-        <SeedHighsForm current={seed} ticker={currentSymbol} />
+        <SeedHighsForm
+          key={currentSymbol}
+          current={seed}
+          ticker={currentSymbol}
+        />
       </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
@@ -144,7 +155,7 @@ export default async function AdminPage({
           분할 발효일 이전 종가와 시드값을 일괄 갱신합니다. 적용 후 작업 로그가
           기록됩니다.
         </p>
-        <SplitAdjustmentForm ticker={currentSymbol} />
+        <SplitAdjustmentForm key={currentSymbol} ticker={currentSymbol} />
         {adjustments.length ? (
           <div className="mt-4 space-y-1 text-xs text-neutral-500">
             <p className="text-neutral-400">최근 보정 로그:</p>

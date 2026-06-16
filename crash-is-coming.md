@@ -143,7 +143,7 @@ The 'drawdown from peak' shown on this page tells you where the price is now —
 ## 4. 사이드 광고 칸 (의도된 추가)
 
 - 데스크톱 왼쪽 사이드에 제품 광고 칸(sticky). 모바일은 히어로 아래 가로 배너.
-- 구성: 작은 라벨("제작자가 만든 제품") + 제품 이미지 + 제품명 + 짧은 설명 + "보러 가기" 버튼.
+- 구성: 작은 라벨("제작자가 만든 영양제") + 제품 이미지 + 제품명 + 짧은 설명 + "보러 가기" 버튼.
 - 제품명: "히알루론산 피부영양제" (정식 명칭 최종 확인 필요)
 - 설명: "약사이자 이 사이트 제작자가 직접 만들었습니다"
 - 링크: https://smartstore.naver.com/checkmedi17/products/13431368745 (새 탭)

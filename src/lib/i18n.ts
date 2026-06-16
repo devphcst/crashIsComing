@@ -162,7 +162,7 @@ const ko: Dict = {
       `${year} 폭락: 고점 대비 ${mdd}%까지 하락 후 ${months}개월 만에 회복`,
   },
   ad: {
-    label: '제작자가 만든 제품',
+    label: '제작자가 만든 영양제',
     tagline: '폭락장이 와도 피부는 관리해야지',
     productName: '큐레이티드:유 모이스처 플러스',
     description:
@@ -241,12 +241,14 @@ const ko: Dict = {
       displayNameHint: '화면에 표시되는 이름 (예: SOXL (반도체 3배))',
       orangeLabel: '주황 경계',
       redLabel: '빨강 경계',
-      thresholdHint: '드로다운이 이 % 이하로 떨어지면 해당 색상이 적용됩니다. 주황이 빨강보다 0에 가까워야 합니다.',
+      thresholdHint:
+        '드로다운이 이 % 이하로 떨어지면 해당 색상이 적용됩니다. 주황이 빨강보다 0에 가까워야 합니다.',
       addSubmit: '추가',
       metaSectionTitle: '종목 정보 (메타)',
       metaSubmit: '메타 저장',
       deleteSectionTitle: '이 종목 삭제',
-      deleteWarning: '누적 종가·시드값·분할 로그가 모두 사라집니다. 되돌릴 수 없습니다.',
+      deleteWarning:
+        '누적 종가·시드값·분할 로그가 모두 사라집니다. 되돌릴 수 없습니다.',
       deleteConfirmLabel: '정말 삭제합니다',
       deleteSubmit: '삭제',
       defaultProtected: '기본 종목은 삭제할 수 없습니다.',

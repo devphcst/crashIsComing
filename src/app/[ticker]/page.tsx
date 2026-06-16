@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
 import { VisitorBeacon } from "@/components/VisitorBeacon";
-import { readMeta } from "@/lib/kv";
+import { readMeta, readSymbolList } from "@/lib/kv";
 import { loadAllMetas, loadHeroData, loadVisitorInfo } from "@/lib/page-data";
 import { buildSymbolMetadata } from "@/lib/seo-builder";
 import { DEFAULT_SYMBOL } from "@/lib/symbols";
@@ -16,18 +17,40 @@ const readLangFromCookie = (): Lang => {
   return v === "en" ? "en" : "ko";
 };
 
-export async function generateMetadata(): Promise<Metadata> {
-  const meta = await readMeta(DEFAULT_SYMBOL);
+const normalize = (raw: string): string => raw.toLowerCase();
+
+const resolveOr404 = async (raw: string): Promise<string> => {
+  const t = normalize(raw);
+  const list = await readSymbolList();
+  if (!list.includes(t)) notFound();
+  return t;
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { ticker: string };
+}): Promise<Metadata> {
+  // 기본 종목은 / 로 redirect되므로 메타데이터는 비워둠 (실제 응답 안 됨)
+  if (normalize(params.ticker) === DEFAULT_SYMBOL) return {};
+  const ticker = await resolveOr404(params.ticker);
+  const meta = await readMeta(ticker);
   return buildSymbolMetadata(readLangFromCookie(), meta);
 }
 
-export default async function Page() {
+export default async function TickerPage({
+  params,
+}: {
+  params: { ticker: string };
+}) {
+  if (normalize(params.ticker) === DEFAULT_SYMBOL) permanentRedirect("/");
+  const ticker = await resolveOr404(params.ticker);
   const lang = readLangFromCookie();
   const [data, visitor, metas, meta] = await Promise.all([
-    loadHeroData(DEFAULT_SYMBOL),
+    loadHeroData(ticker),
     loadVisitorInfo(),
     loadAllMetas(),
-    readMeta(DEFAULT_SYMBOL),
+    readMeta(ticker),
   ]);
   return (
     <>
@@ -41,7 +64,7 @@ export default async function Page() {
         data={data}
         visitor={visitor}
         tabs={metas}
-        current={DEFAULT_SYMBOL}
+        current={ticker}
       />
       <VisitorBeacon />
     </>

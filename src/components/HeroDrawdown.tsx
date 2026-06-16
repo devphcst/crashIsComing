@@ -16,6 +16,8 @@ import { AboutSection } from "./AboutSection";
 import { AllInWarningSection } from "./AllInWarningSection";
 import { ProductAdSidebar, ProductAdBanner } from "./ProductAd";
 import { StaleCriticalBanner } from "./StaleCriticalBanner";
+import { MainSymbolTabs } from "./MainSymbolTabs";
+import type { SymbolMeta } from "@/lib/symbols";
 import {
   SIDEBAR_WIDTH,
   SIDEBAR_GAP,
@@ -55,9 +57,13 @@ const colorClassFor = (level: DrawdownLevel): string => {
 export function HeroDrawdown({
   data,
   visitor,
+  tabs,
+  current,
 }: {
   data: HeroData;
   visitor: VisitorInfo;
+  tabs: SymbolMeta[];
+  current: string;
 }) {
   const [lang, setLang] = useState<Lang>("ko");
   const [hydrated, setHydrated] = useState(false);
@@ -102,6 +108,10 @@ export function HeroDrawdown({
           ariaLabel={d.langToggleAria}
         />
       </header>
+
+      {tabs.length > 1 ? (
+        <MainSymbolTabs tabs={tabs} current={current} />
+      ) : null}
 
       <div
         className="three-col-grid grid w-full lg:mx-auto lg:px-6"

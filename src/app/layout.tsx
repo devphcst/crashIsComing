@@ -4,14 +4,15 @@ import { AnalyticsWrapper } from "@/components/AnalyticsWrapper";
 import { SEO_TEXT, SITE_URL } from "@/constants/seo";
 
 const ko = SEO_TEXT.ko;
+const DEFAULT_DISPLAY_NAME = "TQQQ";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: ko.title,
+    default: ko.titleFor(DEFAULT_DISPLAY_NAME),
     template: "%s | TQQQ",
   },
-  description: ko.description,
+  description: ko.descriptionFor(DEFAULT_DISPLAY_NAME),
   keywords: ko.keywords,
   applicationName: "TQQQ Drawdown Monitor",
   robots: {

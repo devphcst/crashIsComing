@@ -91,6 +91,27 @@ export type Dict = {
       noActivity: string;
       providerLabel: (provider: string) => string;
     };
+    symbols: {
+      tabsAria: string;
+      addButton: string;
+      cancelAdd: string;
+      addFormTitle: string;
+      tickerLabel: string;
+      tickerHint: string;
+      displayNameLabel: string;
+      displayNameHint: string;
+      orangeLabel: string;
+      redLabel: string;
+      thresholdHint: string;
+      addSubmit: string;
+      metaSectionTitle: string;
+      metaSubmit: string;
+      deleteSectionTitle: string;
+      deleteWarning: string;
+      deleteConfirmLabel: string;
+      deleteSubmit: string;
+      defaultProtected: string;
+    };
   };
 };
 
@@ -208,6 +229,27 @@ const ko: Dict = {
       lastError: (when, message) => `최근 실패: ${when} · ${message}`,
       noActivity: '아직 자동 수집 실행 기록이 없습니다.',
       providerLabel: (provider) => `현재 provider: ${provider}`,
+    },
+    symbols: {
+      tabsAria: '종목 탭',
+      addButton: '+ 종목 추가',
+      cancelAdd: '취소',
+      addFormTitle: '새 종목 추가',
+      tickerLabel: 'ticker',
+      tickerHint: '소문자 영문으로 시작 · 식별자/URL에 사용 (예: soxl)',
+      displayNameLabel: '표시 이름',
+      displayNameHint: '화면에 표시되는 이름 (예: SOXL (반도체 3배))',
+      orangeLabel: '주황 경계',
+      redLabel: '빨강 경계',
+      thresholdHint: '드로다운이 이 % 이하로 떨어지면 해당 색상이 적용됩니다. 주황이 빨강보다 0에 가까워야 합니다.',
+      addSubmit: '추가',
+      metaSectionTitle: '종목 정보 (메타)',
+      metaSubmit: '메타 저장',
+      deleteSectionTitle: '이 종목 삭제',
+      deleteWarning: '누적 종가·시드값·분할 로그가 모두 사라집니다. 되돌릴 수 없습니다.',
+      deleteConfirmLabel: '정말 삭제합니다',
+      deleteSubmit: '삭제',
+      defaultProtected: '기본 종목은 삭제할 수 없습니다.',
     },
   },
 };
@@ -327,6 +369,30 @@ const en: Dict = {
       lastError: (when, message) => `Last failure: ${when} · ${message}`,
       noActivity: 'No auto-ingest activity yet.',
       providerLabel: (provider) => `Provider: ${provider}`,
+    },
+    symbols: {
+      tabsAria: 'Symbol tabs',
+      addButton: '+ Add symbol',
+      cancelAdd: 'Cancel',
+      addFormTitle: 'New symbol',
+      tickerLabel: 'ticker',
+      tickerHint:
+        'Lowercase letter to start. Used as identifier/URL (e.g. soxl).',
+      displayNameLabel: 'Display name',
+      displayNameHint: 'Shown on screen (e.g. "SOXL (3x semis)").',
+      orangeLabel: 'Orange threshold',
+      redLabel: 'Red threshold',
+      thresholdHint:
+        'Color applies when drawdown is at or below this %. Orange must be closer to 0 than red.',
+      addSubmit: 'Add',
+      metaSectionTitle: 'Symbol info (meta)',
+      metaSubmit: 'Save meta',
+      deleteSectionTitle: 'Delete this symbol',
+      deleteWarning:
+        'Closes, seed, and split log will be erased. Cannot be undone.',
+      deleteConfirmLabel: 'I really want to delete',
+      deleteSubmit: 'Delete',
+      defaultProtected: 'Default symbol cannot be deleted.',
     },
   },
 };

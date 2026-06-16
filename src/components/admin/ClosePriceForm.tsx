@@ -18,11 +18,18 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export function ClosePriceForm({ defaultDate }: { defaultDate: string }) {
+export function ClosePriceForm({
+  defaultDate,
+  ticker,
+}: {
+  defaultDate: string;
+  ticker: string;
+}) {
   const [state, formAction] = useFormState(addCloseAction, initial);
 
   return (
     <form action={formAction} className="space-y-3">
+      <input type="hidden" name="ticker" value={ticker} />
       <div className="grid grid-cols-2 gap-3">
         <label className="block text-xs text-neutral-400">
           날짜

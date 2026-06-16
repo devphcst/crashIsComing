@@ -6,6 +6,8 @@ import {
   readAdjustments,
   readSettings,
   readVisitorCount,
+  readSymbolList,
+  readMeta,
   isKvConfigured,
 } from "@/lib/kv";
 import { readIngestStatus } from "@/lib/ingest/status";
@@ -16,6 +18,10 @@ import { SplitAdjustmentForm } from "@/components/admin/SplitAdjustmentForm";
 import { RecentClosesTable } from "@/components/admin/RecentClosesTable";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 import { IngestStatusCard } from "@/components/admin/IngestStatusCard";
+import { SymbolTabs } from "@/components/admin/SymbolTabs";
+import { AddSymbolForm } from "@/components/admin/AddSymbolForm";
+import { MetaEditForm } from "@/components/admin/MetaEditForm";
+import { DeleteSymbolForm } from "@/components/admin/DeleteSymbolForm";
 import { logoutAction } from "./actions";
 import { dictionaries } from "@/lib/i18n";
 
@@ -31,22 +37,52 @@ const todayISO = (): string => {
   return `${y}-${m}-${day}`;
 };
 
-export default async function AdminPage() {
+const resolveSymbol = (
+  raw: string | string[] | undefined,
+  list: string[],
+): string => {
+  const candidate = Array.isArray(raw) ? raw[0] : raw;
+  const clean = (candidate ?? "").trim().toLowerCase();
+  if (clean && list.includes(clean)) return clean;
+  return DEFAULT_SYMBOL;
+};
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams?: { symbol?: string; add?: string };
+}) {
   noStore();
-  const [closes, seed, adjustments, settings, visitorCount, ingestStatus] =
-    await Promise.all([
-      readAllCloses(DEFAULT_SYMBOL),
-      readSeed(DEFAULT_SYMBOL),
-      readAdjustments(DEFAULT_SYMBOL, 5),
-      readSettings(),
-      readVisitorCount(),
-      readIngestStatus(DEFAULT_SYMBOL),
-    ]);
+
+  const list = await readSymbolList();
+  const currentSymbol = resolveSymbol(searchParams?.symbol, list);
+  const addOpen = searchParams?.add === "1";
+
+  const [
+    metas,
+    closes,
+    seed,
+    adjustments,
+    settings,
+    visitorCount,
+    ingestStatus,
+    currentMeta,
+  ] = await Promise.all([
+    Promise.all(list.map((t) => readMeta(t))),
+    readAllCloses(currentSymbol),
+    readSeed(currentSymbol),
+    readAdjustments(currentSymbol, 5),
+    readSettings(),
+    readVisitorCount(),
+    readIngestStatus(currentSymbol),
+    readMeta(currentSymbol),
+  ]);
+
   const kvOn = isKvConfigured();
   const providerName = (process.env.DATA_PROVIDER || "manual").trim();
 
   return (
-    <main className="mx-auto max-w-3xl space-y-8 px-6 py-10">
+    <main className="mx-auto max-w-3xl space-y-6 px-6 py-10">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-neutral-100">관리자</h1>
         <div className="flex items-center gap-2">
@@ -77,18 +113,29 @@ export default async function AdminPage() {
         </div>
       ) : null}
 
+      <SymbolTabs metas={metas} current={currentSymbol} addOpen={addOpen} />
+
+      {addOpen ? <AddSymbolForm currentSymbol={currentSymbol} /> : null}
+
       <IngestStatusCard status={ingestStatus} provider={providerName} />
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
+        <h2 className="text-sm font-medium text-neutral-200">
+          {t.symbols.metaSectionTitle} — {currentMeta.displayName}
+        </h2>
+        <MetaEditForm meta={currentMeta} />
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
         <h2 className="text-sm font-medium text-neutral-200">종가 추가</h2>
-        <ClosePriceForm defaultDate={todayISO()} />
+        <ClosePriceForm defaultDate={todayISO()} ticker={currentSymbol} />
       </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
         <h2 className="text-sm font-medium text-neutral-200">
           시드값 (초기 ATH / 1년 고점)
         </h2>
-        <SeedHighsForm current={seed} />
+        <SeedHighsForm current={seed} ticker={currentSymbol} />
       </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
@@ -97,7 +144,7 @@ export default async function AdminPage() {
           분할 발효일 이전 종가와 시드값을 일괄 갱신합니다. 적용 후 작업 로그가
           기록됩니다.
         </p>
-        <SplitAdjustmentForm />
+        <SplitAdjustmentForm ticker={currentSymbol} />
         {adjustments.length ? (
           <div className="mt-4 space-y-1 text-xs text-neutral-500">
             <p className="text-neutral-400">최근 보정 로그:</p>
@@ -111,13 +158,20 @@ export default async function AdminPage() {
       </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">{t.siteSettings}</h2>
-        <SettingsForm settings={settings} visitorCount={visitorCount} />
-      </section>
-
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
         <h2 className="text-sm font-medium text-neutral-200">최근 입력 10건</h2>
         <RecentClosesTable closes={closes} />
+      </section>
+
+      {currentSymbol !== DEFAULT_SYMBOL ? (
+        <DeleteSymbolForm
+          ticker={currentSymbol}
+          displayName={currentMeta.displayName}
+        />
+      ) : null}
+
+      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
+        <h2 className="text-sm font-medium text-neutral-200">{t.siteSettings}</h2>
+        <SettingsForm settings={settings} visitorCount={visitorCount} />
       </section>
     </main>
   );

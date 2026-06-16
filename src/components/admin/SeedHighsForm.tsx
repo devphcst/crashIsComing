@@ -21,11 +21,18 @@ function SubmitButton() {
   );
 }
 
-export function SeedHighsForm({ current }: { current: SeedHighs | undefined }) {
+export function SeedHighsForm({
+  current,
+  ticker,
+}: {
+  current: SeedHighs | undefined;
+  ticker: string;
+}) {
   const [state, formAction] = useFormState(setSeedAction, initial);
 
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="ticker" value={ticker} />
       <div className="space-y-2 rounded-md border border-neutral-800 bg-neutral-950/40 p-3 text-xs leading-relaxed text-neutral-400">
         <p>{t.seedExplain}</p>
         <p className="text-neutral-500">{t.seedHowto}</p>

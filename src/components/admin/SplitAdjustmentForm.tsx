@@ -30,7 +30,7 @@ function Button({ label }: { label: string }) {
   );
 }
 
-export function SplitAdjustmentForm() {
+export function SplitAdjustmentForm({ ticker }: { ticker: string }) {
   const [previewState, previewAction] = useFormState(
     previewSplitAction,
     initialPreview,
@@ -43,6 +43,7 @@ export function SplitAdjustmentForm() {
   return (
     <div className="space-y-4">
       <form action={previewAction} className="space-y-3">
+        <input type="hidden" name="ticker" value={ticker} />
         <div className="grid grid-cols-2 gap-3">
           <label className="block text-xs text-neutral-400">
             비율 (예: 2:1 분할 → 2)
@@ -100,6 +101,7 @@ export function SplitAdjustmentForm() {
           ) : null}
 
           <form action={applyAction} className="flex items-center gap-3">
+            <input type="hidden" name="ticker" value={ticker} />
             <input
               type="hidden"
               name="ratio"

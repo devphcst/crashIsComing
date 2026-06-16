@@ -289,6 +289,29 @@ export const writeSymbolList = async (tickers: string[]): Promise<void> => {
   await kv.set(KV_KEYS.symbolList, JSON.stringify(tickers));
 };
 
+export const deleteSymbol = async (ticker: string): Promise<void> => {
+  if (ticker === DEFAULT_SYMBOL) {
+    throw new Error(`기본 종목(${DEFAULT_SYMBOL})은 삭제할 수 없습니다.`);
+  }
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    delete s.symbols[ticker];
+    s.symbolList = s.symbolList.filter((t) => t !== ticker);
+    await writeDevStore(s);
+    return;
+  }
+  await beforeKv();
+  await Promise.all([
+    kv.del(KV_KEYS.meta(ticker)),
+    kv.del(KV_KEYS.closes(ticker)),
+    kv.del(KV_KEYS.seed(ticker)),
+    kv.del(KV_KEYS.adjustments(ticker)),
+    kv.del(KV_KEYS.ingest(ticker)),
+  ]);
+  const list = await readSymbolList();
+  await writeSymbolList(list.filter((t) => t !== ticker));
+};
+
 // ---- site (visitor count, settings) ----
 
 export const readVisitorCount = async (): Promise<number> => {

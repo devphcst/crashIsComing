@@ -131,7 +131,12 @@ export function HeroDrawdown({
           <section className="flex min-h-screen flex-col items-center gap-8 px-6 pb-12 pt-[10vh]">
             {data.ready ? (
               <>
-                <HeroNumbers data={data} dict={d} lang={lang} />
+                <HeroNumbers
+                  data={data}
+                  dict={d}
+                  lang={lang}
+                  tickerLabel={current.toUpperCase()}
+                />
                 <Facts data={data} dict={d} lang={lang} />
                 <LastUpdated
                   asOfText={d.asOf(formatDate(data.current.date, lang))}
@@ -173,16 +178,18 @@ function HeroNumbers({
   data,
   dict,
   lang: _lang,
+  tickerLabel,
 }: {
   data: Extract<HeroData, { ready: true }>;
   dict: ReturnType<typeof getDict>;
   lang: Lang;
+  tickerLabel: string;
 }) {
   const level = levelFor(data.ath.drawdownPct, data.thresholds);
   return (
     <div className="flex flex-col items-center gap-3 text-center">
       <span className="rounded-full border border-neutral-700 bg-neutral-900/60 px-4 py-1.5 text-2xl font-medium tracking-wider text-neutral-200 sm:text-3xl">
-        TQQQ
+        {tickerLabel}
       </span>
       <span className="text-sm text-neutral-500">{dict.athDrawdown}</span>
       <span

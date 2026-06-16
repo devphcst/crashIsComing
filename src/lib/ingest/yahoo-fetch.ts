@@ -1,7 +1,7 @@
 import type { Close } from "../providers/types";
 
-const ENDPOINT =
-  "https://query1.finance.yahoo.com/v8/finance/chart/TQQQ?interval=1d&range=5d";
+const buildEndpoint = (ticker: string): string =>
+  `https://query1.finance.yahoo.com/v8/finance/chart/${ticker.toUpperCase()}?interval=1d&range=5d`;
 
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 " +
@@ -53,8 +53,10 @@ export const parseLatestCloseFromYahoo = (json: YahooChartResponse): Close => {
   throw new Error("yahoo: all adjclose values null");
 };
 
-export const fetchLatestCloseFromYahoo = async (): Promise<Close> => {
-  const res = await fetch(ENDPOINT, {
+export const fetchLatestCloseFromYahoo = async (
+  ticker: string,
+): Promise<Close> => {
+  const res = await fetch(buildEndpoint(ticker), {
     headers: { "User-Agent": UA, Accept: "application/json" },
     cache: "no-store",
   });

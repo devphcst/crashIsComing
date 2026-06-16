@@ -3,13 +3,18 @@ import type { Close, IngestStatus } from "../providers/types";
 
 const EMPTY: IngestStatus = { consecutiveFailures: 0 };
 
-export const readIngestStatus = async (): Promise<IngestStatus> => {
-  const s = await readIngestStatusRaw();
+export const readIngestStatus = async (
+  ticker: string,
+): Promise<IngestStatus> => {
+  const s = await readIngestStatusRaw(ticker);
   return s ?? EMPTY;
 };
 
-export const recordSuccess = async (close: Close): Promise<IngestStatus> => {
-  const prev = await readIngestStatus();
+export const recordSuccess = async (
+  ticker: string,
+  close: Close,
+): Promise<IngestStatus> => {
+  const prev = await readIngestStatus(ticker);
   const next: IngestStatus = {
     consecutiveFailures: 0,
     lastSuccess: {
@@ -20,20 +25,21 @@ export const recordSuccess = async (close: Close): Promise<IngestStatus> => {
     },
     lastError: prev.lastError,
   };
-  await writeIngestStatusRaw(next);
+  await writeIngestStatusRaw(ticker, next);
   return next;
 };
 
 export const recordFailure = async (
+  ticker: string,
   err: unknown,
 ): Promise<IngestStatus> => {
-  const prev = await readIngestStatus();
+  const prev = await readIngestStatus(ticker);
   const message = err instanceof Error ? err.message : String(err);
   const next: IngestStatus = {
     consecutiveFailures: prev.consecutiveFailures + 1,
     lastSuccess: prev.lastSuccess,
     lastError: { ts: new Date().toISOString(), message },
   };
-  await writeIngestStatusRaw(next);
+  await writeIngestStatusRaw(ticker, next);
   return next;
 };

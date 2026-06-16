@@ -7,7 +7,8 @@ import { getProvider } from "@/lib/providers";
 import { computeATH, computeOneYearHigh } from "@/lib/peaks";
 import { calcDrawdown } from "@/lib/drawdown";
 import { computeStaleness } from "@/lib/staleness";
-import { readSettings, readVisitorCount } from "@/lib/kv";
+import { readMeta, readSettings, readVisitorCount } from "@/lib/kv";
+import { DEFAULT_SYMBOL } from "@/lib/symbols";
 import type { Lang } from "@/lib/i18n";
 import {
   SEO_TEXT,
@@ -78,11 +79,12 @@ async function loadVisitorInfo(): Promise<VisitorInfo> {
 async function loadHeroData(): Promise<HeroData> {
   noStore();
   try {
-    const provider = getProvider();
-    const [latest, closes, seed] = await Promise.all([
+    const provider = getProvider(DEFAULT_SYMBOL);
+    const [latest, closes, seed, meta] = await Promise.all([
       provider.getLatestClose(),
       provider.getCloses(),
       provider.getSeedHighs(),
+      readMeta(DEFAULT_SYMBOL),
     ]);
 
     const ath = computeATH(closes, seed);
@@ -115,6 +117,10 @@ async function loadHeroData(): Promise<HeroData> {
       },
       staleDays,
       staleCritical,
+      thresholds: {
+        orange: meta.orangeThreshold,
+        red: meta.redThreshold,
+      },
     };
   } catch (err) {
     console.error("loadHeroData failed:", err);

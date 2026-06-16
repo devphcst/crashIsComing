@@ -7,75 +7,77 @@ import type {
   AdjustmentLog,
   IngestStatus,
 } from "./providers/types";
+import { DEFAULT_SITE_SETTINGS, type SiteSettings } from "./site";
+import {
+  DEFAULT_SYMBOL,
+  defaultMetaFor,
+  type SymbolMeta,
+} from "./symbols";
+import {
+  ensureKvMigrated,
+  migrateDevStoreShape,
+  NEW_KEYS,
+  type DevStoreV2,
+} from "./migration";
 
-export const KV_KEYS = {
-  closes: "tqqq:closes",
-  seed: "tqqq:seed",
-  adjustments: "tqqq:adjustments",
-  visitorCount: "tqqq:visitor:count",
-  settings: "tqqq:settings",
-  ingestStatus: "tqqq:ingest:status",
-} as const;
+export type { SiteSettings } from "./site";
 
-export type SiteSettings = {
-  showVisitorCount: boolean;
-};
-
-const DEFAULT_SETTINGS: SiteSettings = {
-  showVisitorCount: false,
-};
+export const KV_KEYS = NEW_KEYS;
 
 export const isKvConfigured = (): boolean =>
   !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 
-type DevStore = {
-  closes: Record<string, Close>;
-  seed?: SeedHighs;
-  adjustments: AdjustmentLog[];
-  visitorCount: number;
-  settings: SiteSettings;
-  ingestStatus?: IngestStatus;
-};
-
 const DEV_STORE_PATH = path.join(process.cwd(), ".dev-store.json");
 
-const emptyStore = (): DevStore => ({
-  closes: {},
-  adjustments: [],
-  visitorCount: 0,
-  settings: DEFAULT_SETTINGS,
-});
-
-const readDevStore = async (): Promise<DevStore> => {
+const readDevStore = async (): Promise<DevStoreV2> => {
   try {
     const raw = await readFile(DEV_STORE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as Partial<DevStore>;
-    return {
-      closes: parsed.closes ?? {},
-      seed: parsed.seed,
-      adjustments: parsed.adjustments ?? [],
-      visitorCount: parsed.visitorCount ?? 0,
-      settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
-      ingestStatus: parsed.ingestStatus,
-    };
+    const parsed = JSON.parse(raw) as unknown;
+    const migrated = migrateDevStoreShape(parsed);
+    // 구 구조였다면 즉시 새 구조로 영속화
+    if ((parsed as { migratedV1?: unknown }).migratedV1 !== true) {
+      await writeDevStore(migrated);
+    }
+    return migrated;
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") return emptyStore();
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      return migrateDevStoreShape({});
+    }
     throw err;
   }
 };
 
-const writeDevStore = async (store: DevStore): Promise<void> => {
+const writeDevStore = async (store: DevStoreV2): Promise<void> => {
   await writeFile(DEV_STORE_PATH, JSON.stringify(store, null, 2), "utf8");
 };
 
-export const readAllCloses = async (): Promise<Close[]> => {
+const ensureSymbolSlot = (store: DevStoreV2, ticker: string): void => {
+  if (!store.symbols[ticker]) {
+    store.symbols[ticker] = {
+      meta: defaultMetaFor(ticker),
+      closes: {},
+      adjustments: [],
+    };
+    if (!store.symbolList.includes(ticker)) store.symbolList.push(ticker);
+  }
+};
+
+const beforeKv = async (): Promise<void> => {
+  if (isKvConfigured()) await ensureKvMigrated();
+};
+
+// ---- closes ----
+
+export const readAllCloses = async (ticker: string): Promise<Close[]> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    return Object.values(s.closes).sort((a, b) =>
+    ensureSymbolSlot(s, ticker);
+    return Object.values(s.symbols[ticker].closes).sort((a, b) =>
       a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
     );
   }
-  const raw = (await kv.hgetall(KV_KEYS.closes)) as Record<
+  await beforeKv();
+  const raw = (await kv.hgetall(KV_KEYS.closes(ticker))) as Record<
     string,
     Close | string
   > | null;
@@ -86,113 +88,240 @@ export const readAllCloses = async (): Promise<Close[]> => {
   return items.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 };
 
-export const getClose = async (date: string): Promise<Close | null> => {
+export const getClose = async (
+  ticker: string,
+  date: string,
+): Promise<Close | null> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    return s.closes[date] ?? null;
+    ensureSymbolSlot(s, ticker);
+    return s.symbols[ticker].closes[date] ?? null;
   }
-  const v = await kv.hget<Close | string>(KV_KEYS.closes, date);
+  await beforeKv();
+  const v = await kv.hget<Close | string>(KV_KEYS.closes(ticker), date);
   if (!v) return null;
   return typeof v === "string" ? (JSON.parse(v) as Close) : v;
 };
 
-export const readSeed = async (): Promise<SeedHighs | undefined> => {
+export const writeClose = async (
+  ticker: string,
+  c: Close,
+): Promise<void> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    return s.seed;
+    ensureSymbolSlot(s, ticker);
+    s.symbols[ticker].closes[c.date] = c;
+    await writeDevStore(s);
+    return;
   }
-  const v = await kv.get<SeedHighs | string>(KV_KEYS.seed);
+  await beforeKv();
+  await kv.hset(KV_KEYS.closes(ticker), { [c.date]: JSON.stringify(c) });
+};
+
+export const writeManyCloses = async (
+  ticker: string,
+  items: Close[],
+): Promise<void> => {
+  if (!items.length) return;
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    ensureSymbolSlot(s, ticker);
+    for (const c of items) s.symbols[ticker].closes[c.date] = c;
+    await writeDevStore(s);
+    return;
+  }
+  await beforeKv();
+  const payload: Record<string, string> = {};
+  for (const c of items) payload[c.date] = JSON.stringify(c);
+  await kv.hset(KV_KEYS.closes(ticker), payload);
+};
+
+// ---- seed ----
+
+export const readSeed = async (
+  ticker: string,
+): Promise<SeedHighs | undefined> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    ensureSymbolSlot(s, ticker);
+    return s.symbols[ticker].seed;
+  }
+  await beforeKv();
+  const v = await kv.get<SeedHighs | string>(KV_KEYS.seed(ticker));
   if (!v) return undefined;
   return typeof v === "string" ? (JSON.parse(v) as SeedHighs) : v;
 };
 
+export const writeSeed = async (
+  ticker: string,
+  seed: SeedHighs,
+): Promise<void> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    ensureSymbolSlot(s, ticker);
+    s.symbols[ticker].seed = seed;
+    await writeDevStore(s);
+    return;
+  }
+  await beforeKv();
+  await kv.set(KV_KEYS.seed(ticker), JSON.stringify(seed));
+};
+
+// ---- adjustments ----
+
 export const readAdjustments = async (
+  ticker: string,
   limit = 20,
 ): Promise<AdjustmentLog[]> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    return s.adjustments.slice(0, limit);
+    ensureSymbolSlot(s, ticker);
+    return s.symbols[ticker].adjustments.slice(0, limit);
   }
-  const raw = (await kv.lrange(KV_KEYS.adjustments, 0, limit - 1)) as (
-    | string
-    | AdjustmentLog
-  )[];
+  await beforeKv();
+  const raw = (await kv.lrange(
+    KV_KEYS.adjustments(ticker),
+    0,
+    limit - 1,
+  )) as (string | AdjustmentLog)[];
   return raw.map((v) =>
     typeof v === "string" ? (JSON.parse(v) as AdjustmentLog) : v,
   );
 };
 
-export const writeClose = async (c: Close): Promise<void> => {
+export const pushAdjustment = async (
+  ticker: string,
+  log: AdjustmentLog,
+): Promise<void> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    s.closes[c.date] = c;
+    ensureSymbolSlot(s, ticker);
+    s.symbols[ticker].adjustments.unshift(log);
     await writeDevStore(s);
     return;
   }
-  await kv.hset(KV_KEYS.closes, { [c.date]: JSON.stringify(c) });
+  await beforeKv();
+  await kv.lpush(KV_KEYS.adjustments(ticker), JSON.stringify(log));
 };
 
-export const writeManyCloses = async (items: Close[]): Promise<void> => {
-  if (!items.length) return;
+// ---- ingest status ----
+
+export const readIngestStatusRaw = async (
+  ticker: string,
+): Promise<IngestStatus | null> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    for (const c of items) s.closes[c.date] = c;
-    await writeDevStore(s);
-    return;
+    ensureSymbolSlot(s, ticker);
+    return s.symbols[ticker].ingestStatus ?? null;
   }
-  const payload: Record<string, string> = {};
-  for (const c of items) payload[c.date] = JSON.stringify(c);
-  await kv.hset(KV_KEYS.closes, payload);
+  await beforeKv();
+  const v = await kv.get<IngestStatus | string>(KV_KEYS.ingest(ticker));
+  if (!v) return null;
+  return typeof v === "string" ? (JSON.parse(v) as IngestStatus) : v;
 };
 
-export const writeSeed = async (seed: SeedHighs): Promise<void> => {
+export const writeIngestStatusRaw = async (
+  ticker: string,
+  status: IngestStatus,
+): Promise<void> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    s.seed = seed;
+    ensureSymbolSlot(s, ticker);
+    s.symbols[ticker].ingestStatus = status;
     await writeDevStore(s);
     return;
   }
-  await kv.set(KV_KEYS.seed, JSON.stringify(seed));
+  await beforeKv();
+  await kv.set(KV_KEYS.ingest(ticker), JSON.stringify(status));
 };
 
-export const pushAdjustment = async (log: AdjustmentLog): Promise<void> => {
+// ---- meta ----
+
+export const readMeta = async (ticker: string): Promise<SymbolMeta> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    s.adjustments.unshift(log);
+    ensureSymbolSlot(s, ticker);
+    return s.symbols[ticker].meta;
+  }
+  await beforeKv();
+  const v = await kv.get<SymbolMeta | string>(KV_KEYS.meta(ticker));
+  if (!v) return defaultMetaFor(ticker);
+  return typeof v === "string" ? (JSON.parse(v) as SymbolMeta) : v;
+};
+
+export const writeMeta = async (
+  ticker: string,
+  meta: SymbolMeta,
+): Promise<void> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    ensureSymbolSlot(s, ticker);
+    s.symbols[ticker].meta = meta;
+    if (!s.symbolList.includes(ticker)) s.symbolList.push(ticker);
     await writeDevStore(s);
     return;
   }
-  await kv.lpush(KV_KEYS.adjustments, JSON.stringify(log));
+  await beforeKv();
+  await kv.set(KV_KEYS.meta(ticker), JSON.stringify(meta));
 };
+
+// ---- symbol list ----
+
+export const readSymbolList = async (): Promise<string[]> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    return s.symbolList.slice();
+  }
+  await beforeKv();
+  const v = await kv.get<string[] | string>(KV_KEYS.symbolList);
+  if (!v) return [DEFAULT_SYMBOL];
+  return typeof v === "string" ? (JSON.parse(v) as string[]) : v;
+};
+
+export const writeSymbolList = async (tickers: string[]): Promise<void> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    s.symbolList = tickers.slice();
+    await writeDevStore(s);
+    return;
+  }
+  await beforeKv();
+  await kv.set(KV_KEYS.symbolList, JSON.stringify(tickers));
+};
+
+// ---- site (visitor count, settings) ----
 
 export const readVisitorCount = async (): Promise<number> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    return s.visitorCount;
+    return s.site.visitorCount;
   }
-  const v = await kv.get<number>(KV_KEYS.visitorCount);
+  await beforeKv();
+  const v = await kv.get<number>(KV_KEYS.siteVisitorCount);
   return typeof v === "number" ? v : 0;
 };
 
 export const incrementVisitorCount = async (): Promise<number> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    s.visitorCount += 1;
+    s.site.visitorCount += 1;
     await writeDevStore(s);
-    return s.visitorCount;
+    return s.site.visitorCount;
   }
-  return (await kv.incr(KV_KEYS.visitorCount)) ?? 0;
+  await beforeKv();
+  return (await kv.incr(KV_KEYS.siteVisitorCount)) ?? 0;
 };
 
 export const readSettings = async (): Promise<SiteSettings> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    return s.settings;
+    return s.site.settings;
   }
-  const v = await kv.get<SiteSettings | string>(KV_KEYS.settings);
-  if (!v) return DEFAULT_SETTINGS;
+  await beforeKv();
+  const v = await kv.get<SiteSettings | string>(KV_KEYS.siteSettings);
+  if (!v) return DEFAULT_SITE_SETTINGS;
   const parsed = typeof v === "string" ? (JSON.parse(v) as SiteSettings) : v;
-  return { ...DEFAULT_SETTINGS, ...parsed };
+  return { ...DEFAULT_SITE_SETTINGS, ...parsed };
 };
 
 export const writeSettings = async (
@@ -202,32 +331,11 @@ export const writeSettings = async (
   const next: SiteSettings = { ...current, ...patch };
   if (!isKvConfigured()) {
     const s = await readDevStore();
-    s.settings = next;
+    s.site.settings = next;
     await writeDevStore(s);
     return next;
   }
-  await kv.set(KV_KEYS.settings, JSON.stringify(next));
+  await beforeKv();
+  await kv.set(KV_KEYS.siteSettings, JSON.stringify(next));
   return next;
-};
-
-export const readIngestStatusRaw = async (): Promise<IngestStatus | null> => {
-  if (!isKvConfigured()) {
-    const s = await readDevStore();
-    return s.ingestStatus ?? null;
-  }
-  const v = await kv.get<IngestStatus | string>(KV_KEYS.ingestStatus);
-  if (!v) return null;
-  return typeof v === "string" ? (JSON.parse(v) as IngestStatus) : v;
-};
-
-export const writeIngestStatusRaw = async (
-  status: IngestStatus,
-): Promise<void> => {
-  if (!isKvConfigured()) {
-    const s = await readDevStore();
-    s.ingestStatus = status;
-    await writeDevStore(s);
-    return;
-  }
-  await kv.set(KV_KEYS.ingestStatus, JSON.stringify(status));
 };

@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
 import { formatPct, formatPrice, formatDate } from "@/lib/format";
-import { levelFor, type DrawdownLevel } from "@/constants/thresholds";
+import {
+  levelFor,
+  type DrawdownLevel,
+  type LevelThresholds,
+} from "@/constants/thresholds";
 import { LangToggle } from "./LangToggle";
 import { LastUpdated } from "./LastUpdated";
 import { Disclaimer } from "./Disclaimer";
@@ -26,6 +30,7 @@ export type HeroData =
       oneYear: { date: string; price: number; drawdownPct: number };
       staleDays: number | null; // null = fresh (soft warning when not null)
       staleCritical: { expectedTradingDate: string; hoursSince: number } | null;
+      thresholds: LevelThresholds;
     }
   | { ready: false; staleCritical?: null };
 
@@ -163,7 +168,7 @@ function HeroNumbers({
   dict: ReturnType<typeof getDict>;
   lang: Lang;
 }) {
-  const level = levelFor(data.ath.drawdownPct);
+  const level = levelFor(data.ath.drawdownPct, data.thresholds);
   return (
     <div className="flex flex-col items-center gap-3 text-center">
       <span className="rounded-full border border-neutral-700 bg-neutral-900/60 px-4 py-1.5 text-2xl font-medium tracking-wider text-neutral-200 sm:text-3xl">

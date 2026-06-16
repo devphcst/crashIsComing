@@ -9,6 +9,7 @@ import {
   isKvConfigured,
 } from "@/lib/kv";
 import { readIngestStatus } from "@/lib/ingest/status";
+import { DEFAULT_SYMBOL } from "@/lib/symbols";
 import { ClosePriceForm } from "@/components/admin/ClosePriceForm";
 import { SeedHighsForm } from "@/components/admin/SeedHighsForm";
 import { SplitAdjustmentForm } from "@/components/admin/SplitAdjustmentForm";
@@ -34,12 +35,12 @@ export default async function AdminPage() {
   noStore();
   const [closes, seed, adjustments, settings, visitorCount, ingestStatus] =
     await Promise.all([
-      readAllCloses(),
-      readSeed(),
-      readAdjustments(5),
+      readAllCloses(DEFAULT_SYMBOL),
+      readSeed(DEFAULT_SYMBOL),
+      readAdjustments(DEFAULT_SYMBOL, 5),
       readSettings(),
       readVisitorCount(),
-      readIngestStatus(),
+      readIngestStatus(DEFAULT_SYMBOL),
     ]);
   const kvOn = isKvConfigured();
   const providerName = (process.env.DATA_PROVIDER || "manual").trim();

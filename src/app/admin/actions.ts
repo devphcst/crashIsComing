@@ -20,6 +20,7 @@ import {
   pushAdjustment,
   writeSettings,
 } from "@/lib/kv";
+import { DEFAULT_SYMBOL } from "@/lib/symbols";
 import {
   applySplitToCloses,
   applySplitToSeed,
@@ -73,10 +74,10 @@ export async function addCloseAction(
   }
 
   const { date, price, confirmAbnormal } = parsed.data;
-  const closes = await readAllCloses();
+  const closes = await readAllCloses(DEFAULT_SYMBOL);
 
   if (!confirmAbnormal) {
-    const existing = await getClose(date);
+    const existing = await getClose(DEFAULT_SYMBOL, date);
     if (existing) {
       return {
         ok: false,
@@ -94,7 +95,7 @@ export async function addCloseAction(
     }
   }
 
-  await writeClose({ date, price });
+  await writeClose(DEFAULT_SYMBOL, { date, price });
   revalidatePath("/");
   revalidatePath("/admin");
   return { ok: true, message: "저장되었습니다." };
@@ -128,7 +129,7 @@ export async function setSeedAction(
   }
   const { athDate, athPrice, oneYearDate, oneYearPrice } = parsed.data;
 
-  const current = (await readSeed()) ?? {};
+  const current = (await readSeed(DEFAULT_SYMBOL)) ?? {};
   const next: SeedHighs = { ...current };
   if (athDate && typeof athPrice === "number") {
     next.ath = { date: athDate, price: athPrice };
@@ -137,7 +138,7 @@ export async function setSeedAction(
     next.oneYearHigh = { date: oneYearDate, price: oneYearPrice };
   }
 
-  await writeSeed(next);
+  await writeSeed(DEFAULT_SYMBOL, next);
   revalidatePath("/");
   revalidatePath("/admin");
   return { ok: true, message: "시드값이 저장되었습니다." };
@@ -164,7 +165,7 @@ export async function previewSplitAction(
     return { ok: false, message: parsed.error.issues[0]?.message ?? "입력 오류" };
   }
   const { ratio, effectiveDate } = parsed.data;
-  const closes = await readAllCloses();
+  const closes = await readAllCloses(DEFAULT_SYMBOL);
   const before = closes.filter(
     (c) => new Date(c.date).getTime() < new Date(effectiveDate).getTime(),
   );
@@ -200,16 +201,16 @@ export async function applySplitAction(
   }
   const { ratio, effectiveDate } = parsed.data;
 
-  const closes = await readAllCloses();
+  const closes = await readAllCloses(DEFAULT_SYMBOL);
   const adjusted = applySplitToCloses(closes, ratio, effectiveDate);
   const changed = adjusted.filter((c, i) => c.price !== closes[i].price);
-  await writeManyCloses(changed);
+  await writeManyCloses(DEFAULT_SYMBOL, changed);
 
-  const seed = await readSeed();
+  const seed = await readSeed(DEFAULT_SYMBOL);
   const newSeed = applySplitToSeed(seed, ratio, effectiveDate);
-  if (newSeed) await writeSeed(newSeed);
+  if (newSeed) await writeSeed(DEFAULT_SYMBOL, newSeed);
 
-  await pushAdjustment({
+  await pushAdjustment(DEFAULT_SYMBOL, {
     ratio,
     effectiveDate,
     appliedAt: new Date().toISOString(),

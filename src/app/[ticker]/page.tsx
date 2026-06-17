@@ -10,7 +10,8 @@ import { DEFAULT_SYMBOL } from "@/lib/symbols";
 import type { Lang } from "@/lib/i18n";
 import { buildJsonLd, LANG_COOKIE } from "@/constants/seo";
 
-export const dynamic = "force-dynamic";
+// force-dynamic 제거 — page-data.ts의 unstable_cache (TTL 60s, tag 'symbols')에
+// 의존해 데이터 fetch를 캐시. cookie 읽기로 페이지 자체는 dynamic 유지.
 
 const readLangFromCookie = (): Lang => {
   const v = cookies().get(LANG_COOKIE)?.value;

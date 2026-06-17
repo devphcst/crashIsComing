@@ -1,6 +1,6 @@
 import "server-only";
 
-import { unstable_noStore as noStore } from "next/cache";
+import { unstable_cache } from "next/cache";
 import { calcDrawdown } from "./drawdown";
 import { computeATH, computeOneYearHigh } from "./peaks";
 import { computeStaleness } from "./staleness";
@@ -19,8 +19,18 @@ export type VisitorInfo = {
   count: number;
 };
 
-export const loadHeroData = async (ticker: string): Promise<HeroData> => {
-  noStore();
+/**
+ * 캐시 정책
+ *   - revalidate: 60초 — admin이 입력해도 최대 60초 뒤에는 반드시 반영
+ *   - tag: 'symbols' — admin 액션이 `revalidateTag('symbols')`로 즉시 무효화
+ *
+ * 캐시 키는 함수 인자(ticker 등)가 자동으로 직렬화되어 들어감 — Next.js
+ * `unstable_cache` 기본 동작. 그래서 ticker별로 독립적으로 캐시된다.
+ */
+const CACHE_TTL_SECONDS = 60;
+const CACHE_TAG = "symbols";
+
+const _loadHeroData = async (ticker: string): Promise<HeroData> => {
   try {
     const provider = getProvider(ticker);
     const [latest, closes, seed, meta] = await Promise.all([
@@ -71,13 +81,12 @@ export const loadHeroData = async (ticker: string): Promise<HeroData> => {
   }
 };
 
-export const loadAllMetas = async (): Promise<SymbolMeta[]> => {
+const _loadAllMetas = async (): Promise<SymbolMeta[]> => {
   const list = await readSymbolList();
   return Promise.all(list.map((t) => readMeta(t)));
 };
 
-export const loadVisitorInfo = async (): Promise<VisitorInfo> => {
-  noStore();
+const _loadVisitorInfo = async (): Promise<VisitorInfo> => {
   try {
     const [settings, count] = await Promise.all([
       readSettings(),
@@ -89,3 +98,22 @@ export const loadVisitorInfo = async (): Promise<VisitorInfo> => {
     return { show: false, count: 0 };
   }
 };
+
+export const loadHeroData = unstable_cache(_loadHeroData, ["hero-data"], {
+  revalidate: CACHE_TTL_SECONDS,
+  tags: [CACHE_TAG],
+});
+
+export const loadAllMetas = unstable_cache(_loadAllMetas, ["all-metas"], {
+  revalidate: CACHE_TTL_SECONDS,
+  tags: [CACHE_TAG],
+});
+
+export const loadVisitorInfo = unstable_cache(
+  _loadVisitorInfo,
+  ["visitor-info"],
+  {
+    revalidate: CACHE_TTL_SECONDS,
+    tags: [CACHE_TAG],
+  },
+);

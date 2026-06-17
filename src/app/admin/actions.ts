@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { ADMIN_COOKIE, isTokenValid } from "@/lib/auth";
@@ -136,6 +136,7 @@ export async function addCloseAction(
   await writeClose(ticker, { date, price });
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidateTag("symbols");
   return { ok: true, message: "저장되었습니다." };
 }
 
@@ -183,6 +184,7 @@ export async function setSeedAction(
   await writeSeed(ticker, next);
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidateTag("symbols");
   return { ok: true, message: "시드값이 저장되었습니다." };
 }
 
@@ -269,6 +271,7 @@ export async function applySplitAction(
 
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidateTag("symbols");
   return {
     ok: true,
     message: `${changed.length}건이 보정되었습니다.`,
@@ -287,6 +290,7 @@ export async function setSettingsAction(
     await writeSettings({ showVisitorCount });
     revalidatePath("/");
     revalidatePath("/admin");
+    revalidateTag("symbols");
     return { ok: true, message: "저장되었습니다." };
   } catch (err) {
     console.error("setSettingsAction failed:", err);
@@ -331,6 +335,8 @@ export async function addSymbolAction(
   await writeMeta(ticker, meta);
   await writeSymbolList([...list, ticker]);
   revalidatePath("/admin");
+  revalidatePath("/");
+  revalidateTag("symbols");
   redirect(`/admin?symbol=${ticker}`);
 }
 
@@ -360,6 +366,7 @@ export async function updateMetaAction(
   await writeMeta(ticker, meta);
   revalidatePath("/admin");
   revalidatePath("/");
+  revalidateTag("symbols");
   return { ok: true, message: "메타 정보를 저장했습니다." };
 }
 
@@ -389,5 +396,6 @@ export async function deleteSymbolAction(
   await deleteSymbol(ticker);
   revalidatePath("/admin");
   revalidatePath("/");
+  revalidateTag("symbols");
   redirect("/admin");
 }

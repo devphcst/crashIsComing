@@ -1,5 +1,4 @@
 import type { Lang } from "@/lib/i18n";
-import type { SymbolMeta } from "@/lib/symbols";
 
 /**
  * 사이트 절대 URL. Vercel은 VERCEL_URL 환경변수를 자동 주입한다.
@@ -22,8 +21,8 @@ export type SeoText = {
  * 메인 페이지 SEO 텍스트. ko가 기본(주 타겟 한국 사용자), en은 사용자가 EN으로
  * 토글한 뒤 다음 페이지 로드 시 사용된다. 검색엔진 봇은 쿠키 없이 접근하므로 항상 ko.
  *
- * displayName 인자로 종목별 메타에서 보낸 표시 이름이 들어온다. 기본 종목(TQQQ)에서는
- * 기존 정적 문자열과 동일한 결과를 내도록 포맷 유지.
+ * displayName 인자로 종목별 메타에서 보낸 표시 이름이 들어온다. TQQQ만 정적
+ * description으로 별도 처리(DEFAULT_SYMBOL_DESCRIPTION) — 회귀 방지.
  *
  * 가이드:
  *   - title ≤ 60자
@@ -59,25 +58,23 @@ export const SEO_TEXT: Record<Lang, SeoText> = {
   },
 };
 
-export const OG_IMAGE_ALT = "TQQQ Drawdown Monitor";
-
-/** JSON-LD WebApplication 스키마. meta가 있으면 name/description을 종목별로. */
-export const buildJsonLd = (lang: Lang, meta?: SymbolMeta) => {
-  const t = SEO_TEXT[lang];
-  const name = meta ? t.titleFor(meta.displayName) : t.titleFor("TQQQ");
-  const description = meta
-    ? t.descriptionFor(meta.displayName)
-    : t.descriptionFor("TQQQ");
-  return {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    name,
-    description,
-    url: SITE_URL,
-    applicationCategory: "FinanceApplication",
-    operatingSystem: "Web",
-    inLanguage: lang === "ko" ? "ko-KR" : "en-US",
-  };
+/**
+ * TQQQ(기본 종목) 페이지 전용 정적 description.
+ *
+ * 멀티 종목 작업 전 description에는 "나스닥 3배 레버리지 폭락장" / "Nasdaq 3x
+ * leveraged ETF crash" 등 검색 키워드가 풍부하게 들어가 있었다. 동적 템플릿
+ * (SEO_TEXT.descriptionFor)을 그대로 쓰면 이 키워드들이 사라져 검색 노출이 떨어진다.
+ * 그래서 TQQQ만 멀티 종목 적용 전 원본 description으로 유지한다.
+ *
+ * SOXL·QLD 같은 종목은 SEO_TEXT.descriptionFor의 동적 템플릿을 그대로 사용.
+ * 종목별 풍부한 description이 필요하면 향후 admin UI 확장으로 SymbolMeta에
+ * seoDescription 필드 추가하는 작업이 별도로 필요.
+ */
+export const DEFAULT_SYMBOL_DESCRIPTION: Record<Lang, string> = {
+  ko: "TQQQ가 전고점에서 얼마나 빠졌는지 큰 숫자 하나로. 나스닥 3배 레버리지 폭락장을 매일 종가 기준으로 추적합니다.",
+  en: "How far has TQQQ fallen from its all-time high? A single big number tracking the Nasdaq 3x leveraged ETF crash, updated daily at close.",
 };
+
+export const OG_IMAGE_ALT = "TQQQ Drawdown Monitor";
 
 export const LANG_COOKIE = "tqqq.lang";

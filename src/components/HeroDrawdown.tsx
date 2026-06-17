@@ -210,15 +210,18 @@ function HeroNumbers({
   const level = levelFor(data.ath.drawdownPct, data.thresholds);
   return (
     <div className="flex w-full max-w-full flex-col items-center gap-3 text-center">
-      {/* 모바일: pill 안에 displayName 전체. 한 줄 유지가 우선이라
-          폰트는 clamp(12px, 3.5vw, 16px)로 자동 축소(줄바꿈 방지: whitespace-nowrap). */}
-      <span className="max-w-full whitespace-nowrap rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1 text-[clamp(0.75rem,3.5vw,1rem)] font-medium tracking-wider text-neutral-200 lg:hidden">
-        {currentDisplayName}
-      </span>
-      {/* 데스크톱: 원래 pill (ticker만, 큰 사이즈) 그대로. */}
-      <span className="hidden rounded-full border border-neutral-700 bg-neutral-900/60 px-4 py-1.5 text-2xl font-medium tracking-wider text-neutral-200 sm:text-3xl lg:inline-block">
-        {tickerLabel}
-      </span>
+      {/* SEO: pill을 <h1>로 마크업 — 종목 페이지마다 ticker가 페이지 주제 신호로
+          노출됨. 페이지에 <h1>은 정확히 하나(이것). AboutSection/AllInWarningSection은
+          <h2>로 종속 섹션.
+          외형은 모바일/데스크톱 두 pill을 하나의 <h1>로 통합:
+            - 모바일(<lg): max-w-full, whitespace-nowrap, px-3 py-1, text-clamp
+            - 데스크톱(lg+): max-w-none, whitespace-normal, px-4 py-1.5, text-3xl
+          텍스트 자체는 inner <span> 두 개로 모바일=displayName, 데스크톱=ticker 분기.
+          (페이지에 <h1>이 하나만 존재) */}
+      <h1 className="inline-block max-w-full whitespace-nowrap rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1 text-[clamp(0.75rem,3.5vw,1rem)] font-medium tracking-wider text-neutral-200 lg:max-w-none lg:whitespace-normal lg:px-4 lg:py-1.5 lg:text-3xl">
+        <span className="lg:hidden">{currentDisplayName}</span>
+        <span className="hidden lg:inline">{tickerLabel}</span>
+      </h1>
       <span className="text-sm text-neutral-500">{dict.athDrawdown}</span>
       <span
         className={

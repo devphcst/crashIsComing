@@ -5,10 +5,10 @@ import { HeroDrawdown } from "@/components/HeroDrawdown";
 import { VisitorBeacon } from "@/components/VisitorBeacon";
 import { readMeta, readSymbolList } from "@/lib/kv";
 import { loadAllMetas, loadHeroData, loadVisitorInfo } from "@/lib/page-data";
-import { buildSymbolMetadata } from "@/lib/seo-builder";
+import { buildJsonLd, buildSymbolMetadata } from "@/lib/seo-builder";
 import { DEFAULT_SYMBOL } from "@/lib/symbols";
 import type { Lang } from "@/lib/i18n";
-import { buildJsonLd, LANG_COOKIE } from "@/constants/seo";
+import { LANG_COOKIE } from "@/constants/seo";
 
 // force-dynamic 제거 — page-data.ts의 unstable_cache (TTL 60s, tag 'symbols')에
 // 의존해 데이터 fetch를 캐시. cookie 읽기로 페이지 자체는 dynamic 유지.

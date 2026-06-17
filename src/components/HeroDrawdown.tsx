@@ -18,7 +18,6 @@ import { ProductAdSidebar, ProductAdBanner } from "./ProductAd";
 import { StaleCriticalBanner } from "./StaleCriticalBanner";
 import { MainSymbolTabs } from "./MainSymbolTabs";
 import { MobileMenu } from "./MobileMenu";
-import { VisitorCard } from "./VisitorCard";
 import type { SymbolMeta } from "@/lib/symbols";
 import {
   SIDEBAR_WIDTH,
@@ -142,7 +141,7 @@ export function HeroDrawdown({
         </aside>
 
         <div className="min-w-0">
-          <section className="flex min-h-screen flex-col items-center gap-8 px-6 pb-12 pt-3 lg:pt-[10vh]">
+          <section className="flex min-h-screen flex-col items-center gap-8 px-6 pb-12 pt-8 lg:pt-[10vh]">
             {data.ready ? (
               <>
                 <HeroNumbers
@@ -151,6 +150,7 @@ export function HeroDrawdown({
                   lang={lang}
                   tickerLabel={current.toUpperCase()}
                   currentDisplayName={currentDisplayName}
+                  visitor={visitor}
                 />
                 <Facts data={data} dict={d} lang={lang} />
                 <LastUpdated
@@ -168,14 +168,6 @@ export function HeroDrawdown({
             )}
           </section>
 
-          {/* 모바일에서 가격 카드(현재가/전고점/52주) 바로 다음에 노출.
-              데스크톱은 푸터의 기존 카운터로 노출되므로 VisitorCard 자체가 lg:hidden. */}
-          {visitor.show ? (
-            <VisitorCard
-              text={d.visitorCardCount(visitor.count.toLocaleString())}
-            />
-          ) : null}
-
           <div id="ad">
             <ProductAdBanner lang={lang} />
           </div>
@@ -189,7 +181,7 @@ export function HeroDrawdown({
 
       <footer className="border-t border-neutral-900 pb-8 pt-6">
         <Disclaimer text={d.disclaimer} />
-        {/* 모바일에서는 가격 카드 아래 VisitorCard로 옮겨 노출되므로 푸터 카운터는 데스크톱에만 */}
+        {/* 모바일에서는 hero 안 인라인 텍스트로 노출되므로 푸터 카운터는 데스크톱에만 */}
         {visitor.show ? (
           <p className="mt-3 hidden text-center text-xs text-neutral-600 lg:block">
             {d.visitorCount(visitor.count.toLocaleString())}
@@ -206,12 +198,14 @@ function HeroNumbers({
   lang: _lang,
   tickerLabel,
   currentDisplayName,
+  visitor,
 }: {
   data: Extract<HeroData, { ready: true }>;
   dict: ReturnType<typeof getDict>;
   lang: Lang;
   tickerLabel: string;
   currentDisplayName: string;
+  visitor: VisitorInfo;
 }) {
   const level = levelFor(data.ath.drawdownPct, data.thresholds);
   return (
@@ -240,6 +234,14 @@ function HeroNumbers({
         </span>{" "}
         {formatPct(data.oneYear.drawdownPct, 1)}
       </span>
+      {/* 모바일 전용 인라인 방문자 텍스트 — 보조 수치 바로 아래 작게.
+          데스크톱은 푸터 카운터로 노출(`lg:hidden`).
+          showVisitorCount(admin 토글) 꺼져 있으면 텍스트도 노출 안 함. */}
+      {visitor.show ? (
+        <span className="-mt-2 text-xs text-neutral-600 lg:hidden">
+          {dict.visitorInline(visitor.count.toLocaleString())}
+        </span>
+      ) : null}
     </div>
   );
 }

@@ -17,7 +17,8 @@ export type Dict = {
   disclaimer: string;
   langToggleAria: string;
   visitorCount: (count: string) => string;
-  visitorCardCount: (count: string) => string;
+  /** 모바일 hero 안 인라인 표시용 — 보조 수치 다음 줄 작게. 데스크톱은 미사용. */
+  visitorInline: (count: string) => string;
   menu: {
     title: string;
     about: string;
@@ -138,7 +139,7 @@ const ko: Dict = {
     '투자 자문이 아니며, 데이터는 관리자가 수동 입력한 종가 기준이고, 정확성을 보장하지 않습니다.',
   langToggleAria: '언어 전환',
   visitorCount: (count) => `누적 방문자 ${count}명`,
-  visitorCardCount: (count) => `지금까지 함께 본 사람 ${count}명`,
+  visitorInline: (count) => `${count}명이 함께 보고 있어요`,
   menu: {
     title: '메뉴',
     about: '서비스 소개',
@@ -281,7 +282,7 @@ const en: Dict = {
     'Not investment advice. Data is manually entered closing prices and accuracy is not guaranteed.',
   langToggleAria: 'Toggle language',
   visitorCount: (count) => `${count} visitors so far`,
-  visitorCardCount: (count) => `${count} people watching with you so far`,
+  visitorInline: (count) => `${count} people watching together`,
   menu: {
     title: 'Menu',
     about: 'About',

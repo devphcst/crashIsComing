@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import type { Lang } from "@/lib/i18n";
-import { getDict } from "@/lib/i18n";
 import { SIDEBAR_AD } from "@/constants/ads";
+
+const linkRel = "noopener noreferrer sponsored";
 
 function AdImage({
   alt,
@@ -34,67 +35,60 @@ function AdImage({
   );
 }
 
-const linkRel = "noopener noreferrer sponsored";
-
-export function ProductAdSidebar({ lang }: { lang: Lang }) {
-  const d = getDict(lang).ad;
+/**
+ * 모바일·데스크톱 공통 카드 내용.
+ * - 상단 행: 이미지(좌) + 라벨·제품명(우)
+ * - 중간: 본문 인용구 (자동 따옴표)
+ * - 하단: 카드 폭 전체 CTA 버튼
+ */
+function AdCardBody({ lang }: { lang: Lang }) {
+  const t = SIDEBAR_AD[lang];
   return (
-    <aside className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
-      <div className="text-xs uppercase tracking-wider text-neutral-500">
-        {d.label}
-      </div>
-      <p className="mb-3 mt-1 text-sm font-medium leading-snug text-neutral-100">
-        {d.tagline}
-      </p>
-      <AdImage alt={d.productName} fallbackLabel={d.imageFallback} />
-      <div className="mt-3 space-y-1">
-        <div className="text-sm font-medium text-neutral-100">
-          {d.productName}
+    <>
+      <div className="flex items-start gap-3">
+        <div className="w-20 shrink-0">
+          <AdImage alt={t.productName} fallbackLabel={t.imageFallback} />
         </div>
-        <p className="whitespace-pre-line text-xs leading-relaxed text-neutral-400">
-          {d.description}
-        </p>
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 pt-0.5">
+          <div className="whitespace-pre-line text-[10px] font-medium uppercase tracking-wider leading-tight text-neutral-500">
+            {t.label}
+          </div>
+          <div className="text-base font-semibold leading-tight text-neutral-100">
+            {t.productName}
+          </div>
+        </div>
       </div>
+
+      <p className="text-sm leading-snug text-neutral-300">
+        &ldquo;{t.body}&rdquo;
+      </p>
+
       <a
         href={SIDEBAR_AD.storeUrl}
         target="_blank"
         rel={linkRel}
-        className="mt-4 block w-full rounded-md bg-neutral-100 px-3 py-2 text-center text-xs font-medium text-neutral-900 hover:bg-white"
+        className="block w-full rounded-md bg-neutral-100 px-3 py-2.5 text-center text-sm font-medium text-neutral-900 transition-colors hover:bg-white"
       >
-        {d.ctaLabel}
+        {t.cta}
       </a>
+    </>
+  );
+}
+
+/** 데스크톱 사이드바 (lg+ 좌측 column에서 사용). 외부에서 sticky 래퍼로 감싸 위치 고정. */
+export function ProductAdSidebar({ lang }: { lang: Lang }) {
+  return (
+    <aside className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
+      <AdCardBody lang={lang} />
     </aside>
   );
 }
 
+/** 모바일 인라인 배너 (lg 미만에서만 노출). 본문 흐름 안에서 자체 마진. */
 export function ProductAdBanner({ lang }: { lang: Lang }) {
-  const d = getDict(lang).ad;
   return (
-    <aside className="mx-6 my-6 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 lg:hidden">
-      <div className="flex items-center gap-4">
-        <div className="w-20 shrink-0">
-          <AdImage alt={d.productName} fallbackLabel={d.imageFallback} />
-        </div>
-        <div className="min-w-0 flex-1 space-y-0.5">
-          <div className="text-xs uppercase tracking-wider text-neutral-500">
-            {d.label}
-          </div>
-          <div className="truncate text-sm font-medium text-neutral-100">
-            {d.productName}
-          </div>
-          <p className="line-clamp-2 whitespace-pre-line text-xs leading-snug text-neutral-400">
-            {d.description}
-          </p>
-        </div>
-        <a
-          href={SIDEBAR_AD.storeUrl}
-          target="_blank"
-          rel={linkRel}
-          className="shrink-0 rounded-md bg-neutral-100 px-3 py-2 text-xs font-medium text-neutral-900 hover:bg-white"
-        >
-          {d.ctaLabel}
-        </a>
-      </div>
+    <aside className="mx-6 my-6 space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 lg:hidden">
+      <AdCardBody lang={lang} />
     </aside>
   );
 }

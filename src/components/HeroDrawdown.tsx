@@ -17,6 +17,8 @@ import { AllInWarningSection } from "./AllInWarningSection";
 import { ProductAdSidebar, ProductAdBanner } from "./ProductAd";
 import { StaleCriticalBanner } from "./StaleCriticalBanner";
 import { MainSymbolTabs } from "./MainSymbolTabs";
+import { MobileMenu } from "./MobileMenu";
+import { VisitorCard } from "./VisitorCard";
 import type { SymbolMeta } from "@/lib/symbols";
 import {
   SIDEBAR_WIDTH,
@@ -89,6 +91,8 @@ export function HeroDrawdown({
   const d = getDict(lang);
 
   const criticalStale = data.ready ? data.staleCritical : null;
+  const currentMeta = tabs.find((m) => m.ticker === current);
+  const currentDisplayName = currentMeta?.displayName ?? current.toUpperCase();
 
   return (
     <main className="flex flex-col">
@@ -100,18 +104,27 @@ export function HeroDrawdown({
           )}
         />
       ) : null}
-      <header className="flex items-center justify-between px-6 pt-6">
-        <span className="text-sm text-neutral-500">{d.brand}</span>
-        <LangToggle
-          lang={lang}
-          onChange={handleLang}
-          ariaLabel={d.langToggleAria}
-        />
-      </header>
+      {/* 모바일에서만 sticky: 헤더(브랜드 + 햄버거)와 종목 탭이 상단 고정 → 어디서든
+          종목 전환·메뉴 접근. 데스크톱은 일반 흐름 그대로(lg:relative). */}
+      <div className="sticky top-0 z-30 bg-neutral-950/90 pb-2 backdrop-blur lg:relative lg:bg-transparent lg:pb-0 lg:backdrop-blur-none">
+        <header className="flex items-center justify-between px-6 pt-6">
+          <span className="text-sm text-neutral-500">{d.brand}</span>
+          {/* 데스크톱: LangToggle 인라인 */}
+          <div className="hidden lg:block">
+            <LangToggle
+              lang={lang}
+              onChange={handleLang}
+              ariaLabel={d.langToggleAria}
+            />
+          </div>
+          {/* 모바일: 햄버거 + 드로어 */}
+          <MobileMenu lang={lang} onChangeLang={handleLang} dict={d} />
+        </header>
 
-      {tabs.length > 1 ? (
-        <MainSymbolTabs tabs={tabs} current={current} />
-      ) : null}
+        {tabs.length > 1 ? (
+          <MainSymbolTabs tabs={tabs} current={current} />
+        ) : null}
+      </div>
 
       <div
         className="three-col-grid grid w-full lg:mx-auto lg:px-6"
@@ -136,6 +149,7 @@ export function HeroDrawdown({
                   dict={d}
                   lang={lang}
                   tickerLabel={current.toUpperCase()}
+                  currentDisplayName={currentDisplayName}
                 />
                 <Facts data={data} dict={d} lang={lang} />
                 <LastUpdated
@@ -153,7 +167,17 @@ export function HeroDrawdown({
             )}
           </section>
 
-          <ProductAdBanner lang={lang} />
+          {/* 모바일에서 가격 카드(현재가/전고점/52주) 바로 다음에 노출.
+              데스크톱은 푸터의 기존 카운터로 노출되므로 VisitorCard 자체가 lg:hidden. */}
+          {visitor.show ? (
+            <VisitorCard
+              text={d.visitorCardCount(visitor.count.toLocaleString())}
+            />
+          ) : null}
+
+          <div id="ad">
+            <ProductAdBanner lang={lang} />
+          </div>
 
           <AboutSection lang={lang} />
           <AllInWarningSection lang={lang} />
@@ -164,8 +188,9 @@ export function HeroDrawdown({
 
       <footer className="border-t border-neutral-900 pb-8 pt-6">
         <Disclaimer text={d.disclaimer} />
+        {/* 모바일에서는 가격 카드 아래 VisitorCard로 옮겨 노출되므로 푸터 카운터는 데스크톱에만 */}
         {visitor.show ? (
-          <p className="mt-3 text-center text-xs text-neutral-600">
+          <p className="mt-3 hidden text-center text-xs text-neutral-600 lg:block">
             {d.visitorCount(visitor.count.toLocaleString())}
           </p>
         ) : null}
@@ -179,18 +204,29 @@ function HeroNumbers({
   dict,
   lang: _lang,
   tickerLabel,
+  currentDisplayName,
 }: {
   data: Extract<HeroData, { ready: true }>;
   dict: ReturnType<typeof getDict>;
   lang: Lang;
   tickerLabel: string;
+  currentDisplayName: string;
 }) {
   const level = levelFor(data.ath.drawdownPct, data.thresholds);
+  const showSubtitle = currentDisplayName !== tickerLabel;
   return (
     <div className="flex flex-col items-center gap-3 text-center">
       <span className="rounded-full border border-neutral-700 bg-neutral-900/60 px-4 py-1.5 text-2xl font-medium tracking-wider text-neutral-200 sm:text-3xl">
         {tickerLabel}
       </span>
+      {/* 모바일 종목 탭이 ticker만 표시하므로 부연(displayName)을 pill 바로 아래 작게.
+          데스크톱은 종목 탭에 이미 displayName 전체가 있어 중복 표시 안 함(lg:hidden).
+          displayName === ticker.toUpperCase() (예: TQQQ)이면 의미 없는 중복이라 표시 안 함. */}
+      {showSubtitle ? (
+        <span className="-mt-2 text-xs text-neutral-500 lg:hidden">
+          {currentDisplayName}
+        </span>
+      ) : null}
       <span className="text-sm text-neutral-500">{dict.athDrawdown}</span>
       <span
         className={

@@ -13,6 +13,19 @@ body {
   min-height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+/* 모바일 햄버거 메뉴에서 anchor 클릭 시 sticky 헤더(브랜드 ~52px + 종목 탭 ~44px)에
+   섹션 상단이 가려지지 않도록 보정. 데스크톱은 sticky가 아니라 여유 마진 정도. */
+[id="about"],
+[id="history"],
+[id="all-in-warning"],
+[id="ad"] {
+  scroll-margin-top: 7rem;
+}
+
 /* 메인 페이지 3단 레이아웃.
    --sidebar-width / --sidebar-gap 는 HeroDrawdown 에서 inline style 로 주입한다
    (src/constants/layout.ts 의 SIDEBAR_WIDTH / SIDEBAR_GAP). */

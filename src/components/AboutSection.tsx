@@ -6,7 +6,7 @@ import { CrashChart } from "./CrashChart";
 export function AboutSection({ lang }: { lang: Lang }) {
   const d = getDict(lang);
   return (
-    <section className="border-t border-neutral-900 px-6 py-16">
+    <section id="about" className="border-t border-neutral-900 px-6 py-16">
       <div className="mx-auto max-w-3xl space-y-12">
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-neutral-200">
@@ -19,7 +19,7 @@ export function AboutSection({ lang }: { lang: Lang }) {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div id="history" className="space-y-4">
           <h2 className="text-lg font-semibold text-neutral-200">
             {d.history.title}
           </h2>

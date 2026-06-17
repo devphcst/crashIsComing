@@ -17,6 +17,17 @@ export type Dict = {
   disclaimer: string;
   langToggleAria: string;
   visitorCount: (count: string) => string;
+  visitorCardCount: (count: string) => string;
+  menu: {
+    title: string;
+    about: string;
+    history: string;
+    allInWarning: string;
+    ad: string;
+    langSection: string;
+    closeAria: string;
+    openAria: string;
+  };
   about: {
     title: string;
     paragraphs: string[];
@@ -127,6 +138,17 @@ const ko: Dict = {
     '투자 자문이 아니며, 데이터는 관리자가 수동 입력한 종가 기준이고, 정확성을 보장하지 않습니다.',
   langToggleAria: '언어 전환',
   visitorCount: (count) => `누적 방문자 ${count}명`,
+  visitorCardCount: (count) => `지금까지 함께 본 사람 ${count}명`,
+  menu: {
+    title: '메뉴',
+    about: '서비스 소개',
+    history: '역사적 폭락',
+    allInWarning: '올인 경고',
+    ad: '약사가 만든 영양제',
+    langSection: '언어',
+    closeAria: '메뉴 닫기',
+    openAria: '메뉴 열기',
+  },
   about: {
     title: '서비스 소개',
     paragraphs: [
@@ -259,6 +281,17 @@ const en: Dict = {
     'Not investment advice. Data is manually entered closing prices and accuracy is not guaranteed.',
   langToggleAria: 'Toggle language',
   visitorCount: (count) => `${count} visitors so far`,
+  visitorCardCount: (count) => `${count} people watching with you so far`,
+  menu: {
+    title: 'Menu',
+    about: 'About',
+    history: 'Historical crashes',
+    allInWarning: 'All-in warning',
+    ad: "Pharmacist's supplement",
+    langSection: 'Language',
+    closeAria: 'Close menu',
+    openAria: 'Open menu',
+  },
   about: {
     title: 'About this site',
     paragraphs: [

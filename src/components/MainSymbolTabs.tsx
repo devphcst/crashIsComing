@@ -32,7 +32,9 @@ export function MainSymbolTabs({
             }
             aria-current={active ? "page" : undefined}
           >
-            {m.displayName}
+            {/* 모바일: ticker만 (탭이 가로 한 줄에 들어가게). 데스크톱: displayName 전체. */}
+            <span className="lg:hidden">{m.ticker.toUpperCase()}</span>
+            <span className="hidden lg:inline">{m.displayName}</span>
           </Link>
         );
       })}

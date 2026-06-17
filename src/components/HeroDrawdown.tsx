@@ -104,10 +104,11 @@ export function HeroDrawdown({
           )}
         />
       ) : null}
-      {/* 모바일에서만 sticky: 헤더(브랜드 + 햄버거)와 종목 탭이 상단 고정 → 어디서든
-          종목 전환·메뉴 접근. 데스크톱은 일반 흐름 그대로(lg:relative). */}
-      <div className="sticky top-0 z-30 bg-neutral-950/90 pb-2 backdrop-blur lg:relative lg:bg-transparent lg:pb-0 lg:backdrop-blur-none">
-        <header className="flex items-center justify-between px-6 pt-6">
+      {/* 모바일에서만 sticky: 헤더(브랜드 + 햄버거)만 상단 고정.
+          종목 탭은 일반 흐름으로 분리 → 스크롤 시 함께 사라짐.
+          데스크톱은 일반 흐름 그대로(lg:relative). */}
+      <div className="sticky top-0 z-30 bg-neutral-950/90 backdrop-blur lg:relative lg:bg-transparent lg:backdrop-blur-none">
+        <header className="flex items-center justify-between px-6 pb-3 pt-6 lg:pb-0">
           <span className="text-sm text-neutral-500">{d.brand}</span>
           {/* 데스크톱: LangToggle 인라인 */}
           <div className="hidden lg:block">
@@ -120,11 +121,11 @@ export function HeroDrawdown({
           {/* 모바일: 햄버거 + 드로어 */}
           <MobileMenu lang={lang} onChangeLang={handleLang} dict={d} />
         </header>
-
-        {tabs.length > 1 ? (
-          <MainSymbolTabs tabs={tabs} current={current} />
-        ) : null}
       </div>
+
+      {tabs.length > 1 ? (
+        <MainSymbolTabs tabs={tabs} current={current} />
+      ) : null}
 
       <div
         className="three-col-grid grid w-full lg:mx-auto lg:px-6"
@@ -141,7 +142,7 @@ export function HeroDrawdown({
         </aside>
 
         <div className="min-w-0">
-          <section className="flex min-h-screen flex-col items-center gap-8 px-6 pb-12 pt-[10vh]">
+          <section className="flex min-h-screen flex-col items-center gap-8 px-6 pb-12 pt-3 lg:pt-[10vh]">
             {data.ready ? (
               <>
                 <HeroNumbers
@@ -213,20 +214,17 @@ function HeroNumbers({
   currentDisplayName: string;
 }) {
   const level = levelFor(data.ath.drawdownPct, data.thresholds);
-  const showSubtitle = currentDisplayName !== tickerLabel;
   return (
-    <div className="flex flex-col items-center gap-3 text-center">
-      <span className="rounded-full border border-neutral-700 bg-neutral-900/60 px-4 py-1.5 text-2xl font-medium tracking-wider text-neutral-200 sm:text-3xl">
+    <div className="flex w-full max-w-full flex-col items-center gap-3 text-center">
+      {/* 모바일: pill 안에 displayName 전체. 한 줄 유지가 우선이라
+          폰트는 clamp(12px, 3.5vw, 16px)로 자동 축소(줄바꿈 방지: whitespace-nowrap). */}
+      <span className="max-w-full whitespace-nowrap rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1 text-[clamp(0.75rem,3.5vw,1rem)] font-medium tracking-wider text-neutral-200 lg:hidden">
+        {currentDisplayName}
+      </span>
+      {/* 데스크톱: 원래 pill (ticker만, 큰 사이즈) 그대로. */}
+      <span className="hidden rounded-full border border-neutral-700 bg-neutral-900/60 px-4 py-1.5 text-2xl font-medium tracking-wider text-neutral-200 sm:text-3xl lg:inline-block">
         {tickerLabel}
       </span>
-      {/* 모바일 종목 탭이 ticker만 표시하므로 부연(displayName)을 pill 바로 아래 작게.
-          데스크톱은 종목 탭에 이미 displayName 전체가 있어 중복 표시 안 함(lg:hidden).
-          displayName === ticker.toUpperCase() (예: TQQQ)이면 의미 없는 중복이라 표시 안 함. */}
-      {showSubtitle ? (
-        <span className="-mt-2 text-xs text-neutral-500 lg:hidden">
-          {currentDisplayName}
-        </span>
-      ) : null}
       <span className="text-sm text-neutral-500">{dict.athDrawdown}</span>
       <span
         className={

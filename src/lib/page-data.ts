@@ -21,13 +21,18 @@ export type VisitorInfo = {
 
 /**
  * 캐시 정책
- *   - revalidate: 60초 — admin이 입력해도 최대 60초 뒤에는 반드시 반영
+ *   - revalidate: 900초 (15분) — 데이터 변경 없는 동안 캐시 최대 유지 시간
  *   - tag: 'symbols' — admin 액션이 `revalidateTag('symbols')`로 즉시 무효화
+ *
+ * 신선도는 TTL이 아니라 tag 무효화로 보장됨. admin이 종가·시드·메타·종목 등을
+ * 입력/수정/삭제하면 해당 server action이 revalidateTag('symbols')를 호출해 모든
+ * 캐시를 즉시 비운다. 따라서 TTL을 길게 잡아도 stale 위험 없음 — TTL은 변경이
+ * 전혀 없는 idle 구간의 메모리·KV 효율을 위한 상한선.
  *
  * 캐시 키는 함수 인자(ticker 등)가 자동으로 직렬화되어 들어감 — Next.js
  * `unstable_cache` 기본 동작. 그래서 ticker별로 독립적으로 캐시된다.
  */
-const CACHE_TTL_SECONDS = 60;
+const CACHE_TTL_SECONDS = 900;
 const CACHE_TAG = "symbols";
 
 const _loadHeroData = async (ticker: string): Promise<HeroData> => {

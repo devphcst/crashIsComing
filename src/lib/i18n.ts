@@ -37,6 +37,14 @@ export type Dict = {
     title: string;
     paragraphs: string[];
   };
+  ad: {
+    label: string;
+    tagline: string;
+    productName: string;
+    description: string;
+    ctaLabel: string;
+    imageFallback: string;
+  };
   admin: {
     title: string;
     login: string;
@@ -152,6 +160,15 @@ const ko: Dict = {
     note: '위 곡선은 실제 일별 주가 데이터가 아니라 흐름을 보여주기 위한 형태 예시이며, 최대 하락률과 회복 기간은 근사값이고 곡선의 중간 굴곡은 실제 가격 움직임과 다릅니다.',
     chartAriaLabel: (year, mdd, months) =>
       `${year} 폭락: 고점 대비 ${mdd}%까지 하락 후 ${months}개월 만에 회복`,
+  },
+  ad: {
+    label: '제작자가 만든 영양제',
+    tagline: '폭락장이 와도 피부는 관리해야지',
+    productName: '큐레이티드:유 모이스처 플러스',
+    description:
+      '💊 현직 약사이자 이 사이트 제작자가 직접 기획, 개발했어요. \n 💊 피부보습에 도움을 줄 수 있어요. \n 💊 자외선에 의한 피부손상으로부터 피부건강에 도움을 줄 수 있아요.',
+    ctaLabel: '구경가기',
+    imageFallback: '이미지',
   },
   allInWarning: {
     title: '그래서, 역사적 폭락에 올인(All-in)하는 것이 옳은가?',
@@ -284,6 +301,14 @@ const en: Dict = {
     note: 'The curves above are illustrative shapes meant to convey the overall movement, not actual daily price data. The maximum drawdowns and recovery periods are approximate, and the intermediate fluctuations differ from real price action.',
     chartAriaLabel: (year, mdd, months) =>
       `${year} crash: dropped ${mdd}% from peak, recovered in ${months} months`,
+  },
+  ad: {
+    label: 'Made by the creator',
+    tagline: 'Even when the market crashes, your skin still needs care.',
+    productName: 'Hyaluronic Acid Skin Supplement',
+    description: 'Created personally by a pharmacist — the maker of this site',
+    ctaLabel: 'Visit store',
+    imageFallback: 'Image',
   },
   allInWarning: {
     title: 'Is it right to go all-in on a historic crash?',

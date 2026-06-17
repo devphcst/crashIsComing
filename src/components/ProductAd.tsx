@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Lang } from "@/lib/i18n";
+import { getDict } from "@/lib/i18n";
 import { SIDEBAR_AD } from "@/constants/ads";
 
 const linkRel = "noopener noreferrer sponsored";
@@ -36,15 +37,50 @@ function AdImage({
 }
 
 /**
- * 모바일·데스크톱 공통 카드 내용.
- * - 상단 행: 이미지(좌) + 라벨·제품명(우)
- * - 중간: 본문 인용구 (자동 따옴표)
- * - 하단: 카드 폭 전체 CTA 버튼
+ * 데스크톱 사이드바 광고 — 원래 디자인 그대로.
+ * 텍스트는 i18n.ts의 `ad` 사전에서 읽는다. 변경 시 그쪽 수정.
+ * 이미지·스토어 링크만 SIDEBAR_AD(constants/ads.ts)에서 공유.
  */
-function AdCardBody({ lang }: { lang: Lang }) {
+export function ProductAdSidebar({ lang }: { lang: Lang }) {
+  const d = getDict(lang).ad;
+  return (
+    <aside className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
+      <div className="text-xs uppercase tracking-wider text-neutral-500">
+        {d.label}
+      </div>
+      <p className="mb-3 mt-1 text-sm font-medium leading-snug text-neutral-100">
+        {d.tagline}
+      </p>
+      <AdImage alt={d.productName} fallbackLabel={d.imageFallback} />
+      <div className="mt-3 space-y-1">
+        <div className="text-sm font-medium text-neutral-100">
+          {d.productName}
+        </div>
+        <p className="whitespace-pre-line text-xs leading-relaxed text-neutral-400">
+          {d.description}
+        </p>
+      </div>
+      <a
+        href={SIDEBAR_AD.storeUrl}
+        target="_blank"
+        rel={linkRel}
+        className="mt-4 block w-full rounded-md bg-neutral-100 px-3 py-2 text-center text-xs font-medium text-neutral-900 hover:bg-white"
+      >
+        {d.ctaLabel}
+      </a>
+    </aside>
+  );
+}
+
+/**
+ * 모바일 인라인 배너 — 새 디자인 (세로, 버튼 하단 폭 전체).
+ * 텍스트는 SIDEBAR_AD(constants/ads.ts)의 ko/en 블록에서 읽는다.
+ * 카피 수정은 그 파일 한 곳만 바꾸면 됨.
+ */
+export function ProductAdBanner({ lang }: { lang: Lang }) {
   const t = SIDEBAR_AD[lang];
   return (
-    <>
+    <aside className="mx-6 my-6 space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 lg:hidden">
       <div className="flex items-start gap-3">
         <div className="w-20 shrink-0">
           <AdImage alt={t.productName} fallbackLabel={t.imageFallback} />
@@ -71,24 +107,6 @@ function AdCardBody({ lang }: { lang: Lang }) {
       >
         {t.cta}
       </a>
-    </>
-  );
-}
-
-/** 데스크톱 사이드바 (lg+ 좌측 column에서 사용). 외부에서 sticky 래퍼로 감싸 위치 고정. */
-export function ProductAdSidebar({ lang }: { lang: Lang }) {
-  return (
-    <aside className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
-      <AdCardBody lang={lang} />
-    </aside>
-  );
-}
-
-/** 모바일 인라인 배너 (lg 미만에서만 노출). 본문 흐름 안에서 자체 마진. */
-export function ProductAdBanner({ lang }: { lang: Lang }) {
-  return (
-    <aside className="mx-6 my-6 space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 lg:hidden">
-      <AdCardBody lang={lang} />
     </aside>
   );
 }

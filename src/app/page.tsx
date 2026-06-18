@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
-import { VisitorBeacon } from "@/components/VisitorBeacon";
 import { readMeta } from "@/lib/kv";
 import { loadAllMetas, loadHeroData, loadVisitorInfo } from "@/lib/page-data";
 import { buildJsonLd, buildSymbolMetadata } from "@/lib/seo-builder";
@@ -45,7 +44,6 @@ export default async function Page() {
         tabs={metas}
         current={DEFAULT_SYMBOL}
       />
-      <VisitorBeacon />
     </>
   );
 }

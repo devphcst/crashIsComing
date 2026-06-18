@@ -135,11 +135,10 @@ export const loadAllMetas = unstable_cache(_loadAllMetas, ["all-metas"], {
   tags: [CACHE_TAG],
 });
 
-export const loadVisitorInfo = unstable_cache(
-  _loadVisitorInfo,
-  ["visitor-info"],
-  {
-    revalidate: CACHE_TTL_SECONDS,
-    tags: [CACHE_TAG],
-  },
-);
+/**
+ * 방문자 정보는 캐시하지 않는다 — 일별 카운터(`today`)가 자정에 리셋되고
+ * 매 방문마다 증가하므로 unstable_cache TTL(15분)에 묶이면 직전 SSR이 today=0이던
+ * 시점에 캐시가 박혀 모든 후속 페이지가 총계만 노출되는 stale 문제가 발생한다.
+ * KV 읽기 2회는 비용이 미미하므로 매 SSR fresh로 충분하다.
+ */
+export const loadVisitorInfo = _loadVisitorInfo;

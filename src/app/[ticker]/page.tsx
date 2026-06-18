@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
-import { VisitorBeacon } from "@/components/VisitorBeacon";
 import { readMeta, readSymbolList } from "@/lib/kv";
 import { loadAllMetas, loadHeroData, loadVisitorInfo } from "@/lib/page-data";
 import { buildJsonLd, buildSymbolMetadata } from "@/lib/seo-builder";
@@ -67,7 +66,6 @@ export default async function TickerPage({
         tabs={metas}
         current={ticker}
       />
-      <VisitorBeacon />
     </>
   );
 }

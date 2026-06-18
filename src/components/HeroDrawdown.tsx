@@ -75,11 +75,30 @@ export function HeroDrawdown({
 }) {
   const [lang, setLang] = useState<Lang>("ko");
   const [hydrated, setHydrated] = useState(false);
+  // SSR이 직전 KV 상태로 시드. /api/visit 응답이 도착하면 today/total을 즉시 갱신해
+  // 본인 방문이 화면에 바로 반영되게 한다. show는 admin 토글이라 SSR 값 그대로.
+  const [visitorState, setVisitorState] = useState({
+    today: visitor.today,
+    total: visitor.total,
+  });
 
   useEffect(() => {
     const stored = window.localStorage.getItem(LANG_STORAGE_KEY) as Lang | null;
     if (stored === "ko" || stored === "en") setLang(stored);
     setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/visit", { method: "GET", cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { today: number; total: number } | null) => {
+        if (j && typeof j.today === "number" && typeof j.total === "number") {
+          setVisitorState({ today: j.today, total: j.total });
+        }
+      })
+      .catch(() => {
+        /* noop — best-effort */
+      });
   }, []);
 
   const handleLang = (l: Lang) => {
@@ -157,7 +176,11 @@ export function HeroDrawdown({
                   lang={lang}
                   tickerLabel={current.toUpperCase()}
                   currentDisplayName={currentDisplayName}
-                  visitor={visitor}
+                  visitor={{
+                    show: visitor.show,
+                    today: visitorState.today,
+                    total: visitorState.total,
+                  }}
                 />
                 <Facts data={data} dict={d} lang={lang} />
                 <LastUpdated

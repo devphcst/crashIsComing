@@ -167,7 +167,7 @@ const ko: Dict = {
     return [
       { text: '오늘 ' },
       { text: String(today), emphasis: 'value' },
-      { text: '명이 봤고, 지금까지' },
+      { text: '명이 봤고, 지금까지 ' },
       { text: totalStr, emphasis: 'value' },
       { text: '명이 다녀갔어요' },
     ];

@@ -22,6 +22,7 @@ import { SymbolTabs } from "@/components/admin/SymbolTabs";
 import { AddSymbolForm } from "@/components/admin/AddSymbolForm";
 import { MetaEditForm } from "@/components/admin/MetaEditForm";
 import { DeleteSymbolForm } from "@/components/admin/DeleteSymbolForm";
+import { SymbolReorderList } from "@/components/admin/SymbolReorderList";
 import { logoutAction } from "./actions";
 import { dictionaries } from "@/lib/i18n";
 
@@ -178,6 +179,18 @@ export default async function AdminPage({
           ticker={currentSymbol}
           displayName={currentMeta.displayName}
         />
+      ) : null}
+
+      {/* 종목 표시 순서 — 페이지 전역 관리. 드래그 핸들(≡)로 카드 위·아래 이동.
+          상단 종목 선택 탭은 클릭 라우팅용으로 분리, 여기는 순수 순서 관리. */}
+      {metas.length > 1 ? (
+        <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
+          <h2 className="text-sm font-medium text-neutral-200">종목 순서</h2>
+          <p className="text-xs text-neutral-500">
+            드래그 핸들(≡)을 잡고 위·아래로 끌어 종목 표시 순서를 변경합니다. 메인 페이지 탭과 admin 상단 탭에 즉시 반영됩니다.
+          </p>
+          <SymbolReorderList metas={metas} />
+        </section>
       ) : null}
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">

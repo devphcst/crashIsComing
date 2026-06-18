@@ -26,6 +26,17 @@ body {
   scroll-margin-top: 7rem;
 }
 
+/* 가로 스크롤 영역(모바일 종목 탭 등)에서 스크롤바 시각적으로 숨기되 스크롤 기능 유지.
+   `-webkit-overflow-scrolling: touch`는 iOS 모멘텀 스크롤 명시(13+ 기본이지만 안전 차원). */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* 메인 페이지 3단 레이아웃.
    --sidebar-width / --sidebar-gap 는 HeroDrawdown 에서 inline style 로 주입한다
    (src/constants/layout.ts 의 SIDEBAR_WIDTH / SIDEBAR_GAP). */

@@ -181,13 +181,7 @@ export function HeroDrawdown({
 
       <footer className="border-t border-neutral-900 pb-8 pt-6">
         <Disclaimer text={d.disclaimer} />
-        {/* 모바일에서는 hero 안 인라인 텍스트로 노출되므로 푸터 카운터는 데스크톱에만.
-            문구는 visitorInline으로 통일 — 모바일과 같은 톤("○○○명이 함께 보고 있어요"). */}
-        {visitor.show ? (
-          <p className="mt-3 hidden text-center text-xs text-neutral-600 lg:block">
-            {d.visitorInline(visitor.count.toLocaleString())}
-          </p>
-        ) : null}
+        {/* visitor 카운터는 모바일·데스크톱 둘 다 hero 안 인라인 텍스트로 통일됨 — 푸터엔 없음. */}
       </footer>
     </main>
   );
@@ -238,11 +232,10 @@ function HeroNumbers({
         </span>{" "}
         {formatPct(data.oneYear.drawdownPct, 1)}
       </span>
-      {/* 모바일 전용 인라인 방문자 텍스트 — 보조 수치 바로 아래 작게.
-          데스크톱은 푸터 카운터로 노출(`lg:hidden`).
+      {/* 모바일·데스크톱 공통 인라인 방문자 텍스트 — 보조 수치 바로 아래 작게.
           showVisitorCount(admin 토글) 꺼져 있으면 텍스트도 노출 안 함. */}
       {visitor.show ? (
-        <span className="-mt-2 text-xs text-neutral-600 lg:hidden">
+        <span className="-mt-2 text-xs text-neutral-600">
           {dict.visitorInline(visitor.count.toLocaleString())}
         </span>
       ) : null}

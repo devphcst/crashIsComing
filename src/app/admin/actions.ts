@@ -399,3 +399,33 @@ export async function deleteSymbolAction(
   revalidateTag("symbols");
   redirect("/admin");
 }
+
+/**
+ * 종목 표시 순서 변경 — 클라이언트에서 드래그 앤 드롭으로 만든 새 순서 배열을 받아 통째로 저장.
+ *
+ * 클라이언트(@dnd-kit `SymbolReorderList`)에서 직접 호출 — formData 아닌 일반 인자.
+ * void 반환(ActionState 없음). redirect 안 함 → admin URL 쿼리 그대로 유지.
+ *
+ * 검증:
+ *   - 인증
+ *   - 길이가 현재 list와 같음
+ *   - 모든 원소가 현재 list에 존재 (permutation)
+ *   - 위 검증 실패 시 조용히 return (UI에선 optimistic 상태 유지되나 다음 새로고침에 원복)
+ */
+export async function reorderSymbolsAction(
+  orderedTickers: string[],
+): Promise<void> {
+  if (!checkAuth()) return;
+
+  const current = await readSymbolList();
+  if (orderedTickers.length !== current.length) return;
+  const currentSet = new Set(current);
+  for (const t of orderedTickers) {
+    if (!currentSet.has(t)) return;
+  }
+
+  await writeSymbolList(orderedTickers);
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidateTag("symbols");
+}

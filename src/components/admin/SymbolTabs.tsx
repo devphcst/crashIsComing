@@ -38,17 +38,7 @@ export function SymbolTabs({
             }
             aria-current={active ? "page" : undefined}
           >
-            <span>{m.displayName}</span>
-            {m.displayName !== m.ticker.toUpperCase() ? (
-              <span
-                className={
-                  "ml-1.5 text-xs " +
-                  (active ? "text-neutral-500" : "text-neutral-500")
-                }
-              >
-                {m.ticker}
-              </span>
-            ) : null}
+            {m.displayName}
           </Link>
         );
       })}

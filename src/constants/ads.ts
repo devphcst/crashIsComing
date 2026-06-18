@@ -84,7 +84,7 @@ export const SIDEBAR_AD: SidebarAdData = {
       productName: '큐레이티드:유 모이스처 플러스',
       description:
         '💊 현직 약사이자 웹제작자가 기획, 개발했어요.\n💊 피부 보습에 도움을 줄 수 있어요.\n💊 자외선에 의한 피부손상으로부터 피부건강에 도움을 줄 수 있어요.',
-      cta: '보러가기 →',
+      cta: '구경가기 →',
       imageFallback: '이미지',
     },
     en: {

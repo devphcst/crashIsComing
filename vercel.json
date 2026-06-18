@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron/yahoo", "schedule": "0 22 * * *" }
+    { "path": "/api/cron/twelvedata", "schedule": "0 22 * * *" },
+    { "path": "/api/cron/watchdog", "schedule": "0 3 * * *" }
   ]
 }

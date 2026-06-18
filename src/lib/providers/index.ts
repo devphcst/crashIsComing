@@ -1,6 +1,6 @@
 import type { DataProvider } from "./types";
 import { ManualProvider } from "./manual";
-import { YahooProvider } from "./yahoo";
+import { TwelveDataProvider } from "./twelvedata";
 
 export const getProvider = (ticker: string): DataProvider => {
   // 빈 문자열도 manual로 폴백 (Vercel 환경변수에 빈 값이 들어가는 케이스 방어)
@@ -8,8 +8,8 @@ export const getProvider = (ticker: string): DataProvider => {
   switch (which) {
     case "manual":
       return new ManualProvider(ticker);
-    case "yahoo":
-      return new YahooProvider(ticker);
+    case "twelvedata":
+      return new TwelveDataProvider(ticker);
     default:
       throw new Error(`unknown DATA_PROVIDER: ${which}`);
   }

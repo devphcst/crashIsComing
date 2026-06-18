@@ -94,6 +94,8 @@ export type Dict = {
       lastError: (when: string, message: string) => string;
       noActivity: string;
       providerLabel: (provider: string) => string;
+      successRate: (ok: number, total: number, pct: string) => string;
+      successRateEmpty: string;
     };
     symbols: {
       tabsAria: string;
@@ -235,6 +237,9 @@ const ko: Dict = {
       lastError: (when, message) => `최근 실패: ${when} · ${message}`,
       noActivity: '아직 자동 수집 실행 기록이 없습니다.',
       providerLabel: (provider) => `현재 provider: ${provider}`,
+      successRate: (ok, total, pct) =>
+        `최근 14일: ${ok}/${total} 성공 (${pct})`,
+      successRateEmpty: '14일 통계 없음',
     },
     symbols: {
       tabsAria: '종목 탭',
@@ -288,7 +293,7 @@ const en: Dict = {
     about: 'About',
     history: 'Historical crashes',
     allInWarning: 'All-in warning',
-    ad: "Pharmacist's supplement",
+    ad: 'Advertising',
     langSection: 'Language',
     closeAria: 'Close menu',
     openAria: 'Open menu',
@@ -380,6 +385,9 @@ const en: Dict = {
       lastError: (when, message) => `Last failure: ${when} · ${message}`,
       noActivity: 'No auto-ingest activity yet.',
       providerLabel: (provider) => `Provider: ${provider}`,
+      successRate: (ok, total, pct) =>
+        `Last 14 days: ${ok}/${total} success (${pct})`,
+      successRateEmpty: 'No 14-day stats yet',
     },
     symbols: {
       tabsAria: 'Symbol tabs',

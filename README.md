@@ -82,24 +82,74 @@ TQQQ는 과거에 분할이 있었고 앞으로 또 발생할 수 있다. **분�
 
 > 분할 보정은 단방향 작업이며, 실수로 두 번 적용하면 가격이 두 번 나눠진다. 미리보기 단계에서 반드시 확인하자.
 
-## Provider 전환 (manual ↔ yahoo)
+## Provider 전환 (manual ↔ twelvedata)
 
 `DATA_PROVIDER` 환경변수로 어느 경로가 KV에 데이터를 채울지 선택한다.
 
 - `manual` (기본): 운영자가 `/admin`에서 매일 직접 입력. `vercel.json`의 cron은 등록되어 있어도 핸들러 내부에서 200 OK + no-op로 빠져나옴.
-- `yahoo`: 매일 **22:00 UTC** (= 한국 시간 오전 7시)에 `/api/cron/yahoo`가 Yahoo Finance `query1.finance.yahoo.com/v8/finance/chart/TQQQ`에서 adjusted close를 가져와 `tqqq:closes`에 저장. `/admin` 수동 입력 경로는 그대로 살아 있어, 자동화가 깨졌을 때 손으로 입력해 즉시 복구할 수 있다.
+- `twelvedata`: 매일 **22:00 UTC** (= 한국 시간 오전 7시)에 `/api/cron/twelvedata`가 [Twelve Data API](https://twelvedata.com/)에서 split-adjusted close를 가져와 `symbols:{ticker}:closes`에 저장. `/admin` 수동 입력 경로는 그대로 살아 있어, 자동화가 깨졌을 때 손으로 입력해 즉시 복구할 수 있다.
 
-### Yahoo 자동 수집 운영
+### Twelve Data 자동 수집 운영
 
-1. Vercel 환경변수: `DATA_PROVIDER=yahoo`, `CRON_SECRET=<랜덤 문자열>`
-2. `vercel.json`의 cron이 배포와 함께 자동 등록됨. Vercel 대시보드 → Crons 탭에서 활성 상태 확인
-3. **수집 상태 카드** — `/admin` 최상단의 "수집 상태" 카드에서 마지막 성공/실패 시각·메시지·연속 실패 횟수 확인. 운영자가 매일 한 번 점검하면 충분
-4. **stale 큰 경고 (메인 페이지)** — 직전 미국 거래일 마감 + `STALE_CRITICAL_HOURS_AFTER_CLOSE`(기본 5시간)가 지났는데도 KV에 그날 종가가 없으면 메인 페이지 상단에 빨간 배너가 자동 노출. NYSE 휴장일·주말은 거래일에서 제외되므로 토·일·휴일 오탐 없음. `/admin`에서 수동 입력하면 즉시 사라짐
-5. **수동 입력은 항상 유효** — yahoo 모드 중에도 `/admin`의 종가 입력 폼은 그대로 동작하고, 같은 KV에 쓰므로 cron이 채운 값을 운영자가 덮어쓸 수 있다. 자동화 fallback 경로
+1. **API key 발급** — https://twelvedata.com 가입 → 무료 플랜 (800 credits/day, 8 req/min). 5종목 × 1회 = 5 credits로 여유.
+2. **Discord webhook URL 발급** — Discord 서버 > 채널 > 통합 > 웹훅 만들기 > URL 복사.
+3. Vercel 환경변수:
+   - `DATA_PROVIDER=twelvedata`
+   - `CRON_SECRET=<랜덤 문자열>` (`openssl rand -base64 32`)
+   - `TWELVE_DATA_API_KEY=<발급받은 키>`
+   - `DISCORD_WEBHOOK_URL=<webhook URL>`
+4. `vercel.json`의 cron 2개가 배포와 함께 자동 등록됨. Vercel 대시보드 → Crons 탭에서 활성 상태 확인.
 
-### 외부 알림(이메일·webhook)은 의도적 미도입
+### 로컬 dev에서 cron 수동 호출 (테스트)
 
-운영자가 admin 카드와 메인 stale 배너로 인지하는 두 채널로 충분하다고 판단했다. 추후 필요해지면 `src/lib/ingest/status.ts`의 `recordFailure` 직후에 채널을 추가하면 된다.
+`.env.local`에 `DATA_PROVIDER=twelvedata`, `CRON_SECRET=test`, `TWELVE_DATA_API_KEY=<실키>`, `DISCORD_WEBHOOK_URL=<테스트 채널 webhook>` 설정 후:
+
+```bash
+# 메인 cron: 5종목 종가 fetch + KV 저장
+curl -H "Authorization: Bearer test" http://localhost:3000/api/cron/twelvedata
+
+# 감시 cron: lastSuccess.date 누락 종목 점검 + Discord 알림
+curl -H "Authorization: Bearer test" http://localhost:3000/api/cron/watchdog
+```
+
+응답 예시 (메인 cron 성공):
+```json
+{ "ok": true, "results": [{ "ticker": "tqqq", "ok": true, "written": { "date": "2026-06-17", "price": 72.93 } }, ...] }
+```
+
+응답 예시 (감시 cron):
+```json
+{ "ok": true, "expected": "2026-06-17", "missing": [], "notified": false }
+```
+
+### 배포 후 첫 cron 실행 확인
+
+1. 다음날 KST 07:05 즈음 `/admin` 접속 → "수집 상태" 카드에서 "최근 성공: <시각> · <date> 종가 <price>" 표시 확인
+2. 안 보이면: Vercel 대시보드 → 해당 프로젝트 → Logs → `/api/cron/twelvedata` 실행 로그 점검
+3. KST 12:00 이후 감시 cron이 자동 catch — 메인 cron 실행 안 됐으면 Discord에 감시 알림 도착
+
+### 안전장치 4중 구조
+
+1. **수집 상태 카드** — `/admin` 최상단의 "수집 상태" 카드에서 마지막 성공/실패 시각·메시지·연속 실패 횟수 + 최근 14일 성공률(95%/90% 컬러 코딩) 표시. 매일 한 번 admin 방문 시 즉시 인지.
+2. **stale 큰 경고 (메인 페이지)** — 직전 미국 거래일 마감 + `STALE_CRITICAL_HOURS_AFTER_CLOSE`(기본 3시간)가 지나도 KV에 그날 종가가 없으면 메인 페이지 상단에 빨간 배너 자동 노출. KST 09:00 즈음 발화. NYSE 휴장일·주말은 거래일에서 제외 — 오탐 없음.
+3. **Discord 알림 (3종)** —
+   - **실패 알림**: 연속 2회 실패부터, 24시간 1통 한도 (`IngestStatus.lastNotifyAt` 디둡).
+   - **복구 알림**: 직전이 알림 발송된 실패 상태였을 때만 1통 (`pendingRecovery` 플래그).
+   - **감시 알림 (dead man's switch)**: 별도 cron `/api/cron/watchdog`가 매일 **03:00 UTC** (12:00 KST) 실행. 메인 cron 자체가 실행 안 됐을 가능성을 catch — 종목별 마지막 성공 날짜가 직전 거래일에 미달이면 1통 합쳐 발송. 시스템 전역 24h 디둡 (KV `system:watchdog:lastNotifyAt`).
+4. **수동 입력 fallback** — auto 모드 중에도 `/admin`의 종가 입력 폼은 그대로 동작하고, 같은 KV에 쓰므로 cron이 채운 값을 운영자가 덮어쓸 수 있음. 자동화 완전 실패 시에도 즉시 복구 가능.
+
+### 14일 후 ROI 판단
+
+`/admin` 수집 상태 카드의 14일 성공률 기준:
+- **≥ 95%** → Twelve Data 무료 유지
+- **90~95%** → 알림이 잘 작동하는지 보고 결정
+- **< 90%** → Polygon $29/월 ([polygon.io](https://polygon.io)) 업그레이드 검토. SLA + institutional grade 분할 보정.
+
+### 환경변수 fallback 동작
+
+- `TWELVE_DATA_API_KEY` 미설정 + `DATA_PROVIDER=twelvedata` → cron 시작 시점에 Discord 알림 + 500 응답 (즉시 운영자 인지)
+- `DISCORD_WEBHOOK_URL` 미설정 → console.warn 후 알림 silent (Vercel logs로만 확인 가능)
+- 둘 다 미설정 → console.error fallback. 배포 전 미리 점검 필요.
 
 ## 의도적 제약 (기획서 §9)
 

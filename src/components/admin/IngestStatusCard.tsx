@@ -1,6 +1,7 @@
 import type { IngestStatus } from "@/lib/providers/types";
 import { dictionaries } from "@/lib/i18n";
 import { formatPrice } from "@/lib/format";
+import { calcSuccessRate } from "@/lib/ingest/stats";
 
 const t = dictionaries.ko.admin.ingest;
 
@@ -9,6 +10,8 @@ const fmtTs = (iso: string): string => {
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false });
 };
+
+const fmtPct = (rate: number): string => `${(rate * 100).toFixed(1)}%`;
 
 export function IngestStatusCard({
   status,
@@ -24,6 +27,9 @@ export function IngestStatusCard({
   const badgeCls = failing
     ? "bg-red-900/60 text-red-200"
     : "bg-emerald-900/60 text-emerald-200";
+
+  // 14일 성공률 — recentResults 기반 슬라이딩 윈도우
+  const sr = calcSuccessRate(status?.recentResults, 14);
 
   return (
     <section className={`space-y-2 rounded-lg border ${containerCls} p-5`}>
@@ -54,6 +60,22 @@ export function IngestStatusCard({
               {t.lastError(fmtTs(status.lastError.ts), status.lastError.message)}
             </p>
           ) : null}
+          {/* 14일 성공률 — 2주 후 사용자가 Twelve Data 유지/Polygon 업그레이드 결정용 */}
+          <p
+            className={
+              sr.rate === null
+                ? "text-neutral-500"
+                : sr.rate >= 0.95
+                  ? "text-emerald-300"
+                  : sr.rate >= 0.9
+                    ? "text-amber-300"
+                    : "text-red-300"
+            }
+          >
+            {sr.rate === null
+              ? t.successRateEmpty
+              : t.successRate(sr.ok, sr.total, fmtPct(sr.rate))}
+          </p>
         </div>
       )}
     </section>

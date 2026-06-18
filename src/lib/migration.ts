@@ -126,6 +126,8 @@ export type DevStoreV2 = {
     visitorCount: number;
     settings: SiteSettings;
   };
+  /** watchdog cron 알림 디둡 (시스템 전역). */
+  watchdog?: { lastNotifyAt: string };
   migratedV1: true;
 };
 

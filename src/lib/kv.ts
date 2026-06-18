@@ -312,6 +312,30 @@ export const deleteSymbol = async (ticker: string): Promise<void> => {
   await writeSymbolList(list.filter((t) => t !== ticker));
 };
 
+// ---- system: watchdog 알림 디둡 ----
+
+const WATCHDOG_NOTIFY_KEY = "system:watchdog:lastNotifyAt";
+
+export const readWatchdogLastNotifyAt = async (): Promise<string | null> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    return s.watchdog?.lastNotifyAt ?? null;
+  }
+  await beforeKv();
+  return (await kv.get<string>(WATCHDOG_NOTIFY_KEY)) ?? null;
+};
+
+export const writeWatchdogLastNotifyAt = async (ts: string): Promise<void> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    s.watchdog = { lastNotifyAt: ts };
+    await writeDevStore(s);
+    return;
+  }
+  await beforeKv();
+  await kv.set(WATCHDOG_NOTIFY_KEY, ts);
+};
+
 // ---- site (visitor count, settings) ----
 
 export const readVisitorCount = async (): Promise<number> => {

@@ -17,9 +17,20 @@ export type AdjustmentLog = {
 };
 
 export type IngestStatus = {
-  lastSuccess?: { ts: string; date: string; price: number; source: "yahoo" };
+  lastSuccess?: {
+    ts: string;
+    date: string;
+    price: number;
+    source: "twelvedata";
+  };
   lastError?: { ts: string; message: string };
   consecutiveFailures: number;
+  /** Discord 실패/복구 알림 최근 발송 시각 (24h 디둡용). */
+  lastNotifyAt?: string;
+  /** 실패 상태였다가 다음 성공 시 복구 알림 발송 여부 플래그. */
+  pendingRecovery?: boolean;
+  /** 최근 30개 cron 실행 결과 (성공률 계산용 슬라이딩 윈도우). */
+  recentResults?: Array<{ date: string; ok: boolean }>;
 };
 
 export interface DataProvider {

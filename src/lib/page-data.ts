@@ -2,13 +2,17 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import { calcDrawdown } from "./drawdown";
-import { computeATH, computeOneYearHigh } from "./peaks";
+import {
+  computeATH,
+  computeOneYearHigh,
+  computePeriodDrawdowns,
+} from "./peaks";
 import { computeStaleness } from "./staleness";
 import {
   readMeta,
   readSettings,
   readSymbolList,
-  readVisitorCount,
+  readVisitorCounts,
 } from "./kv";
 import { getProvider } from "./providers";
 import type { SymbolMeta } from "./symbols";
@@ -16,7 +20,15 @@ import type { HeroData } from "@/components/HeroDrawdown";
 
 export type VisitorInfo = {
   show: boolean;
-  count: number;
+  today: number;
+  total: number;
+};
+
+/** KST(UTC+9) 기준 오늘 날짜 YYYY-MM-DD — 일별 카운터 키 결정용. */
+const todayKstDate = (): string => {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
 };
 
 /**
@@ -50,6 +62,9 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
 
     if (!latest || !ath || !oneYear) return { ready: false };
 
+    // 기간별 폭락(전기 대비) — 데이터 부족 항목은 null로 들어가 UI에서 숨김 처리.
+    const periodDrawdowns = computePeriodDrawdowns(closes);
+
     const stale = computeStaleness(latest.date);
     const staleDays = stale.kind === "soft" ? stale.daysSinceInput : null;
     const staleCritical =
@@ -73,6 +88,7 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
         price: oneYear.price,
         drawdownPct: calcDrawdown(latest.price, oneYear.price),
       },
+      breakdown: periodDrawdowns,
       staleDays,
       staleCritical,
       thresholds: {
@@ -93,14 +109,19 @@ const _loadAllMetas = async (): Promise<SymbolMeta[]> => {
 
 const _loadVisitorInfo = async (): Promise<VisitorInfo> => {
   try {
-    const [settings, count] = await Promise.all([
+    const today = todayKstDate();
+    const [settings, counts] = await Promise.all([
       readSettings(),
-      readVisitorCount(),
+      readVisitorCounts(today),
     ]);
-    return { show: settings.showVisitorCount, count };
+    return {
+      show: settings.showVisitorCount,
+      today: counts.today,
+      total: counts.total,
+    };
   } catch (err) {
     console.error("loadVisitorInfo failed:", err);
-    return { show: false, count: 0 };
+    return { show: false, today: 0, total: 0 };
   }
 };
 

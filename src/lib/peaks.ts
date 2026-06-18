@@ -33,3 +33,35 @@ export const computeOneYearHigh = (
   if (!candidates.length) return null;
   return maxBy(candidates, (c) => c.price);
 };
+
+/**
+ * 기간별 폭락률(전기 대비) — `closes`는 오름차순 정렬 가정.
+ *   - 1일:   직전 거래일 종가 대비
+ *   - 1주일: 7거래일 전 종가 대비
+ *   - 1개월: 21거래일 전 종가 대비
+ *
+ * 데이터 부족(인덱스 미달) 시 해당 항목 null. 호출자가 UI에서 숨김 처리.
+ * 음수 = 하락, 양수 = 상승.
+ */
+export type PeriodDrawdowns = {
+  oneDay: number | null;
+  oneWeek: number | null;
+  oneMonth: number | null;
+};
+
+const lookbackBy = (closes: Close[], n: number): Close | null =>
+  closes.length > n ? closes[closes.length - 1 - n] : null;
+
+export const computePeriodDrawdowns = (closes: Close[]): PeriodDrawdowns => {
+  if (closes.length === 0) {
+    return { oneDay: null, oneWeek: null, oneMonth: null };
+  }
+  const latest = closes[closes.length - 1];
+  const pct = (past: Close | null): number | null =>
+    past ? ((latest.price - past.price) / past.price) * 100 : null;
+  return {
+    oneDay: pct(lookbackBy(closes, 1)),
+    oneWeek: pct(lookbackBy(closes, 7)),
+    oneMonth: pct(lookbackBy(closes, 21)),
+  };
+};

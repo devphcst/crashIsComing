@@ -124,6 +124,8 @@ export type DevStoreV2 = {
   symbolList: string[];
   site: {
     visitorCount: number;
+    /** 일별 카운터 — `{ "YYYY-MM-DD": count }`. KST 자정 기준 키. 옵셔널 (기존 store 호환). */
+    visitorDaily?: Record<string, number>;
     settings: SiteSettings;
   };
   /** watchdog cron 알림 디둡 (시스템 전역). */

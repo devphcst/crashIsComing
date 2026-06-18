@@ -31,6 +31,12 @@ export type HeroData =
       current: { date: string; price: number };
       ath: { date: string; price: number; drawdownPct: number };
       oneYear: { date: string; price: number; drawdownPct: number };
+      /** 1일/1주일/1개월 전기 대비 폭락률. null = 데이터 부족(UI 숨김). */
+      breakdown: {
+        oneDay: number | null;
+        oneWeek: number | null;
+        oneMonth: number | null;
+      };
       staleDays: number | null; // null = fresh (soft warning when not null)
       staleCritical: { expectedTradingDate: string; hoursSince: number } | null;
       thresholds: LevelThresholds;
@@ -39,7 +45,8 @@ export type HeroData =
 
 export type VisitorInfo = {
   show: boolean;
-  count: number;
+  today: number;
+  total: number;
 };
 
 const LANG_STORAGE_KEY = "tqqq.lang";
@@ -226,20 +233,74 @@ function HeroNumbers({
       >
         {formatPct(data.ath.drawdownPct, 1)}
       </span>
-      <span className="mt-4 text-2xl text-neutral-300">
-        <span className="text-sm text-neutral-500">
-          {dict.oneYearDrawdown}
-        </span>{" "}
-        {formatPct(data.oneYear.drawdownPct, 1)}
-      </span>
+      {/* 기간별 폭락 보조 줄 — 1일·1주일·1개월·52주를 가운데 정렬 한 줄로 (좁은 화면은 wrap).
+          데이터 부족 항목(null)은 통째 숨김 — 신규 종목 데이터 쌓이며 점진적 노출. */}
+      <div className="mt-4 flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5 text-sm">
+        <PeriodItem label={dict.breakdown.oneDay} value={data.breakdown.oneDay} />
+        <PeriodItem label={dict.breakdown.oneWeek} value={data.breakdown.oneWeek} prependSep />
+        <PeriodItem label={dict.breakdown.oneMonth} value={data.breakdown.oneMonth} prependSep />
+        <PeriodItem label={dict.breakdown.fiftyTwoWeek} value={data.oneYear.drawdownPct} prependSep />
+      </div>
       {/* 모바일·데스크톱 공통 인라인 방문자 텍스트 — 보조 수치 바로 아래 작게.
+          오늘 + 누적 표시, today=0이면 i18n 함수가 자동으로 누적만 반환.
+          parts 배열로 강조 영역(emphasis="value")은 밝은 톤, 라벨은 더 흐림.
           showVisitorCount(admin 토글) 꺼져 있으면 텍스트도 노출 안 함. */}
       {visitor.show ? (
-        <span className="-mt-2 text-xs text-neutral-600">
-          {dict.visitorInline(visitor.count.toLocaleString())}
+        <span className="mt-3 text-xs text-neutral-700">
+          {dict
+            .visitorInline(visitor.today || null, visitor.total)
+            .map((p, i) => (
+              <span
+                key={i}
+                className={p.emphasis === "value" ? "text-neutral-500" : ""}
+              >
+                {p.text}
+              </span>
+            ))}
         </span>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * 기간별 폭락 단일 항목 — "1일 -1.2%" 형태.
+ *   - value === null: null 반환 (UI 숨김)
+ *   - value < 0: 빨강(text-red-400, 기존 큰 숫자 text-red-500보다 약한 톤)
+ *   - value > 0: 흰색
+ *   - value === 0: 회색
+ *   - prependSep=true이면 항목 앞에 "·" 구분자 (더 흐린 회색)
+ */
+function PeriodItem({
+  label,
+  value,
+  prependSep,
+}: {
+  label: string;
+  value: number | null;
+  prependSep?: boolean;
+}) {
+  if (value === null) return null;
+  const valueClass =
+    value < 0
+      ? "text-red-400"
+      : value > 0
+        ? "text-neutral-100"
+        : "text-neutral-500";
+  return (
+    <>
+      {prependSep ? (
+        <span className="text-neutral-700" aria-hidden>
+          ·
+        </span>
+      ) : null}
+      <span className="inline-flex items-baseline gap-1">
+        <span className="text-neutral-500">{label}</span>
+        <span className={`font-mono ${valueClass}`}>
+          {formatPct(value, 1)}
+        </span>
+      </span>
+    </>
   );
 }
 

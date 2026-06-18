@@ -17,8 +17,23 @@ export type Dict = {
   disclaimer: string;
   langToggleAria: string;
   visitorCount: (count: string) => string;
-  /** 모바일 hero 안 인라인 표시용 — 보조 수치 다음 줄 작게. 데스크톱은 미사용. */
-  visitorInline: (count: string) => string;
+  /**
+   * Hero 안 인라인 visitor 표시용 — 오늘 + 누적.
+   * parts 배열 반환 (강조 영역 분기): emphasis="value"는 숫자 강조 (밝은 톤),
+   * 없으면 라벨 (어두운 톤).
+   * today === null 이면 누적만 표시 (오늘 0명 케이스).
+   */
+  visitorInline: (
+    today: number | null,
+    total: number,
+  ) => Array<{ text: string; emphasis?: "value" }>;
+  /** 기간별 폭락률 라벨 (1일/1주일/1개월/52주). */
+  breakdown: {
+    oneDay: string;
+    oneWeek: string;
+    oneMonth: string;
+    fiftyTwoWeek: string;
+  };
   menu: {
     title: string;
     about: string;
@@ -141,7 +156,28 @@ const ko: Dict = {
     '투자 자문이 아니며, 데이터는 관리자가 수동 입력한 종가 기준이고, 정확성을 보장하지 않습니다.',
   langToggleAria: '언어 전환',
   visitorCount: (count) => `누적 방문자 ${count}명`,
-  visitorInline: (count) => `${count}명이 확인했어요.`,
+  visitorInline: (today, total) => {
+    const totalStr = total.toLocaleString();
+    if (today === null || today === 0) {
+      return [
+        { text: totalStr, emphasis: "value" },
+        { text: '명이 다녀갔어요' },
+      ];
+    }
+    return [
+      { text: '오늘 ' },
+      { text: String(today), emphasis: "value" },
+      { text: '명이 봤고, ' },
+      { text: totalStr, emphasis: "value" },
+      { text: '명이 다녀갔어요' },
+    ];
+  },
+  breakdown: {
+    oneDay: '1일',
+    oneWeek: '1주일',
+    oneMonth: '1개월',
+    fiftyTwoWeek: '52주',
+  },
   menu: {
     title: '메뉴',
     about: '서비스 소개',
@@ -287,7 +323,28 @@ const en: Dict = {
     'Not investment advice. Data is manually entered closing prices and accuracy is not guaranteed.',
   langToggleAria: 'Toggle language',
   visitorCount: (count) => `${count} visitors so far`,
-  visitorInline: (count) => `${count} people watching together`,
+  visitorInline: (today, total) => {
+    const totalStr = total.toLocaleString();
+    if (today === null || today === 0) {
+      return [
+        { text: totalStr, emphasis: "value" },
+        { text: ' total' },
+      ];
+    }
+    return [
+      { text: 'Today ' },
+      { text: String(today), emphasis: "value" },
+      { text: ' · ' },
+      { text: totalStr, emphasis: "value" },
+      { text: ' total' },
+    ];
+  },
+  breakdown: {
+    oneDay: '1d',
+    oneWeek: '1w',
+    oneMonth: '1m',
+    fiftyTwoWeek: '52w',
+  },
   menu: {
     title: 'Menu',
     about: 'About',

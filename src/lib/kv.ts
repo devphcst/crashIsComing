@@ -359,6 +359,61 @@ export const incrementVisitorCount = async (): Promise<number> => {
   return (await kv.incr(KV_KEYS.siteVisitorCount)) ?? 0;
 };
 
+/**
+ * 누적 + 일별 카운터 동시 읽기 (메인 페이지 hero 표시용).
+ * todayKstDate: "YYYY-MM-DD" (KST 자정 기준). 일별 키 `site:visitor:daily:{date}` 조회.
+ */
+export const readVisitorCounts = async (
+  todayKstDate: string,
+): Promise<{ total: number; today: number }> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    return {
+      total: s.site.visitorCount,
+      today: s.site.visitorDaily?.[todayKstDate] ?? 0,
+    };
+  }
+  await beforeKv();
+  const dailyKey = `site:visitor:daily:${todayKstDate}`;
+  const [total, today] = await Promise.all([
+    kv.get<number>(KV_KEYS.siteVisitorCount),
+    kv.get<number>(dailyKey),
+  ]);
+  return {
+    total: typeof total === "number" ? total : 0,
+    today: typeof today === "number" ? today : 0,
+  };
+};
+
+/**
+ * 누적 + 일별 카운터 동시 증가 (방문 endpoint 호출 시).
+ * 자정 KST가 지나면 새 일별 키가 자동 생성됨 — 별도 cleanup cron 없음.
+ * 일별 키는 무한 누적되지만 키당 약 40바이트라 1년 ~14KB 수준, KV 용량 부담 0.
+ */
+export const incrementVisitorCounts = async (
+  todayKstDate: string,
+): Promise<{ total: number; today: number }> => {
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    s.site.visitorCount += 1;
+    if (!s.site.visitorDaily) s.site.visitorDaily = {};
+    s.site.visitorDaily[todayKstDate] =
+      (s.site.visitorDaily[todayKstDate] ?? 0) + 1;
+    await writeDevStore(s);
+    return {
+      total: s.site.visitorCount,
+      today: s.site.visitorDaily[todayKstDate],
+    };
+  }
+  await beforeKv();
+  const dailyKey = `site:visitor:daily:${todayKstDate}`;
+  const [total, today] = await Promise.all([
+    kv.incr(KV_KEYS.siteVisitorCount),
+    kv.incr(dailyKey),
+  ]);
+  return { total: total ?? 0, today: today ?? 0 };
+};
+
 export const readSettings = async (): Promise<SiteSettings> => {
   if (!isKvConfigured()) {
     const s = await readDevStore();

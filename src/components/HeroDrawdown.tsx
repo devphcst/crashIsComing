@@ -181,10 +181,11 @@ export function HeroDrawdown({
 
       <footer className="border-t border-neutral-900 pb-8 pt-6">
         <Disclaimer text={d.disclaimer} />
-        {/* 모바일에서는 hero 안 인라인 텍스트로 노출되므로 푸터 카운터는 데스크톱에만 */}
+        {/* 모바일에서는 hero 안 인라인 텍스트로 노출되므로 푸터 카운터는 데스크톱에만.
+            문구는 visitorInline으로 통일 — 모바일과 같은 톤("○○○명이 함께 보고 있어요"). */}
         {visitor.show ? (
           <p className="mt-3 hidden text-center text-xs text-neutral-600 lg:block">
-            {d.visitorCount(visitor.count.toLocaleString())}
+            {d.visitorInline(visitor.count.toLocaleString())}
           </p>
         ) : null}
       </footer>

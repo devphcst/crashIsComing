@@ -13,11 +13,11 @@ body {
   min-height: 100%;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+/* scroll-behavior: smooth는 전역에서 제거 — 브라우저의 새로고침 시 스크롤 복원이
+   smooth로 처리되어 "맨 위에서 점프"하는 현상이 발생함. 햄버거 anchor 클릭의
+   smooth scroll은 MobileMenu의 JS 핸들러(scrollIntoView)로 명시적 처리한다.
 
-/* 모바일 햄버거 메뉴에서 anchor 클릭 시 sticky 헤더(브랜드 ~52px + 종목 탭 ~44px)에
+   모바일 햄버거 메뉴에서 anchor 클릭 시 sticky 헤더(브랜드 ~52px + 종목 탭 ~44px)에
    섹션 상단이 가려지지 않도록 보정. 데스크톱은 sticky가 아니라 여유 마진 정도. */
 [id="about"],
 [id="history"],

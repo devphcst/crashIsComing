@@ -38,6 +38,30 @@ export function MobileMenu({
     };
   }, [open]);
 
+  /**
+   * anchor 클릭 핸들러.
+   *
+   * 1. preventDefault — 브라우저 기본 hash 점프(즉시 이동) 차단
+   * 2. scrollIntoView({ behavior: "smooth" }) — JS로 명시적 smooth scroll
+   *    (전역 CSS scroll-behavior:smooth에 의존 안 함. 새로고침 시
+   *    브라우저 스크롤 복원이 smooth로 처리돼 점프 보이는 문제 회피.)
+   * 3. history.replaceState — URL hash는 갱신하되 history에 push 안 함.
+   *    그 상태로 새로고침해도 hash 점프와 스크롤 복원이 충돌하지 않게.
+   * 4. setOpen(false) — 드로어 즉시 닫힘
+   */
+  const handleAnchorClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
+    e.preventDefault();
+    const target = document.querySelector(href);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      history.replaceState(null, "", href);
+    }
+    setOpen(false);
+  };
+
   const spanBase =
     "block h-0.5 w-6 bg-neutral-200 transition-transform duration-200";
 
@@ -96,7 +120,7 @@ export function MobileMenu({
               <li key={item.key}>
                 <a
                   href={item.href}
-                  onClick={() => setOpen(false)}
+                  onClick={(e) => handleAnchorClick(e, item.href)}
                   className="block py-3 text-base text-neutral-200 hover:text-white"
                 >
                   {dict.menu[item.key]}

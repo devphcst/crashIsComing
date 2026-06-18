@@ -26,7 +26,7 @@ export type Dict = {
   visitorInline: (
     today: number | null,
     total: number,
-  ) => Array<{ text: string; emphasis?: "value" }>;
+  ) => Array<{ text: string; emphasis?: 'value' }>;
   /** 기간별 폭락률 라벨 (1일/1주일/1개월/52주). */
   breakdown: {
     oneDay: string;
@@ -141,7 +141,7 @@ const ko: Dict = {
   brand: '폭락장은 온다',
   athDrawdown: '전고점(ATH) 대비',
   oneYearDrawdown: '최근 52주 고점 대비',
-  current: '현재 종가',
+  current: '최근 종가',
   ath: '전고점',
   oneYearHigh: '52주 고점',
   asOf: (date) => `${date} 종가 기준 (대한민국 시간 기준)`,
@@ -160,20 +160,20 @@ const ko: Dict = {
     const totalStr = total.toLocaleString();
     if (today === null || today === 0) {
       return [
-        { text: totalStr, emphasis: "value" },
+        { text: totalStr, emphasis: 'value' },
         { text: '명이 다녀갔어요' },
       ];
     }
     return [
       { text: '오늘 ' },
-      { text: String(today), emphasis: "value" },
-      { text: '명이 봤고, ' },
-      { text: totalStr, emphasis: "value" },
+      { text: String(today), emphasis: 'value' },
+      { text: '명이 봤고, 지금까지' },
+      { text: totalStr, emphasis: 'value' },
       { text: '명이 다녀갔어요' },
     ];
   },
   breakdown: {
-    oneDay: '1일',
+    oneDay: '전날',
     oneWeek: '1주일',
     oneMonth: '1개월',
     fiftyTwoWeek: '52주',
@@ -308,7 +308,7 @@ const en: Dict = {
   brand: 'Crash Is Coming',
   athDrawdown: 'vs. all-time high',
   oneYearDrawdown: 'vs. 52-week high',
-  current: 'Current close',
+  current: 'Latest close',
   ath: 'All-time high',
   oneYearHigh: '52-week high',
   asOf: (date) => `As of ${date} close (KST)`,
@@ -326,16 +326,13 @@ const en: Dict = {
   visitorInline: (today, total) => {
     const totalStr = total.toLocaleString();
     if (today === null || today === 0) {
-      return [
-        { text: totalStr, emphasis: "value" },
-        { text: ' total' },
-      ];
+      return [{ text: totalStr, emphasis: 'value' }, { text: ' total' }];
     }
     return [
       { text: 'Today ' },
-      { text: String(today), emphasis: "value" },
+      { text: String(today), emphasis: 'value' },
       { text: ' · ' },
-      { text: totalStr, emphasis: "value" },
+      { text: totalStr, emphasis: 'value' },
       { text: ' total' },
     ];
   },

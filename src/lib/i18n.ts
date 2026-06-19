@@ -8,7 +8,10 @@ export type Dict = {
   current: string;
   ath: string;
   oneYearHigh: string;
-  asOf: (usDateFormatted: string, kstLine: string) => string;
+  /** 푸터 asOf 첫 줄 — 미국 시장 종가 날짜. */
+  asOfUs: (usDateFormatted: string) => string;
+  /** 푸터 asOf 둘째 줄 — 한국 시간 마감 (괄호 포함). */
+  asOfKst: (kstLine: string) => string;
   updateSchedule: string;
   /** 가격 카드 첫 줄 끝에 붙는 시간대 표기 — '(미국 시간)' / ' (US time)'. */
   closeUsSuffix: string;
@@ -151,7 +154,8 @@ const ko: Dict = {
   current: '최근 종가',
   ath: '전고점',
   oneYearHigh: '52주 고점',
-  asOf: (usDate, kstLine) => `${usDate} 미국 시장 종가 (${kstLine})`,
+  asOfUs: (usDate) => `${usDate} 미국 시장 종가`,
+  asOfKst: (kstLine) => `(${kstLine})`,
   updateSchedule: '매일 미국 시장 마감 후 자동 업데이트됩니다.',
   closeUsSuffix: ' (미국 시간)',
   closeKst: (month, day, hour) =>
@@ -321,7 +325,8 @@ const en: Dict = {
   current: 'Latest close',
   ath: 'All-time high',
   oneYearHigh: '52-week high',
-  asOf: (usDate, kstLine) => `US market close on ${usDate} (${kstLine})`,
+  asOfUs: (usDate) => `US market close on ${usDate}`,
+  asOfKst: (kstLine) => `(${kstLine})`,
   updateSchedule: 'Updates automatically after each U.S. market close.',
   closeUsSuffix: ' (US time)',
   closeKst: (month, day, hour) => {

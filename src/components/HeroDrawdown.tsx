@@ -185,10 +185,10 @@ export function HeroDrawdown({
                 />
                 <Facts data={data} dict={d} lang={lang} />
                 <LastUpdated
-                  asOfText={(() => {
+                  asOfUsText={d.asOfUs(formatDate(data.current.date, lang))}
+                  asOfKstText={(() => {
                     const kst = usCloseInKst(data.current.date);
-                    return d.asOf(
-                      formatDate(data.current.date, lang),
+                    return d.asOfKst(
                       d.closeKst(kst.month, kst.day, kst.hour),
                     );
                   })()}

@@ -43,10 +43,17 @@ export const computeOneYearHigh = (
  * 데이터 부족(인덱스 미달) 시 해당 항목 null. 호출자가 UI에서 숨김 처리.
  * 음수 = 하락, 양수 = 상승.
  */
+/** 보조 수치 항목 — pct + 비교 기준이 된 과거 종가의 날짜·가격. */
+export type PeriodPoint = {
+  pct: number;
+  date: string;
+  price: number;
+};
+
 export type PeriodDrawdowns = {
-  oneDay: number | null;
-  oneWeek: number | null;
-  oneMonth: number | null;
+  oneDay: PeriodPoint | null;
+  oneWeek: PeriodPoint | null;
+  oneMonth: PeriodPoint | null;
 };
 
 const lookbackBy = (closes: Close[], n: number): Close | null =>
@@ -57,11 +64,17 @@ export const computePeriodDrawdowns = (closes: Close[]): PeriodDrawdowns => {
     return { oneDay: null, oneWeek: null, oneMonth: null };
   }
   const latest = closes[closes.length - 1];
-  const pct = (past: Close | null): number | null =>
-    past ? ((latest.price - past.price) / past.price) * 100 : null;
+  const point = (past: Close | null): PeriodPoint | null =>
+    past
+      ? {
+          pct: ((latest.price - past.price) / past.price) * 100,
+          date: past.date,
+          price: past.price,
+        }
+      : null;
   return {
-    oneDay: pct(lookbackBy(closes, 1)),
-    oneWeek: pct(lookbackBy(closes, 7)),
-    oneMonth: pct(lookbackBy(closes, 21)),
+    oneDay: point(lookbackBy(closes, 1)),
+    oneWeek: point(lookbackBy(closes, 7)),
+    oneMonth: point(lookbackBy(closes, 21)),
   };
 };

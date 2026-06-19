@@ -80,40 +80,44 @@ describe("computePeriodDrawdowns", () => {
     });
   });
 
-  it("1일 lookback: 가격 100 → 95 = -5%", () => {
+  it("1일 lookback: 가격 100 → 95 = -5%, 기준 날짜·가격 포함", () => {
     const closes = mkCloses([100, 95]);
     const r = computePeriodDrawdowns(closes);
-    expect(r.oneDay).toBe(-5);
+    expect(r.oneDay).toEqual({ pct: -5, date: "2026-01-01", price: 100 });
     expect(r.oneWeek).toBeNull();
     expect(r.oneMonth).toBeNull();
   });
 
   it("8개 데이터 (1일 + 1주일 가능, 1개월 부족)", () => {
-    // index 0..7, latest는 idx 7. 1주일 전 = idx 0 (100), latest = 50 → -50%
     const closes = mkCloses([100, 99, 98, 97, 96, 95, 94, 50]);
     const r = computePeriodDrawdowns(closes);
-    expect(r.oneDay).toBeCloseTo(((50 - 94) / 94) * 100, 5);
-    expect(r.oneWeek).toBe(-50);
+    expect(r.oneDay?.pct).toBeCloseTo(((50 - 94) / 94) * 100, 5);
+    expect(r.oneDay?.date).toBe("2026-01-07");
+    expect(r.oneDay?.price).toBe(94);
+    expect(r.oneWeek).toEqual({ pct: -50, date: "2026-01-01", price: 100 });
     expect(r.oneMonth).toBeNull();
   });
 
   it("22개 데이터 (3 항목 모두 계산 가능)", () => {
     const prices = Array.from({ length: 22 }, (_, i) => 100 + i);
-    // latest = 121 (idx 21), 1일 전 = 120, 1주일 전 = 114 (idx 14), 1개월 전 = 100 (idx 0)
     const closes = mkCloses(prices);
     const r = computePeriodDrawdowns(closes);
-    expect(r.oneDay).toBeCloseTo(((121 - 120) / 120) * 100, 5);
-    expect(r.oneWeek).toBeCloseTo(((121 - 114) / 114) * 100, 5);
-    expect(r.oneMonth).toBe(21); // (121-100)/100 = 21%
+    expect(r.oneDay?.pct).toBeCloseTo(((121 - 120) / 120) * 100, 5);
+    expect(r.oneDay?.price).toBe(120);
+    expect(r.oneWeek?.pct).toBeCloseTo(((121 - 114) / 114) * 100, 5);
+    expect(r.oneWeek?.price).toBe(114);
+    expect(r.oneMonth?.pct).toBe(21);
+    expect(r.oneMonth?.price).toBe(100);
+    expect(r.oneMonth?.date).toBe("2026-01-01");
   });
 
-  it("상승 케이스 → 양수", () => {
+  it("상승 케이스 → 양수 pct", () => {
     const closes = mkCloses([100, 110]);
-    expect(computePeriodDrawdowns(closes).oneDay).toBe(10);
+    expect(computePeriodDrawdowns(closes).oneDay?.pct).toBe(10);
   });
 
-  it("같은 가격 → 0", () => {
+  it("같은 가격 → 0 pct", () => {
     const closes = mkCloses([100, 100]);
-    expect(computePeriodDrawdowns(closes).oneDay).toBe(0);
+    expect(computePeriodDrawdowns(closes).oneDay?.pct).toBe(0);
   });
 });

@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
-import { formatPct, formatPrice, formatDate } from "@/lib/format";
+import { formatPct, formatPrice, formatDate, formatSignedPct } from "@/lib/format";
 import { usCloseInKst } from "@/lib/market-time";
+import type { PeriodPoint } from "@/lib/peaks";
+import { PeriodTooltip } from "./PeriodTooltip";
 import {
   levelFor,
   type DrawdownLevel,
@@ -32,11 +34,11 @@ export type HeroData =
       current: { date: string; price: number };
       ath: { date: string; price: number; drawdownPct: number };
       oneYear: { date: string; price: number; drawdownPct: number };
-      /** 1일/1주일/1개월 전기 대비 폭락률. null = 데이터 부족(UI 숨김). */
+      /** 전날/1주일/1개월 보조 수치 — 기준 종가의 날짜·가격 포함. null = 데이터 부족(UI 숨김). */
       breakdown: {
-        oneDay: number | null;
-        oneWeek: number | null;
-        oneMonth: number | null;
+        oneDay: PeriodPoint | null;
+        oneWeek: PeriodPoint | null;
+        oneMonth: PeriodPoint | null;
       };
       staleDays: number | null; // null = fresh (soft warning when not null)
       staleCritical: { expectedTradingDate: string; hoursSince: number } | null;
@@ -227,7 +229,7 @@ export function HeroDrawdown({
 function HeroNumbers({
   data,
   dict,
-  lang: _lang,
+  lang,
   tickerLabel,
   currentDisplayName,
   visitor,
@@ -240,6 +242,42 @@ function HeroNumbers({
   visitor: VisitorInfo;
 }) {
   const level = levelFor(data.ath.drawdownPct, data.thresholds);
+  // 보조 수치 툴팁 단일 active 슬롯. 한 항목 열리면 나머지 자동 닫힘.
+  const [activePeriod, setActivePeriod] = useState<
+    "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek" | null
+  >(null);
+  const breakdownRowRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!activePeriod) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (
+        breakdownRowRef.current &&
+        !breakdownRowRef.current.contains(e.target as Node)
+      ) {
+        setActivePeriod(null);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActivePeriod(null);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown, { passive: true });
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [activePeriod]);
+  const toggle = (
+    key: "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek",
+  ) => setActivePeriod((cur) => (cur === key ? null : key));
+  // 52주 항목은 oneYear 데이터(이미 date/price 포함)를 PeriodPoint 모양으로 어댑트.
+  const fiftyTwoWeekPoint: PeriodPoint = {
+    pct: data.oneYear.drawdownPct,
+    date: data.oneYear.date,
+    price: data.oneYear.price,
+  };
   return (
     <div className="flex w-full max-w-full flex-col items-center gap-3 text-center">
       {/* SEO: pill을 <h1>로 마크업 — 종목 페이지마다 ticker가 페이지 주제 신호로
@@ -263,13 +301,54 @@ function HeroNumbers({
       >
         {formatPct(data.ath.drawdownPct, 1)}
       </span>
-      {/* 기간별 폭락 보조 줄 — 1일·1주일·1개월·52주를 가운데 정렬 한 줄로 (좁은 화면은 wrap).
-          데이터 부족 항목(null)은 통째 숨김 — 신규 종목 데이터 쌓이며 점진적 노출. */}
-      <div className="mt-4 flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5 text-sm">
-        <PeriodItem label={dict.breakdown.oneDay} value={data.breakdown.oneDay} />
-        <PeriodItem label={dict.breakdown.oneWeek} value={data.breakdown.oneWeek} prependSep />
-        <PeriodItem label={dict.breakdown.oneMonth} value={data.breakdown.oneMonth} prependSep />
-        <PeriodItem label={dict.breakdown.fiftyTwoWeek} value={data.oneYear.drawdownPct} prependSep />
+      {/* 안내문 — 보조 수치 줄 위 한 줄. 단골 사용자에 시각 노이즈 안 되게 흐린 톤. */}
+      <p className="mt-3 text-xs text-neutral-600">{dict.breakdownHint}</p>
+      {/* 기간별 폭락 보조 줄 — 전날·1주일·1개월·52주를 가운데 정렬 한 줄로 (좁은 화면은 wrap).
+          데이터 부족 항목(null)은 통째 숨김 — 신규 종목 데이터 쌓이며 점진적 노출.
+          각 항목은 hover/탭 시 툴팁 노출(기준 날짜·가격·자연어 설명). */}
+      <div
+        ref={breakdownRowRef}
+        className="mt-1 flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5 text-sm"
+      >
+        <PeriodItem
+          period="oneDay"
+          label={dict.breakdown.oneDay}
+          point={data.breakdown.oneDay}
+          dict={dict}
+          lang={lang}
+          active={activePeriod === "oneDay"}
+          onToggle={() => toggle("oneDay")}
+        />
+        <PeriodItem
+          period="oneWeek"
+          label={dict.breakdown.oneWeek}
+          point={data.breakdown.oneWeek}
+          dict={dict}
+          lang={lang}
+          active={activePeriod === "oneWeek"}
+          onToggle={() => toggle("oneWeek")}
+          prependSep
+        />
+        <PeriodItem
+          period="oneMonth"
+          label={dict.breakdown.oneMonth}
+          point={data.breakdown.oneMonth}
+          dict={dict}
+          lang={lang}
+          active={activePeriod === "oneMonth"}
+          onToggle={() => toggle("oneMonth")}
+          prependSep
+        />
+        <PeriodItem
+          period="fiftyTwoWeek"
+          label={dict.breakdown.fiftyTwoWeek}
+          point={fiftyTwoWeekPoint}
+          dict={dict}
+          lang={lang}
+          active={activePeriod === "fiftyTwoWeek"}
+          onToggle={() => toggle("fiftyTwoWeek")}
+          prependSep
+        />
       </div>
       {/* 모바일·데스크톱 공통 인라인 방문자 텍스트 — 보조 수치 바로 아래 작게.
           오늘 + 누적 표시, today=0이면 i18n 함수가 자동으로 누적만 반환.
@@ -293,30 +372,52 @@ function HeroNumbers({
   );
 }
 
+type BreakdownKey = "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek";
+
 /**
- * 기간별 폭락 단일 항목 — "1일 -1.2%" 형태.
- *   - value === null: null 반환 (UI 숨김)
- *   - value < 0: 빨강(text-red-400, 기존 큰 숫자 text-red-500보다 약한 톤)
- *   - value > 0: 흰색
- *   - value === 0: 회색
+ * 기간별 폭락 단일 항목 — "전날 -1.2%" 형태.
+ *   - point === null: UI 숨김 (신규 종목 데이터 부족)
+ *   - pct < 0: 빨강(text-red-400, 기존 큰 숫자 text-red-500보다 약한 톤), "-1.2%"
+ *   - pct > 0: 흰색, "+8.7%"
+ *   - pct === 0: 회색, "0.0%"
  *   - prependSep=true이면 항목 앞에 "·" 구분자 (더 흐린 회색)
+ *   - hover(데스크톱) 또는 active(탭) 시 툴팁 노출.
  */
 function PeriodItem({
+  period,
   label,
-  value,
+  point,
   prependSep,
+  active,
+  onToggle,
+  dict,
+  lang,
 }: {
+  period: BreakdownKey;
   label: string;
-  value: number | null;
+  point: PeriodPoint | null;
   prependSep?: boolean;
+  active: boolean;
+  onToggle: () => void;
+  dict: ReturnType<typeof getDict>;
+  lang: Lang;
 }) {
-  if (value === null) return null;
+  const [hover, setHover] = useState(false);
+  if (point === null) return null;
+  const rounded = Number(point.pct.toFixed(1));
   const valueClass =
-    value < 0
+    rounded < 0
       ? "text-red-400"
-      : value > 0
+      : rounded > 0
         ? "text-neutral-100"
         : "text-neutral-500";
+  const open = active || hover;
+  const tooltipText = dict.breakdownTooltip({
+    period,
+    dateLabel: formatDate(point.date, lang),
+    priceLabel: formatPrice(point.price),
+    pct: point.pct,
+  });
   return (
     <>
       {prependSep ? (
@@ -324,11 +425,22 @@ function PeriodItem({
           ·
         </span>
       ) : null}
-      <span className="inline-flex items-baseline gap-1">
-        <span className="text-neutral-500">{label}</span>
-        <span className={`font-mono ${valueClass}`}>
-          {formatPct(value, 1)}
-        </span>
+      <span className="relative inline-flex items-baseline">
+        <button
+          type="button"
+          onClick={onToggle}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          aria-expanded={active}
+          aria-label={tooltipText}
+          className="-mx-1 inline-flex items-baseline gap-1 rounded px-1 transition-colors hover:bg-neutral-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-700"
+        >
+          <span className="text-neutral-500">{label}</span>
+          <span className={`font-mono ${valueClass}`}>
+            {formatSignedPct(point.pct, 1)}
+          </span>
+        </button>
+        {open ? <PeriodTooltip text={tooltipText} /> : null}
       </span>
     </>
   );

@@ -37,13 +37,22 @@ export type Dict = {
     today: number | null,
     total: number,
   ) => Array<{ text: string; emphasis?: 'value' }>;
-  /** 기간별 폭락률 라벨 (1일/1주일/1개월/52주). */
+  /** 기간별 폭락률 라벨 (전날/1주일/1개월/52주). */
   breakdown: {
     oneDay: string;
     oneWeek: string;
     oneMonth: string;
     fiftyTwoWeek: string;
   };
+  /** 보조 수치 줄 위에 노출되는 한 줄 안내문 — 사용자 이해 도움. */
+  breakdownHint: string;
+  /** 보조 수치 항목 hover/탭 시 노출되는 툴팁 본문. */
+  breakdownTooltip: (params: {
+    period: 'oneDay' | 'oneWeek' | 'oneMonth' | 'fiftyTwoWeek';
+    dateLabel: string;
+    priceLabel: string;
+    pct: number;
+  }) => string;
   menu: {
     title: string;
     about: string;
@@ -191,6 +200,22 @@ const ko: Dict = {
     oneWeek: '1주일',
     oneMonth: '1개월',
     fiftyTwoWeek: '52주',
+  },
+  breakdownHint: '아래는 각 시점의 종가 대비 변화율입니다',
+  breakdownTooltip: ({ period, dateLabel, priceLabel, pct }) => {
+    const labels = {
+      oneDay: '전날',
+      oneWeek: '1주일 전',
+      oneMonth: '1개월 전',
+      fiftyTwoWeek: '52주 전',
+    } as const;
+    const abs = Math.abs(pct).toFixed(1);
+    const verb =
+      pct > 0.05 ? '올랐어요' : pct < -0.05 ? '내렸어요' : '변동 없어요';
+    if (verb === '변동 없어요') {
+      return `${labels[period]}(${dateLabel}) 종가 ${priceLabel} 대비 변동 없어요`;
+    }
+    return `${labels[period]}(${dateLabel}) 종가 ${priceLabel} 대비 ${abs}% ${verb}`;
   },
   menu: {
     title: '메뉴',
@@ -364,6 +389,17 @@ const en: Dict = {
     oneWeek: '1w',
     oneMonth: '1m',
     fiftyTwoWeek: '52w',
+  },
+  breakdownHint: 'Each value compares the current close to the close on that date',
+  breakdownTooltip: ({ dateLabel, priceLabel, pct }) => {
+    const abs = Math.abs(pct).toFixed(1);
+    if (pct > 0.05) {
+      return `Compared to close on ${dateLabel} (${priceLabel}), up ${abs}%`;
+    }
+    if (pct < -0.05) {
+      return `Compared to close on ${dateLabel} (${priceLabel}), down ${abs}%`;
+    }
+    return `Compared to close on ${dateLabel} (${priceLabel}), unchanged`;
   },
   menu: {
     title: 'Menu',

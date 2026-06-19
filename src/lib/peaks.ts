@@ -56,6 +56,16 @@ export type PeriodDrawdowns = {
   oneMonth: PeriodPoint | null;
 };
 
+/**
+ * 거래일(주말·휴장일 제외) 기준 lookback 상수.
+ *   - 1주일 = 5거래일 (월~금 한 영업주, 칼렌더 7일 ≈ 한 주 같은 요일)
+ *   - 1개월 = 20거래일 (4영업주 = 28 calendar days, 표준 finance 1개월 근사)
+ * 사용자 직관 "지난주 같은 요일" / "한 달 전" 매칭. 데이터 부족 항목은 호출자가 UI 숨김.
+ */
+export const ONE_DAY_LOOKBACK = 1;
+export const ONE_WEEK_LOOKBACK = 5;
+export const ONE_MONTH_LOOKBACK = 20;
+
 const lookbackBy = (closes: Close[], n: number): Close | null =>
   closes.length > n ? closes[closes.length - 1 - n] : null;
 
@@ -73,8 +83,8 @@ export const computePeriodDrawdowns = (closes: Close[]): PeriodDrawdowns => {
         }
       : null;
   return {
-    oneDay: point(lookbackBy(closes, 1)),
-    oneWeek: point(lookbackBy(closes, 7)),
-    oneMonth: point(lookbackBy(closes, 21)),
+    oneDay: point(lookbackBy(closes, ONE_DAY_LOOKBACK)),
+    oneWeek: point(lookbackBy(closes, ONE_WEEK_LOOKBACK)),
+    oneMonth: point(lookbackBy(closes, ONE_MONTH_LOOKBACK)),
   };
 };

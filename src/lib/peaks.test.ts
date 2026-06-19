@@ -88,27 +88,37 @@ describe("computePeriodDrawdowns", () => {
     expect(r.oneMonth).toBeNull();
   });
 
-  it("8개 데이터 (1일 + 1주일 가능, 1개월 부족)", () => {
-    const closes = mkCloses([100, 99, 98, 97, 96, 95, 94, 50]);
+  it("6개 데이터 (1일 + 1주일=5거래일 가능, 1개월 부족)", () => {
+    // length=6: latest idx 5, 1주일(5) → idx 0
+    const closes = mkCloses([100, 99, 98, 97, 96, 50]);
     const r = computePeriodDrawdowns(closes);
-    expect(r.oneDay?.pct).toBeCloseTo(((50 - 94) / 94) * 100, 5);
-    expect(r.oneDay?.date).toBe("2026-01-07");
-    expect(r.oneDay?.price).toBe(94);
+    expect(r.oneDay?.pct).toBeCloseTo(((50 - 96) / 96) * 100, 5);
+    expect(r.oneDay?.date).toBe("2026-01-05");
+    expect(r.oneDay?.price).toBe(96);
     expect(r.oneWeek).toEqual({ pct: -50, date: "2026-01-01", price: 100 });
     expect(r.oneMonth).toBeNull();
   });
 
-  it("22개 데이터 (3 항목 모두 계산 가능)", () => {
-    const prices = Array.from({ length: 22 }, (_, i) => 100 + i);
+  it("21개 데이터 (3 항목 모두 계산 가능 — 1개월=20거래일)", () => {
+    const prices = Array.from({ length: 21 }, (_, i) => 100 + i);
+    // latest = 120 (idx 20), 1일전 = 119 (idx 19), 1주일전(5) = 115 (idx 15),
+    // 1개월전(20) = 100 (idx 0)
     const closes = mkCloses(prices);
     const r = computePeriodDrawdowns(closes);
-    expect(r.oneDay?.pct).toBeCloseTo(((121 - 120) / 120) * 100, 5);
-    expect(r.oneDay?.price).toBe(120);
-    expect(r.oneWeek?.pct).toBeCloseTo(((121 - 114) / 114) * 100, 5);
-    expect(r.oneWeek?.price).toBe(114);
-    expect(r.oneMonth?.pct).toBe(21);
+    expect(r.oneDay?.pct).toBeCloseTo(((120 - 119) / 119) * 100, 5);
+    expect(r.oneDay?.price).toBe(119);
+    expect(r.oneWeek?.pct).toBeCloseTo(((120 - 115) / 115) * 100, 5);
+    expect(r.oneWeek?.price).toBe(115);
+    expect(r.oneMonth?.pct).toBe(20); // (120-100)/100 = 20%
     expect(r.oneMonth?.price).toBe(100);
     expect(r.oneMonth?.date).toBe("2026-01-01");
+  });
+
+  it("20개 데이터 (1개월 lookback 미달 — null)", () => {
+    const prices = Array.from({ length: 20 }, (_, i) => 100 + i);
+    const r = computePeriodDrawdowns(mkCloses(prices));
+    expect(r.oneMonth).toBeNull();
+    expect(r.oneWeek).not.toBeNull();
   });
 
   it("상승 케이스 → 양수 pct", () => {

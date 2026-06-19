@@ -286,19 +286,21 @@ function HeroNumbers({
   };
   // 보조 수치 영역 펼침/접힘 — 기본 접힘. ticker 변경 시 페이지 재렌더로 자동 초기화.
   const [breakdownOpen, setBreakdownOpen] = useState(false);
-  // 표시할 항목 목록 — null인 것은 제외. 52주는 seed 기반이라 항상 존재.
+  // 항목 4개 항상 유지 — null이어도 "데이터 누적 중" placeholder로 표시
+  // (사용자가 항목이 사라진 게 아니라 곧 채워질 거란 걸 알 수 있게).
+  // 52주는 seed 기반이라 항상 존재.
   const visibleItems = [
-    data.breakdown.oneDay && {
+    {
       key: "oneDay" as const,
       label: dict.breakdown.oneDay,
       point: data.breakdown.oneDay,
     },
-    data.breakdown.oneWeek && {
+    {
       key: "oneWeek" as const,
       label: dict.breakdown.oneWeek,
       point: data.breakdown.oneWeek,
     },
-    data.breakdown.oneMonth && {
+    {
       key: "oneMonth" as const,
       label: dict.breakdown.oneMonth,
       point: data.breakdown.oneMonth,
@@ -308,7 +310,7 @@ function HeroNumbers({
       label: dict.breakdown.fiftyTwoWeek,
       point: fiftyTwoWeekPoint,
     },
-  ].filter((x): x is NonNullable<typeof x> => Boolean(x));
+  ];
   return (
     <div className="flex w-full max-w-full flex-col items-center gap-3 text-center">
       {/* SEO: pill을 <h1>로 마크업 — 종목 페이지마다 ticker가 페이지 주제 신호로
@@ -448,7 +450,17 @@ function PeriodItem({
   lang: Lang;
 }) {
   const [hover, setHover] = useState(false);
-  if (point === null) return null;
+  // 데이터 부족 시 — 항목 유지하되 비활성. 호버/탭/툴팁 모두 비활성.
+  if (point === null) {
+    return (
+      <div className="flex w-full cursor-default items-baseline justify-between rounded px-2 py-0.5 text-sm">
+        <span className="text-neutral-600">{label}</span>
+        <span className="text-[11px] text-neutral-600">
+          {dict.breakdownEmpty}
+        </span>
+      </div>
+    );
+  }
   const rounded = Number(point.pct.toFixed(1));
   const valueClass = rounded < 0 ? "text-red-400" : "text-neutral-500";
   const open = active || hover;

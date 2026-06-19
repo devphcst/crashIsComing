@@ -30,7 +30,7 @@ export function PeriodTooltip({ text }: { text: string }) {
       ref={ref}
       role="tooltip"
       style={{ transform: `translate(calc(-50% + ${dx}px), 0)` }}
-      className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 w-max max-w-[min(280px,calc(100vw-16px))] whitespace-normal break-keep rounded border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-xs font-normal leading-snug text-neutral-300 shadow-lg"
+      className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 w-[min(200px,calc(100vw-16px))] whitespace-normal break-keep rounded border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-xs font-normal leading-relaxed text-neutral-300 shadow-lg"
     >
       {text}
     </div>

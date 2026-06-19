@@ -20,7 +20,7 @@ const firstSunday = (y: number, month1to12: number): number => {
 
 /** 'YYYY-MM-DD' → 그 날짜의 16:00 ET이 EDT(DST)인지 EST인지. */
 export const isUSEasternDst = (yyyymmdd: string): boolean => {
-  const [y, m, d] = yyyymmdd.split("-").map(Number);
+  const [y, m, d] = yyyymmdd.split('-').map(Number);
   if (m < 3 || m > 11) return false;
   if (m > 3 && m < 11) return true;
   if (m === 3) return d >= firstSunday(y, 3) + 7; // 둘째 주 일요일
@@ -44,7 +44,7 @@ export type KstMoment = {
  * EST 기간(그 외): 16:00 EST = 다음 날 06:00 KST
  */
 export const usCloseInKst = (yyyymmdd: string): KstMoment => {
-  const [y, m, d] = yyyymmdd.split("-").map(Number);
+  const [y, m, d] = yyyymmdd.split('-').map(Number);
   const dst = isUSEasternDst(yyyymmdd);
   const closeUtcHour = dst ? 20 : 21; // 16 + (DST ? 4 : 5)
   const utcMs = Date.UTC(y, m - 1, d, closeUtcHour, 0, 0);

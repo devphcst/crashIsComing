@@ -284,6 +284,31 @@ function HeroNumbers({
     date: data.oneYear.date,
     price: data.oneYear.price,
   };
+  // 보조 수치 영역 펼침/접힘 — 기본 접힘. ticker 변경 시 페이지 재렌더로 자동 초기화.
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
+  // 표시할 항목 목록 — null인 것은 제외. 52주는 seed 기반이라 항상 존재.
+  const visibleItems = [
+    data.breakdown.oneDay && {
+      key: "oneDay" as const,
+      label: dict.breakdown.oneDay,
+      point: data.breakdown.oneDay,
+    },
+    data.breakdown.oneWeek && {
+      key: "oneWeek" as const,
+      label: dict.breakdown.oneWeek,
+      point: data.breakdown.oneWeek,
+    },
+    data.breakdown.oneMonth && {
+      key: "oneMonth" as const,
+      label: dict.breakdown.oneMonth,
+      point: data.breakdown.oneMonth,
+    },
+    {
+      key: "fiftyTwoWeek" as const,
+      label: dict.breakdown.fiftyTwoWeek,
+      point: fiftyTwoWeekPoint,
+    },
+  ].filter((x): x is NonNullable<typeof x> => Boolean(x));
   return (
     <div className="flex w-full max-w-full flex-col items-center gap-3 text-center">
       {/* SEO: pill을 <h1>로 마크업 — 종목 페이지마다 ticker가 페이지 주제 신호로
@@ -307,55 +332,72 @@ function HeroNumbers({
       >
         {formatPct(data.ath.drawdownPct, 1)}
       </span>
-      {/* 안내문 — 보조 수치 줄 위 한 줄. 단골 사용자에 시각 노이즈 안 되게 흐린 톤. */}
-      <p className="mt-3 text-xs text-neutral-600">{dict.breakdownHint}</p>
-      {/* 기간별 폭락 보조 줄 — 전날·1주일·1개월·52주를 가운데 정렬 한 줄로 (좁은 화면은 wrap).
-          데이터 부족 항목(null)은 통째 숨김 — 신규 종목 데이터 쌓이며 점진적 노출.
-          각 항목은 hover/탭 시 툴팁 노출(기준 날짜·가격·자연어 설명). */}
-      <div
-        ref={breakdownRowRef}
-        className="mt-1 flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5 text-sm"
-      >
-        <PeriodItem
-          period="oneDay"
-          label={dict.breakdown.oneDay}
-          point={data.breakdown.oneDay}
-          dict={dict}
-          lang={lang}
-          active={activePeriod === "oneDay"}
-          onToggle={() => toggle("oneDay")}
-        />
-        <PeriodItem
-          period="oneWeek"
-          label={dict.breakdown.oneWeek}
-          point={data.breakdown.oneWeek}
-          dict={dict}
-          lang={lang}
-          active={activePeriod === "oneWeek"}
-          onToggle={() => toggle("oneWeek")}
-          prependSep
-        />
-        <PeriodItem
-          period="oneMonth"
-          label={dict.breakdown.oneMonth}
-          point={data.breakdown.oneMonth}
-          dict={dict}
-          lang={lang}
-          active={activePeriod === "oneMonth"}
-          onToggle={() => toggle("oneMonth")}
-          prependSep
-        />
-        <PeriodItem
-          period="fiftyTwoWeek"
-          label={dict.breakdown.fiftyTwoWeek}
-          point={fiftyTwoWeekPoint}
-          dict={dict}
-          lang={lang}
-          active={activePeriod === "fiftyTwoWeek"}
-          onToggle={() => toggle("fiftyTwoWeek")}
-          prependSep
-        />
-      </div>
+      {/* 시점별 변화율 — 기본 접힘. pill 버튼으로 토글.
+          표시 항목 0개면(불가능 케이스) pill 자체 숨김.
+          펼침 애니메이션: grid-template-rows 0fr→1fr (200ms ease-out). */}
+      {visibleItems.length > 0 ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setBreakdownOpen((o) => !o)}
+            aria-expanded={breakdownOpen}
+            aria-controls="breakdown-panel"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-500 transition-colors hover:border-neutral-700 hover:text-neutral-400"
+          >
+            <span>
+              {breakdownOpen
+                ? dict.breakdownToggle.collapse
+                : dict.breakdownToggle.expand}
+            </span>
+            <svg
+              viewBox="0 0 12 12"
+              aria-hidden
+              className={`h-3 w-3 transition-transform duration-200 ${
+                breakdownOpen ? "rotate-180" : ""
+              }`}
+            >
+              <path
+                d="M3 4.5l3 3 3-3"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          <div
+            id="breakdown-panel"
+            className={`grid w-full transition-[grid-template-rows] duration-200 ease-out ${
+              breakdownOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+            }`}
+            aria-hidden={!breakdownOpen}
+          >
+            <div className="overflow-hidden">
+              <p className="mt-2 text-xs text-neutral-600">
+                {dict.breakdownHint}
+              </p>
+              <div
+                ref={breakdownRowRef}
+                className="mx-auto mt-2 flex w-full max-w-[200px] flex-col"
+              >
+                {visibleItems.map((item) => (
+                  <PeriodItem
+                    key={item.key}
+                    period={item.key}
+                    label={item.label}
+                    point={item.point}
+                    dict={dict}
+                    lang={lang}
+                    active={activePeriod === item.key}
+                    onToggle={() => toggle(item.key)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
       {/* 모바일·데스크톱 공통 인라인 방문자 텍스트 — 보조 수치 바로 아래 작게.
           오늘 + 누적 표시, today=0이면 i18n 함수가 자동으로 누적만 반환.
           parts 배열로 강조 영역(emphasis="value")은 밝은 톤, 라벨은 더 흐림.
@@ -381,19 +423,17 @@ function HeroNumbers({
 type BreakdownKey = "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek";
 
 /**
- * 기간별 폭락 단일 항목 — "전날 -1.2%" 형태.
+ * 기간별 폭락 단일 항목 — 세로 배치 한 줄. 라벨(좌) ↔ 값(우) flex justify-between.
  *   - point === null: UI 숨김 (신규 종목 데이터 부족)
- *   - pct < 0: 빨강(text-red-400, 기존 큰 숫자 text-red-500보다 약한 톤), "-1.2%"
- *   - pct > 0: 흰색, "+8.7%"
- *   - pct === 0: 회색, "0.0%"
- *   - prependSep=true이면 항목 앞에 "·" 구분자 (더 흐린 회색)
+ *   - pct < 0: 빨강(text-red-400) "-1.2%"
+ *   - pct > 0: 회색(text-neutral-500) "+8.7%"  — 음수와 다른 톤, 폭락 모니터 정체성
+ *   - pct === 0: 회색(text-neutral-500) "0.0%"
  *   - hover(데스크톱) 또는 active(탭) 시 툴팁 노출.
  */
 function PeriodItem({
   period,
   label,
   point,
-  prependSep,
   active,
   onToggle,
   dict,
@@ -402,7 +442,6 @@ function PeriodItem({
   period: BreakdownKey;
   label: string;
   point: PeriodPoint | null;
-  prependSep?: boolean;
   active: boolean;
   onToggle: () => void;
   dict: ReturnType<typeof getDict>;
@@ -411,12 +450,7 @@ function PeriodItem({
   const [hover, setHover] = useState(false);
   if (point === null) return null;
   const rounded = Number(point.pct.toFixed(1));
-  const valueClass =
-    rounded < 0
-      ? "text-red-400"
-      : rounded > 0
-        ? "text-neutral-100"
-        : "text-neutral-500";
+  const valueClass = rounded < 0 ? "text-red-400" : "text-neutral-500";
   const open = active || hover;
   const tooltipText = dict.breakdownTooltip({
     period,
@@ -425,30 +459,23 @@ function PeriodItem({
     pct: point.pct,
   });
   return (
-    <>
-      {prependSep ? (
-        <span className="text-neutral-700" aria-hidden>
-          ·
+    <span className="relative block">
+      <button
+        type="button"
+        onClick={onToggle}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        aria-expanded={active}
+        aria-label={tooltipText}
+        className="flex w-full items-baseline justify-between rounded px-2 py-0.5 text-sm transition-colors hover:bg-neutral-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-700"
+      >
+        <span className="text-neutral-500">{label}</span>
+        <span className={`font-mono ${valueClass}`}>
+          {formatSignedPct(point.pct, 1)}
         </span>
-      ) : null}
-      <span className="relative inline-flex items-baseline">
-        <button
-          type="button"
-          onClick={onToggle}
-          onMouseEnter={() => setHover(true)}
-          onMouseLeave={() => setHover(false)}
-          aria-expanded={active}
-          aria-label={tooltipText}
-          className="-mx-1 inline-flex items-baseline gap-1 rounded px-1 transition-colors hover:bg-neutral-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-700"
-        >
-          <span className="text-neutral-500">{label}</span>
-          <span className={`font-mono ${valueClass}`}>
-            {formatSignedPct(point.pct, 1)}
-          </span>
-        </button>
-        {open ? <PeriodTooltip text={tooltipText} /> : null}
-      </span>
-    </>
+      </button>
+      {open ? <PeriodTooltip text={tooltipText} /> : null}
+    </span>
   );
 }
 

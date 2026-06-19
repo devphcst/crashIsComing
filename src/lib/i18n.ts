@@ -46,6 +46,8 @@ export type Dict = {
   };
   /** 보조 수치 줄 위에 노출되는 한 줄 안내문 — 사용자 이해 도움. */
   breakdownHint: string;
+  /** 보조 수치 영역 펼침/접힘 토글 버튼 라벨. */
+  breakdownToggle: { expand: string; collapse: string };
   /** 보조 수치 항목 hover/탭 시 노출되는 툴팁 본문. */
   breakdownTooltip: (params: {
     period: 'oneDay' | 'oneWeek' | 'oneMonth' | 'fiftyTwoWeek';
@@ -202,6 +204,7 @@ const ko: Dict = {
     fiftyTwoWeek: '52주',
   },
   breakdownHint: '아래는 각 시점의 종가 대비 변화율입니다',
+  breakdownToggle: { expand: '시점별 변화율 보기', collapse: '접기' },
   breakdownTooltip: ({ period, dateLabel, priceLabel, pct }) => {
     const labels = {
       oneDay: '전날',
@@ -391,6 +394,7 @@ const en: Dict = {
     fiftyTwoWeek: '52w',
   },
   breakdownHint: 'Each value compares the current close to the close on that date',
+  breakdownToggle: { expand: 'Show period changes', collapse: 'Hide' },
   breakdownTooltip: ({ dateLabel, priceLabel, pct }) => {
     const abs = Math.abs(pct).toFixed(1);
     if (pct > 0.05) {

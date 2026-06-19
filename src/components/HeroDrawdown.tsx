@@ -253,6 +253,17 @@ function HeroNumbers({
     "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek" | null
   >(null);
   const breakdownRowRef = useRef<HTMLDivElement>(null);
+  // 호버 가능 디바이스 감지 — 마우스/트랙패드 = popover, 터치 = inline 확장.
+  // matchMedia 한 번 + change 리스너로 디바이스 모드 전환에도 반응.
+  const [isHoverCapable, setIsHoverCapable] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mql = window.matchMedia("(hover: hover)");
+    setIsHoverCapable(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsHoverCapable(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
   useEffect(() => {
     if (!activePeriod) return;
     const onDown = (e: MouseEvent | TouchEvent) => {
@@ -393,6 +404,7 @@ function HeroNumbers({
                     lang={lang}
                     active={activePeriod === item.key}
                     onToggle={() => toggle(item.key)}
+                    isHoverCapable={isHoverCapable}
                   />
                 ))}
               </div>
@@ -440,6 +452,7 @@ function PeriodItem({
   onToggle,
   dict,
   lang,
+  isHoverCapable,
 }: {
   period: BreakdownKey;
   label: string;
@@ -448,6 +461,7 @@ function PeriodItem({
   onToggle: () => void;
   dict: ReturnType<typeof getDict>;
   lang: Lang;
+  isHoverCapable: boolean;
 }) {
   const [hover, setHover] = useState(false);
   // 데이터 부족 시 — 항목 유지하되 비활성. 호버/탭/툴팁 모두 비활성.
@@ -463,31 +477,47 @@ function PeriodItem({
   }
   const rounded = Number(point.pct.toFixed(1));
   const valueClass = rounded < 0 ? "text-red-400" : "text-neutral-500";
-  const open = active || hover;
   const tooltipText = dict.breakdownTooltip({
     period,
     dateLabel: formatShortDate(point.date, lang),
     priceLabel: formatPrice(point.price),
     pct: point.pct,
   });
+  // 호버 가능: 데스크톱 popover(hover/active 어느 쪽이든 노출, 자동 위치 보정)
+  // 호버 불가: 모바일 inline 확장(active일 때 행 강조 + 아래 박스), popover 안 그림
+  const popoverOpen = isHoverCapable && (active || hover);
+  const inlineOpen = !isHoverCapable && active;
   return (
-    <span className="relative block">
-      <button
-        type="button"
-        onClick={onToggle}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        aria-expanded={active}
-        aria-label={tooltipText}
-        className="flex w-full items-baseline justify-between rounded px-2 py-0.5 text-sm transition-colors hover:bg-neutral-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-700"
-      >
-        <span className="text-neutral-500">{label}</span>
-        <span className={`font-mono ${valueClass}`}>
-          {formatSignedPct(point.pct, 1)}
-        </span>
-      </button>
-      {open ? <PeriodTooltip text={tooltipText} /> : null}
-    </span>
+    <div>
+      <span className="relative block">
+        <button
+          type="button"
+          onClick={onToggle}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          aria-expanded={active}
+          aria-label={tooltipText}
+          className={`flex w-full items-baseline justify-between rounded px-2 py-0.5 text-sm transition-colors hover:bg-neutral-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-700 ${
+            inlineOpen ? "bg-neutral-900/60" : ""
+          }`}
+        >
+          <span className="text-neutral-500">{label}</span>
+          <span className={`font-mono ${valueClass}`}>
+            {formatSignedPct(point.pct, 1)}
+          </span>
+        </button>
+        {popoverOpen ? <PeriodTooltip text={tooltipText} /> : null}
+      </span>
+      {inlineOpen ? (
+        <div
+          role="region"
+          aria-label={tooltipText}
+          className="mt-1 rounded-lg bg-neutral-900 px-2.5 py-2 text-[11px] leading-relaxed text-neutral-300"
+        >
+          {tooltipText}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
 import { formatPct, formatPrice, formatDate } from "@/lib/format";
+import { usCloseInKst } from "@/lib/market-time";
 import {
   levelFor,
   type DrawdownLevel,
@@ -184,7 +185,13 @@ export function HeroDrawdown({
                 />
                 <Facts data={data} dict={d} lang={lang} />
                 <LastUpdated
-                  asOfText={d.asOf(formatDate(data.current.date, lang))}
+                  asOfText={(() => {
+                    const kst = usCloseInKst(data.current.date);
+                    return d.asOf(
+                      formatDate(data.current.date, lang),
+                      d.closeKst(kst.month, kst.day, kst.hour),
+                    );
+                  })()}
                   scheduleText={d.updateSchedule}
                   staleWarningText={
                     data.staleDays !== null
@@ -336,9 +343,17 @@ function Facts({
   dict: ReturnType<typeof getDict>;
   lang: Lang;
 }) {
+  // 최근 종가 카드만 시간대 명시 — 미국 시장 날짜 + 한국 시간 마감 두 줄.
+  // ATH·52주는 시간 무관 정보라 기존 단일 날짜 그대로.
+  const currentKst = usCloseInKst(data.current.date);
   return (
     <dl className="grid w-full max-w-3xl grid-cols-1 gap-3 text-sm text-neutral-300 sm:grid-cols-3">
-      <Cell label={dict.current} value={formatPrice(data.current.price)} sub={formatDate(data.current.date, lang)} />
+      <Cell
+        label={dict.current}
+        value={formatPrice(data.current.price)}
+        sub={`${formatDate(data.current.date, lang)}${dict.closeUsSuffix}`}
+        sub2={dict.closeKst(currentKst.month, currentKst.day, currentKst.hour)}
+      />
       <Cell label={dict.ath} value={formatPrice(data.ath.price)} sub={formatDate(data.ath.date, lang)} />
       <Cell label={dict.oneYearHigh} value={formatPrice(data.oneYear.price)} sub={formatDate(data.oneYear.date, lang)} />
     </dl>
@@ -349,10 +364,12 @@ function Cell({
   label,
   value,
   sub,
+  sub2,
 }: {
   label: string;
   value: string;
   sub: string;
+  sub2?: string;
 }) {
   return (
     <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
@@ -361,6 +378,7 @@ function Cell({
       </dt>
       <dd className="mt-1 text-xl text-neutral-100">{value}</dd>
       <dd className="text-xs text-neutral-500">{sub}</dd>
+      {sub2 ? <dd className="text-xs text-neutral-500">{sub2}</dd> : null}
     </div>
   );
 }

@@ -8,8 +8,15 @@ export type Dict = {
   current: string;
   ath: string;
   oneYearHigh: string;
-  asOf: (date: string) => string;
+  asOf: (usDateFormatted: string, kstLine: string) => string;
   updateSchedule: string;
+  /** 가격 카드 첫 줄 끝에 붙는 시간대 표기 — '(미국 시간)' / ' (US time)'. */
+  closeUsSuffix: string;
+  /**
+   * 가격 카드 둘째 줄(및 푸터 asOf 내 괄호 안)에서 쓰는 한국 시간 마감 표기.
+   * 미국 시장 16:00 ET을 KST로 환산한 결과(월/일/시).
+   */
+  closeKst: (month: number, day: number, hour: number) => string;
   staleWarning: (days: number) => string;
   staleCritical: (date: string, hours: number) => string;
   notReady: string;
@@ -144,8 +151,11 @@ const ko: Dict = {
   current: '최근 종가',
   ath: '전고점',
   oneYearHigh: '52주 고점',
-  asOf: (date) => `${date} 종가 기준 (대한민국 시간 기준)`,
-  updateSchedule: '매일 오전 6시 미국주식시장 마감 후 업데이트 됩니다.',
+  asOf: (usDate, kstLine) => `${usDate} 미국 시장 종가 (${kstLine})`,
+  updateSchedule: '매일 미국 시장 마감 후 자동 업데이트됩니다.',
+  closeUsSuffix: ' (미국 시간)',
+  closeKst: (month, day, hour) =>
+    `한국 시간 ${month}월 ${day}일 ${String(hour).padStart(2, '0')}:00 마감`,
   staleWarning: (days) => `⚠ 데이터가 오래되었습니다 (${days}일 전 입력)`,
   staleCritical: (date, hours) =>
     `⚠ 데이터 갱신 실패 — 마지막 거래일(${date}) 종가가 ${hours}시간째 미반영`,
@@ -311,8 +321,16 @@ const en: Dict = {
   current: 'Latest close',
   ath: 'All-time high',
   oneYearHigh: '52-week high',
-  asOf: (date) => `As of ${date} close (KST)`,
-  updateSchedule: 'Updated daily at 6 AM KST, after the U.S. market closes.',
+  asOf: (usDate, kstLine) => `US market close on ${usDate} (${kstLine})`,
+  updateSchedule: 'Updates automatically after each U.S. market close.',
+  closeUsSuffix: ' (US time)',
+  closeKst: (month, day, hour) => {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return `Closed ${String(hour).padStart(2, '0')}:00 KST, ${months[month - 1]} ${day}`;
+  },
   staleWarning: (days) => `⚠ Data is stale (last input ${days} day(s) ago)`,
   staleCritical: (date, hours) =>
     `⚠ Auto-update failed — close for ${date} missing for ${hours}h`,

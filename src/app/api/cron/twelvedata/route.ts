@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { readSymbolList, writeClose } from "@/lib/kv";
 import { fetchLatestCloseFromTwelveData } from "@/lib/ingest/twelvedata-fetch";
 import { recordFailure, recordSuccess } from "@/lib/ingest/status";
@@ -65,12 +66,14 @@ export async function GET(req: Request) {
   const tickers = await readSymbolList();
   const results: SymbolResult[] = [];
   let anyFailed = false;
+  let anyWritten = false;
 
   for (const ticker of tickers) {
     try {
       const close = await fetchLatestCloseFromTwelveData(ticker);
       await writeClose(ticker, close);
       await recordSuccess(ticker, close);
+      anyWritten = true;
       results.push({ ticker, ok: true, written: close });
     } catch (err) {
       anyFailed = true;
@@ -80,6 +83,10 @@ export async function GET(req: Request) {
       results.push({ ticker, ok: false, error: message });
     }
   }
+
+  // KV에 신규 종가 1개라도 쓰였으면 페이지 캐시 즉시 무효화 — admin 액션과 동일 패턴.
+  // 누락 시 자동 cron 후 메인 페이지가 unstable_cache TTL(15분)간 옛 데이터 노출.
+  if (anyWritten) revalidateTag("symbols");
 
   return NextResponse.json(
     { ok: !anyFailed, results },

@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
-import { formatPct, formatPrice, formatDate, formatSignedPct } from "@/lib/format";
+import {
+  formatPct,
+  formatPrice,
+  formatDate,
+  formatShortDate,
+  formatSignedPct,
+} from "@/lib/format";
 import { usCloseInKst } from "@/lib/market-time";
 import type { PeriodPoint } from "@/lib/peaks";
 import { PeriodTooltip } from "./PeriodTooltip";
@@ -414,7 +420,7 @@ function PeriodItem({
   const open = active || hover;
   const tooltipText = dict.breakdownTooltip({
     period,
-    dateLabel: formatDate(point.date, lang),
+    dateLabel: formatShortDate(point.date, lang),
     priceLabel: formatPrice(point.price),
     pct: point.pct,
   });

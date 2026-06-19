@@ -34,3 +34,17 @@ export const formatDate = (iso: string, lang: "ko" | "en"): string => {
     timeZone: "UTC",
   });
 };
+
+/** 'YYYY-MM-DD' → 연도 생략한 짧은 표기. 툴팁 등 좁은 공간용. */
+export const formatShortDate = (iso: string, lang: "ko" | "en"): string => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  if (lang === "ko") {
+    return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`;
+  }
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+};

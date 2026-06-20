@@ -387,7 +387,7 @@ function HeroNumbers({
             aria-hidden={!breakdownOpen}
           >
             <div className="overflow-hidden">
-              <p className="mt-2 text-xs text-neutral-600">
+              <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-neutral-600">
                 {dict.breakdownHint}
               </p>
               <div

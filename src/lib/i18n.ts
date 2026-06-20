@@ -169,7 +169,7 @@ const ko: Dict = {
   oneYearHigh: '52주 고점',
   asOfUs: (usDate) => `${usDate} 미국 시장 종가`,
   asOfKst: (kstLine) => `(${kstLine})`,
-  updateSchedule: '매일 미국 시장 마감 후 자동 업데이트됩니다.',
+  updateSchedule: '거래일 기준 · 매일 미국 시장 마감 후 자동 업데이트됩니다.',
   closeUsSuffix: ' (미국 시간)',
   closeKst: (month, day, hour) =>
     `한국 시간 ${month}월 ${day}일 ${String(hour).padStart(2, '0')}:00 마감`,
@@ -200,28 +200,24 @@ const ko: Dict = {
     ];
   },
   breakdown: {
-    oneDay: '전날',
-    oneWeek: '1주일',
-    oneMonth: '1개월',
-    fiftyTwoWeek: '52주',
+    oneDay: '최근 1일',
+    oneWeek: '최근 1주',
+    oneMonth: '최근 1개월',
+    fiftyTwoWeek: '최근 1년',
   },
-  breakdownHint: '아래는 각 시점의 종가 대비 변화율입니다',
+  breakdownHint:
+    '아래는 각 시점의 종가 대비 변화율입니다\n거래일 기준이라 주말·휴장일에는 업데이트되지 않습니다',
   breakdownToggle: { expand: '시점별 변화율 보기', collapse: '접기' },
   breakdownEmpty: '데이터 누적 중',
-  breakdownTooltip: ({ period, dateLabel, priceLabel, pct }) => {
-    const labels = {
-      oneDay: '전날',
-      oneWeek: '1주일 전',
-      oneMonth: '1개월 전',
-      fiftyTwoWeek: '52주 전',
-    } as const;
+  breakdownTooltip: ({ dateLabel, priceLabel, pct }) => {
     const abs = Math.abs(pct).toFixed(1);
-    const verb =
-      pct > 0.05 ? '올랐어요' : pct < -0.05 ? '내렸어요' : '변동 없어요';
-    if (verb === '변동 없어요') {
-      return `${labels[period]}(${dateLabel}) 종가 ${priceLabel} 대비 변동 없어요`;
+    if (pct > 0.05) {
+      return `${dateLabel} 종가 ${priceLabel} 대비 ${abs}% 올랐어요`;
     }
-    return `${labels[period]}(${dateLabel}) 종가 ${priceLabel} 대비 ${abs}% ${verb}`;
+    if (pct < -0.05) {
+      return `${dateLabel} 종가 ${priceLabel} 대비 ${abs}% 내렸어요`;
+    }
+    return `${dateLabel} 종가 ${priceLabel} 대비 변동 없어요`;
   },
   menu: {
     title: '메뉴',
@@ -358,7 +354,7 @@ const en: Dict = {
   oneYearHigh: '52-week high',
   asOfUs: (usDate) => `US market close on ${usDate}`,
   asOfKst: (kstLine) => `(${kstLine})`,
-  updateSchedule: 'Updates automatically after each U.S. market close.',
+  updateSchedule: 'Trading days only · Updates automatically after each U.S. market close.',
   closeUsSuffix: ' (US time)',
   closeKst: (month, day, hour) => {
     const months = [
@@ -391,23 +387,24 @@ const en: Dict = {
     ];
   },
   breakdown: {
-    oneDay: '1d',
-    oneWeek: '1w',
-    oneMonth: '1m',
-    fiftyTwoWeek: '52w',
+    oneDay: 'Past day',
+    oneWeek: 'Past week',
+    oneMonth: 'Past month',
+    fiftyTwoWeek: 'Past year',
   },
-  breakdownHint: 'Each value compares the current close to the close on that date',
+  breakdownHint:
+    'Each value compares the current close to the close on that date\nValues only update on trading days — no changes on weekends or U.S. market holidays',
   breakdownToggle: { expand: 'Show period changes', collapse: 'Hide' },
   breakdownEmpty: 'Building up data',
   breakdownTooltip: ({ dateLabel, priceLabel, pct }) => {
     const abs = Math.abs(pct).toFixed(1);
     if (pct > 0.05) {
-      return `Compared to close on ${dateLabel} (${priceLabel}), up ${abs}%`;
+      return `${dateLabel} close ${priceLabel} — up ${abs}%`;
     }
     if (pct < -0.05) {
-      return `Compared to close on ${dateLabel} (${priceLabel}), down ${abs}%`;
+      return `${dateLabel} close ${priceLabel} — down ${abs}%`;
     }
-    return `Compared to close on ${dateLabel} (${priceLabel}), unchanged`;
+    return `${dateLabel} close ${priceLabel} — unchanged`;
   },
   menu: {
     title: 'Menu',

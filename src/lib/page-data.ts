@@ -7,6 +7,7 @@ import {
   computeOneYearHigh,
   computePeriodDrawdowns,
 } from "./peaks";
+import { computeMarketStatus } from "./market-status";
 import {
   readMeta,
   readSettings,
@@ -78,6 +79,7 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
         drawdownPct: calcDrawdown(latest.price, oneYear.price),
       },
       breakdown: periodDrawdowns,
+      marketStatus: computeMarketStatus(latest.date),
       thresholds: {
         orange: meta.orangeThreshold,
         red: meta.redThreshold,

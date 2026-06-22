@@ -12,6 +12,7 @@ import {
 } from "@/lib/format";
 import { usCloseInKst } from "@/lib/market-time";
 import type { PeriodPoint } from "@/lib/peaks";
+import type { MarketStatus } from "@/lib/market-status";
 import {
   levelFor,
   type DrawdownLevel,
@@ -44,6 +45,7 @@ export type HeroData =
         oneWeek: PeriodPoint | null;
         oneMonth: PeriodPoint | null;
       };
+      marketStatus: MarketStatus;
       thresholds: LevelThresholds;
     }
   | { ready: false };
@@ -495,20 +497,102 @@ function Facts({
   dict: ReturnType<typeof getDict>;
   lang: Lang;
 }) {
-  // 최근 종가 카드만 시간대 명시 — 미국 시장 날짜 + 한국 시간 마감 두 줄.
-  // ATH·52주는 시간 무관 정보라 기존 단일 날짜 그대로.
-  const currentKst = usCloseInKst(data.current.date);
+  // 최근 종가 카드: 큰 가격 + KST 날짜·요일·새벽 + US 날짜·요일·종가 + 시장 상태 박스.
+  // ATH·52주는 기존 표기에 (요일) 한 단어만 추가.
+  const usDate = data.current.date;
+  const kstISO = kstMomentToISO(usCloseInKst(usDate));
+  const nextUsDate = data.marketStatus.nextTradingDay;
+  const nextKstISO = kstMomentToISO(usCloseInKst(nextUsDate));
+
+  const closed = data.marketStatus.kind !== "normal";
+  const statusLabel =
+    data.marketStatus.kind === "normal"
+      ? dict.marketStatusLabel.normal
+      : data.marketStatus.kind === "weekend"
+        ? dict.marketStatusLabel.weekend
+        : dict.marketStatusLabel.holiday(data.marketStatus.holidayName);
+  const statusParts = dict.marketStatusNextLine({
+    kstDateLabel: formatShortDate(nextKstISO, lang),
+    weekday: dict.weekdayShort(nextKstISO),
+    closed,
+  });
+
   return (
-    <dl className="grid w-full max-w-3xl grid-cols-1 gap-3 text-sm text-neutral-300 sm:grid-cols-3">
-      <Cell
+    <dl className="grid w-full max-w-3xl grid-cols-1 items-start gap-3 text-sm text-neutral-300 sm:grid-cols-3">
+      <CurrentCloseCell
         label={dict.current}
-        value={formatPrice(data.current.price)}
-        sub={`${formatDate(data.current.date, lang)}${dict.closeUsSuffix}`}
-        sub2={dict.closeKst(currentKst.month, currentKst.day, currentKst.hour)}
+        price={formatPrice(data.current.price)}
+        kstLine={dict.currentCloseKst(
+          formatShortDate(kstISO, lang),
+          dict.weekdayShort(kstISO),
+        )}
+        usLine={dict.currentCloseUs(
+          formatShortDate(usDate, lang),
+          dict.weekdayShort(usDate),
+        )}
+        statusLabel={statusLabel}
+        statusParts={statusParts}
       />
-      <Cell label={dict.ath} value={formatPrice(data.ath.price)} sub={formatDate(data.ath.date, lang)} />
-      <Cell label={dict.oneYearHigh} value={formatPrice(data.oneYear.price)} sub={formatDate(data.oneYear.date, lang)} />
+      <Cell
+        label={dict.ath}
+        value={formatPrice(data.ath.price)}
+        sub={dict.dateWithWeekday(
+          formatDate(data.ath.date, lang),
+          dict.weekdayShort(data.ath.date),
+        )}
+      />
+      <Cell
+        label={dict.oneYearHigh}
+        value={formatPrice(data.oneYear.price)}
+        sub={dict.dateWithWeekday(
+          formatDate(data.oneYear.date, lang),
+          dict.weekdayShort(data.oneYear.date),
+        )}
+      />
     </dl>
+  );
+}
+
+const kstMomentToISO = (m: { year: number; month: number; day: number }): string =>
+  `${m.year}-${String(m.month).padStart(2, "0")}-${String(m.day).padStart(2, "0")}`;
+
+function CurrentCloseCell({
+  label,
+  price,
+  kstLine,
+  usLine,
+  statusLabel,
+  statusParts,
+}: {
+  label: string;
+  price: string;
+  kstLine: string;
+  usLine: string;
+  statusLabel: string;
+  statusParts: ReadonlyArray<{ text: string; emphasis?: "value" }>;
+}) {
+  return (
+    <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
+      <dt className="text-xs uppercase tracking-wide text-neutral-500">
+        {label}
+      </dt>
+      <dd className="mt-1 text-2xl text-neutral-100">{price}</dd>
+      <dd className="mt-2 text-sm text-neutral-100">{kstLine}</dd>
+      <dd className="text-[11px] text-neutral-600">{usLine}</dd>
+      <dd className="mt-3 rounded-lg bg-neutral-900 px-3 py-2.5">
+        <div className="text-[11px] text-neutral-400">{statusLabel}</div>
+        <div className="mt-0.5 text-[11px] text-neutral-500">
+          {statusParts.map((p, i) => (
+            <span
+              key={i}
+              className={p.emphasis === "value" ? "text-white" : ""}
+            >
+              {p.text}
+            </span>
+          ))}
+        </div>
+      </dd>
+    </div>
   );
 }
 
@@ -516,12 +600,10 @@ function Cell({
   label,
   value,
   sub,
-  sub2,
 }: {
   label: string;
   value: string;
   sub: string;
-  sub2?: string;
 }) {
   return (
     <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
@@ -530,7 +612,6 @@ function Cell({
       </dt>
       <dd className="mt-1 text-xl text-neutral-100">{value}</dd>
       <dd className="text-xs text-neutral-500">{sub}</dd>
-      {sub2 ? <dd className="text-xs text-neutral-500">{sub2}</dd> : null}
     </div>
   );
 }

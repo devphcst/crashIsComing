@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { isUSTradingDay, lastTradingDayBefore } from "./nyse-calendar";
+import {
+  getHolidayName,
+  isUSTradingDay,
+  lastTradingDayBefore,
+  nextTradingDayAfter,
+} from "./nyse-calendar";
 
 describe("isUSTradingDay", () => {
   it("returns false for known 2026 NYSE holidays", () => {
@@ -55,5 +60,38 @@ describe("lastTradingDayBefore", () => {
     // 2026-12-25 (Fri Christmas) closed. 2026-12-26 Sat, 27 Sun. Mon 28 morning → 24 Thu.
     const now = new Date("2026-12-28T08:00:00Z");
     expect(lastTradingDayBefore(now)).toBe("2026-12-24");
+  });
+});
+
+describe("nextTradingDayAfter", () => {
+  it("returns next weekday for ordinary trading day", () => {
+    expect(nextTradingDayAfter("2026-05-19")).toBe("2026-05-20"); // Tue → Wed
+  });
+
+  it("skips weekend — Friday returns Monday", () => {
+    expect(nextTradingDayAfter("2026-05-22")).toBe("2026-05-26"); // Fri → next Mon (Memorial Day 5/25 is Mon)
+  });
+
+  it("skips Memorial Day holiday — Fri 2026-05-22 → Tue 2026-05-26", () => {
+    // 5/22 Fri → 5/23 Sat → 5/24 Sun → 5/25 Mon (Memorial Day) → 5/26 Tue
+    expect(nextTradingDayAfter("2026-05-22")).toBe("2026-05-26");
+  });
+
+  it("skips Juneteenth — Thu 2026-06-18 → Mon 2026-06-22", () => {
+    // 6/18 Thu → 6/19 Fri Juneteenth → 6/20 Sat → 6/21 Sun → 6/22 Mon
+    expect(nextTradingDayAfter("2026-06-18")).toBe("2026-06-22");
+  });
+});
+
+describe("getHolidayName", () => {
+  it("returns name for Juneteenth", () => {
+    expect(getHolidayName("2026-06-19")).toBe("Juneteenth");
+  });
+  it("returns name for Thanksgiving", () => {
+    expect(getHolidayName("2026-11-26")).toBe("Thanksgiving Day");
+  });
+  it("returns null for non-holiday", () => {
+    expect(getHolidayName("2026-05-19")).toBeNull();
+    expect(getHolidayName("2026-05-16")).toBeNull(); // Sat
   });
 });

@@ -20,8 +20,6 @@ export type Dict = {
    * 미국 시장 16:00 ET을 KST로 환산한 결과(월/일/시).
    */
   closeKst: (month: number, day: number, hour: number) => string;
-  staleWarning: (days: number) => string;
-  staleCritical: (date: string, hours: number) => string;
   notReady: string;
   notReadyHint: string;
   disclaimer: string;
@@ -173,9 +171,6 @@ const ko: Dict = {
   closeUsSuffix: ' (미국 시간)',
   closeKst: (month, day, hour) =>
     `한국 시간 ${month}월 ${day}일 ${String(hour).padStart(2, '0')}:00 마감`,
-  staleWarning: (days) => `⚠ 데이터가 오래되었습니다 (${days}일 전 입력)`,
-  staleCritical: (date, hours) =>
-    `⚠ 데이터 갱신 실패 — 마지막 거래일(${date}) 종가가 ${hours}시간째 미반영`,
   notReady: '데이터를 준비 중입니다',
   notReadyHint:
     '관리자가 초기 ATH와 52주 고점 시드를 입력하면 화면에 수치가 표시됩니다.',
@@ -363,9 +358,6 @@ const en: Dict = {
     ];
     return `Closed ${String(hour).padStart(2, '0')}:00 KST, ${months[month - 1]} ${day}`;
   },
-  staleWarning: (days) => `⚠ Data is stale (last input ${days} day(s) ago)`,
-  staleCritical: (date, hours) =>
-    `⚠ Auto-update failed — close for ${date} missing for ${hours}h`,
   notReady: 'Data not ready yet',
   notReadyHint:
     'Once the admin seeds the initial ATH and 52-week high, numbers will appear here.',

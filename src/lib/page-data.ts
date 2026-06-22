@@ -7,7 +7,6 @@ import {
   computeOneYearHigh,
   computePeriodDrawdowns,
 } from "./peaks";
-import { computeStaleness } from "./staleness";
 import {
   readMeta,
   readSettings,
@@ -65,16 +64,6 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
     // 기간별 폭락(전기 대비) — 데이터 부족 항목은 null로 들어가 UI에서 숨김 처리.
     const periodDrawdowns = computePeriodDrawdowns(closes);
 
-    const stale = computeStaleness(latest.date);
-    const staleDays = stale.kind === "soft" ? stale.daysSinceInput : null;
-    const staleCritical =
-      stale.kind === "critical"
-        ? {
-            expectedTradingDate: stale.expectedTradingDate,
-            hoursSince: stale.hoursSince,
-          }
-        : null;
-
     return {
       ready: true,
       current: latest,
@@ -89,8 +78,6 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
         drawdownPct: calcDrawdown(latest.price, oneYear.price),
       },
       breakdown: periodDrawdowns,
-      staleDays,
-      staleCritical,
       thresholds: {
         orange: meta.orangeThreshold,
         red: meta.redThreshold,

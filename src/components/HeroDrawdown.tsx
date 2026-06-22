@@ -23,7 +23,6 @@ import { Disclaimer } from "./Disclaimer";
 import { AboutSection } from "./AboutSection";
 import { AllInWarningSection } from "./AllInWarningSection";
 import { ProductAdSidebar, ProductAdBanner } from "./ProductAd";
-import { StaleCriticalBanner } from "./StaleCriticalBanner";
 import { MainSymbolTabs } from "./MainSymbolTabs";
 import { MobileMenu } from "./MobileMenu";
 import type { SymbolMeta } from "@/lib/symbols";
@@ -45,11 +44,9 @@ export type HeroData =
         oneWeek: PeriodPoint | null;
         oneMonth: PeriodPoint | null;
       };
-      staleDays: number | null; // null = fresh (soft warning when not null)
-      staleCritical: { expectedTradingDate: string; hoursSince: number } | null;
       thresholds: LevelThresholds;
     }
-  | { ready: false; staleCritical?: null };
+  | { ready: false };
 
 export type VisitorInfo = {
   show: boolean;
@@ -123,20 +120,11 @@ export function HeroDrawdown({
 
   const d = getDict(lang);
 
-  const criticalStale = data.ready ? data.staleCritical : null;
   const currentMeta = tabs.find((m) => m.ticker === current);
   const currentDisplayName = currentMeta?.displayName ?? current.toUpperCase();
 
   return (
     <main className="flex flex-col">
-      {criticalStale ? (
-        <StaleCriticalBanner
-          message={d.staleCritical(
-            criticalStale.expectedTradingDate,
-            criticalStale.hoursSince,
-          )}
-        />
-      ) : null}
       {/* 모바일에서만 sticky: 헤더(브랜드 + 햄버거)만 상단 고정.
           종목 탭은 일반 흐름으로 분리 → 스크롤 시 함께 사라짐.
           데스크톱은 일반 흐름 그대로(lg:relative). */}
@@ -200,11 +188,6 @@ export function HeroDrawdown({
                     );
                   })()}
                   scheduleText={d.updateSchedule}
-                  staleWarningText={
-                    data.staleDays !== null
-                      ? d.staleWarning(data.staleDays)
-                      : null
-                  }
                 />
               </>
             ) : (

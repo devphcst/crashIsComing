@@ -39,7 +39,11 @@ export type Dict = {
     normal: string;
     weekend: (dateRange: string) => string;
     holiday: (date: string, weekday: string, englishName: string) => string;
-    holidayWithWeekend: (date: string, weekday: string, englishName: string) => string;
+    holidayWithWeekend: (
+      date: string,
+      weekday: string,
+      englishName: string,
+    ) => string;
   };
   /**
    * 시장 상태 띠 우측 다음 업데이트 시각 — parts 배열.
@@ -225,7 +229,7 @@ const ko: Dict = {
   marketNextUpdate: (kstDateLabel, weekday) => [
     { text: '한국 ' },
     { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
-    { text: ' 새벽' },
+    { text: ' 오전 7시 업데이트' },
   ],
   dateRangeShort: (startISO, endISO) => {
     const s = new Date(`${startISO}T00:00:00Z`);
@@ -415,12 +419,23 @@ const en: Dict = {
   oneYearHigh: '52-week high',
   asOfUs: (usDate) => `US market close on ${usDate}`,
   asOfKst: (kstLine) => `(${kstLine})`,
-  updateSchedule: 'Trading days only · Updates automatically after each U.S. market close.',
+  updateSchedule:
+    'Trading days only · Updates automatically after each U.S. market close.',
   closeUsSuffix: ' (US time)',
   closeKst: (month, day, hour) => {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return `Closed ${String(hour).padStart(2, '0')}:00 KST, ${months[month - 1]} ${day}`;
   },
@@ -449,8 +464,18 @@ const en: Dict = {
   ],
   dateRangeShort: (startISO, endISO) => {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     const s = new Date(`${startISO}T00:00:00Z`);
     const e = new Date(`${endISO}T00:00:00Z`);

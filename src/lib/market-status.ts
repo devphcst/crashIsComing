@@ -1,19 +1,30 @@
 import { getHolidayName, nextTradingDayAfter } from "./nyse-calendar";
 
 /**
- * 가격 카드의 "다음 업데이트" 박스 분기.
- * latestCloseDate(가장 최근 종가의 거래일)와 nextTradingDayAfter 사이의 gap을 검사:
- *   - gap = 0 거래일 직후 다음 영업일 = 평일 정상 (normal)
- *   - gap에 공휴일 있음                  = 공휴일 휴장 (holiday, 첫 공휴일 이름)
- *   - gap이 토/일만                       = 주말 휴장 (weekend)
+ * 가격 카드 위 "다음 업데이트" 띠의 분기.
+ * latestCloseDate(가장 최근 종가의 거래일)와 nextTradingDayAfter 사이의 gap을 분석:
+ *   - gap = 0 거래일 직후 다음 영업일      = normal
+ *   - gap에 공휴일 있음                    = holiday (첫 공휴일 + 주말 동반 여부)
+ *   - gap이 토/일만                         = weekend (주말 범위 시작·끝 날짜)
  *
- * 이 판정은 "가장 최근 종가가 어디서 왔고, 다음 종가가 언제 들어올지"라는 데이터 흐름만 본다.
- * 현재 시각(now)에 의존하지 않으므로 unstable_cache(15분 TTL)에 안전하다.
+ * "오늘 한국 시간" 같은 now 인자는 받지 않는다 — 최근 종가 데이터 흐름만으로 분기 가능.
+ * 이로써 unstable_cache(15분 TTL) 환경에서도 안전.
  */
 export type MarketStatus =
   | { kind: "normal"; nextTradingDay: string }
-  | { kind: "weekend"; nextTradingDay: string }
-  | { kind: "holiday"; nextTradingDay: string; holidayName: string };
+  | {
+      kind: "weekend";
+      nextTradingDay: string;
+      weekendStart: string;
+      weekendEnd: string;
+    }
+  | {
+      kind: "holiday";
+      nextTradingDay: string;
+      holidayDate: string;
+      holidayName: string;
+      hasWeekend: boolean;
+    };
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -22,6 +33,12 @@ const toISO = (d: Date): string => {
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+};
+
+const isWeekendISO = (iso: string): boolean => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  const dow = d.getUTCDay();
+  return dow === 0 || dow === 6;
 };
 
 /** [from+1, to-1] 범위 ISO 날짜 배열. 양 끝 exclusive. */
@@ -46,10 +63,32 @@ export const computeMarketStatus = (latestCloseDate: string): MarketStatus => {
     return { kind: "normal", nextTradingDay: next };
   }
 
+  let firstHoliday: { date: string; name: string } | null = null;
+  let hasWeekend = false;
   for (const d of gap) {
-    const name = getHolidayName(d);
-    if (name) return { kind: "holiday", nextTradingDay: next, holidayName: name };
+    if (!firstHoliday) {
+      const name = getHolidayName(d);
+      if (name) firstHoliday = { date: d, name };
+    }
+    if (isWeekendISO(d)) hasWeekend = true;
   }
 
-  return { kind: "weekend", nextTradingDay: next };
+  if (firstHoliday) {
+    return {
+      kind: "holiday",
+      nextTradingDay: next,
+      holidayDate: firstHoliday.date,
+      holidayName: firstHoliday.name,
+      hasWeekend,
+    };
+  }
+
+  // 공휴일 없음 — gap은 모두 주말 (Sat/Sun)
+  const weekendDays = gap.filter(isWeekendISO);
+  return {
+    kind: "weekend",
+    nextTradingDay: next,
+    weekendStart: weekendDays[0],
+    weekendEnd: weekendDays[weekendDays.length - 1],
+  };
 };

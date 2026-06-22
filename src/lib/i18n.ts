@@ -28,22 +28,33 @@ export type Dict = {
   currentCloseUs: (usDateLabel: string, weekday: string) => string;
   /** 가격 카드 날짜 + 요일 표기 — ATH/52주 카드용 "2026년 4월 23일 (목)". */
   dateWithWeekday: (dateLabel: string, weekday: string) => string;
-  /** 시장 상태 박스 상단 라벨 분기. */
+  /**
+   * 시장 상태 띠 좌측 라벨. 분기:
+   *   - normal: 평일 정상 ("다음 업데이트")
+   *   - weekend: 주말만 ("6월 21일~22일 주말 휴장") — dateRange는 dateRangeShort 결과
+   *   - holiday: 공휴일만 ("6월 19일 (금) Juneteenth 휴장")
+   *   - holidayWithWeekend: 공휴일 + 주말 ("6월 19일 (금) Juneteenth 휴장 + 주말")
+   */
   marketStatusLabel: {
     normal: string;
-    weekend: string;
-    holiday: (englishHolidayName: string) => string;
+    weekend: (dateRange: string) => string;
+    holiday: (date: string, weekday: string, englishName: string) => string;
+    holidayWithWeekend: (date: string, weekday: string, englishName: string) => string;
   };
   /**
-   * 시장 상태 박스 하단 시각 — parts 배열.
-   * `closed` true면 "다음 업데이트 " 접두사가 추가됨.
-   * value emphasis는 날짜+요일만 (text-white 강조 대상).
+   * 시장 상태 띠 우측 다음 업데이트 시각 — parts 배열.
+   * 날짜+요일 부분만 value emphasis (text-white 강조 대상).
    */
-  marketStatusNextLine: (params: {
-    kstDateLabel: string;
-    weekday: string;
-    closed: boolean;
-  }) => Array<{ text: string; emphasis?: 'value' }>;
+  marketNextUpdate: (
+    kstDateLabel: string,
+    weekday: string,
+  ) => Array<{ text: string; emphasis?: 'value' }>;
+  /**
+   * 두 ISO 날짜의 짧은 범위 표기.
+   *   - 같은 달: '6월 21일~22일' / 'Jun 21–22'
+   *   - 다른 달: '5월 31일~6월 1일' / 'May 31–Jun 1'
+   */
+  dateRangeShort: (startISO: string, endISO: string) => string;
   notReady: string;
   notReadyHint: string;
   disclaimer: string;
@@ -206,21 +217,26 @@ const ko: Dict = {
   dateWithWeekday: (dateLabel, weekday) => `${dateLabel} (${weekday})`,
   marketStatusLabel: {
     normal: '다음 업데이트',
-    weekend: '주말 휴장 중',
-    holiday: (name) => `미국 공휴일 휴장 (${name})`,
+    weekend: (dateRange) => `${dateRange} 주말 휴장`,
+    holiday: (date, weekday, name) => `${date} (${weekday}) ${name} 휴장`,
+    holidayWithWeekend: (date, weekday, name) =>
+      `${date} (${weekday}) ${name} 휴장 + 주말`,
   },
-  marketStatusNextLine: ({ kstDateLabel, weekday, closed }) =>
-    closed
-      ? [
-          { text: '다음 업데이트 한국 ' },
-          { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
-          { text: ' 새벽' },
-        ]
-      : [
-          { text: '한국 ' },
-          { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
-          { text: ' 새벽' },
-        ],
+  marketNextUpdate: (kstDateLabel, weekday) => [
+    { text: '한국 ' },
+    { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
+    { text: ' 새벽' },
+  ],
+  dateRangeShort: (startISO, endISO) => {
+    const s = new Date(`${startISO}T00:00:00Z`);
+    const e = new Date(`${endISO}T00:00:00Z`);
+    const sm = s.getUTCMonth() + 1;
+    const sd = s.getUTCDate();
+    const em = e.getUTCMonth() + 1;
+    const ed = e.getUTCDate();
+    if (sm === em) return `${sm}월 ${sd}일~${ed}일`;
+    return `${sm}월 ${sd}일~${em}월 ${ed}일`;
+  },
   notReady: '데이터를 준비 중입니다',
   notReadyHint:
     '관리자가 초기 ATH와 52주 고점 시드를 입력하면 화면에 수치가 표시됩니다.',
@@ -420,21 +436,31 @@ const en: Dict = {
   dateWithWeekday: (dateLabel, weekday) => `${dateLabel} (${weekday})`,
   marketStatusLabel: {
     normal: 'Next update',
-    weekend: 'Weekend closed',
-    holiday: (name) => `US holiday closed (${name})`,
+    weekend: (dateRange) => `Weekend closed (${dateRange})`,
+    holiday: (date, weekday, name) =>
+      `US holiday: ${name} (${date}, ${weekday})`,
+    holidayWithWeekend: (date, weekday, name) =>
+      `${name} (${date}, ${weekday}) + weekend closure`,
   },
-  marketStatusNextLine: ({ kstDateLabel, weekday, closed }) =>
-    closed
-      ? [
-          { text: 'Next update KST ' },
-          { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
-          { text: ' dawn' },
-        ]
-      : [
-          { text: 'KST ' },
-          { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
-          { text: ' dawn' },
-        ],
+  marketNextUpdate: (kstDateLabel, weekday) => [
+    { text: 'KST ' },
+    { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
+    { text: ' dawn' },
+  ],
+  dateRangeShort: (startISO, endISO) => {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    const s = new Date(`${startISO}T00:00:00Z`);
+    const e = new Date(`${endISO}T00:00:00Z`);
+    const sm = months[s.getUTCMonth()];
+    const sd = s.getUTCDate();
+    const em = months[e.getUTCMonth()];
+    const ed = e.getUTCDate();
+    if (sm === em) return `${sm} ${sd}–${ed}`;
+    return `${sm} ${sd}–${em} ${ed}`;
+  },
   notReady: 'Data not ready yet',
   notReadyHint:
     'Once the admin seeds the initial ATH and 52-week high, numbers will appear here.',

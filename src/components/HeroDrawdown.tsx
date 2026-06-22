@@ -497,79 +497,129 @@ function Facts({
   dict: ReturnType<typeof getDict>;
   lang: Lang;
 }) {
-  // 최근 종가 카드: 큰 가격 + KST 날짜·요일·새벽 + US 날짜·요일·종가 + 시장 상태 박스.
+  // 시장 상태 띠는 카드 셋 외부 (위) — 카드 세 개를 동일 높이로 정렬하기 위함.
+  // 최근 종가 카드: 큰 가격 + KST 날짜·요일·새벽 + US 날짜·요일·종가.
   // ATH·52주는 기존 표기에 (요일) 한 단어만 추가.
   const usDate = data.current.date;
   const kstISO = kstMomentToISO(usCloseInKst(usDate));
-  const nextUsDate = data.marketStatus.nextTradingDay;
-  const nextKstISO = kstMomentToISO(usCloseInKst(nextUsDate));
-
-  const closed = data.marketStatus.kind !== "normal";
-  const statusLabel =
-    data.marketStatus.kind === "normal"
-      ? dict.marketStatusLabel.normal
-      : data.marketStatus.kind === "weekend"
-        ? dict.marketStatusLabel.weekend
-        : dict.marketStatusLabel.holiday(data.marketStatus.holidayName);
-  const statusParts = dict.marketStatusNextLine({
-    kstDateLabel: formatShortDate(nextKstISO, lang),
-    weekday: dict.weekdayShort(nextKstISO),
-    closed,
-  });
 
   return (
-    <dl className="grid w-full max-w-3xl grid-cols-1 items-start gap-3 text-sm text-neutral-300 sm:grid-cols-3">
-      <CurrentCloseCell
-        label={dict.current}
-        price={formatPrice(data.current.price)}
-        kstLine={dict.currentCloseKst(
-          formatShortDate(kstISO, lang),
-          dict.weekdayShort(kstISO),
-        )}
-        usLine={dict.currentCloseUs(
-          formatShortDate(usDate, lang),
-          dict.weekdayShort(usDate),
-        )}
-        statusLabel={statusLabel}
-        statusParts={statusParts}
-      />
-      <Cell
-        label={dict.ath}
-        value={formatPrice(data.ath.price)}
-        sub={dict.dateWithWeekday(
-          formatDate(data.ath.date, lang),
-          dict.weekdayShort(data.ath.date),
-        )}
-      />
-      <Cell
-        label={dict.oneYearHigh}
-        value={formatPrice(data.oneYear.price)}
-        sub={dict.dateWithWeekday(
-          formatDate(data.oneYear.date, lang),
-          dict.weekdayShort(data.oneYear.date),
-        )}
-      />
-    </dl>
+    <div className="flex w-full max-w-3xl flex-col gap-3">
+      <MarketStatusBanner data={data} dict={dict} lang={lang} />
+      <dl className="grid grid-cols-1 gap-3 text-sm text-neutral-300 sm:grid-cols-3">
+        <CurrentCloseCell
+          label={dict.current}
+          price={formatPrice(data.current.price)}
+          kstLine={dict.currentCloseKst(
+            formatShortDate(kstISO, lang),
+            dict.weekdayShort(kstISO),
+          )}
+          usLine={dict.currentCloseUs(
+            formatShortDate(usDate, lang),
+            dict.weekdayShort(usDate),
+          )}
+        />
+        <Cell
+          label={dict.ath}
+          value={formatPrice(data.ath.price)}
+          sub={dict.dateWithWeekday(
+            formatDate(data.ath.date, lang),
+            dict.weekdayShort(data.ath.date),
+          )}
+        />
+        <Cell
+          label={dict.oneYearHigh}
+          value={formatPrice(data.oneYear.price)}
+          sub={dict.dateWithWeekday(
+            formatDate(data.oneYear.date, lang),
+            dict.weekdayShort(data.oneYear.date),
+          )}
+        />
+      </dl>
+    </div>
   );
 }
 
 const kstMomentToISO = (m: { year: number; month: number; day: number }): string =>
   `${m.year}-${String(m.month).padStart(2, "0")}-${String(m.day).padStart(2, "0")}`;
 
+function MarketStatusBanner({
+  data,
+  dict,
+  lang,
+}: {
+  data: Extract<HeroData, { ready: true }>;
+  dict: ReturnType<typeof getDict>;
+  lang: Lang;
+}) {
+  const ms = data.marketStatus;
+  const nextKstISO = kstMomentToISO(usCloseInKst(ms.nextTradingDay));
+  const nextParts = dict.marketNextUpdate(
+    formatShortDate(nextKstISO, lang),
+    dict.weekdayShort(nextKstISO),
+  );
+
+  let statusText: string;
+  switch (ms.kind) {
+    case "normal":
+      statusText = dict.marketStatusLabel.normal;
+      break;
+    case "weekend":
+      statusText = dict.marketStatusLabel.weekend(
+        dict.dateRangeShort(ms.weekendStart, ms.weekendEnd),
+      );
+      break;
+    case "holiday": {
+      const dateLabel = formatShortDate(ms.holidayDate, lang);
+      const weekday = dict.weekdayShort(ms.holidayDate);
+      statusText = ms.hasWeekend
+        ? dict.marketStatusLabel.holidayWithWeekend(
+            dateLabel,
+            weekday,
+            ms.holidayName,
+          )
+        : dict.marketStatusLabel.holiday(dateLabel, weekday, ms.holidayName);
+      break;
+    }
+  }
+
+  const closed = ms.kind !== "normal";
+  // 평일: mobile/desktop 모두 한 줄(justify-between). 휴장: mobile 두 줄(flex-col), desktop 한 줄.
+  const layoutCls = closed
+    ? "flex flex-col gap-1 lg:flex-row lg:items-center lg:justify-between lg:gap-4"
+    : "flex flex-row items-center justify-between gap-3";
+
+  return (
+    <div
+      className={`w-full rounded-lg bg-neutral-900 px-3 py-2.5 text-xs lg:px-4 lg:py-3 ${layoutCls}`}
+    >
+      <span className={closed ? "text-neutral-300" : "text-neutral-400"}>
+        {statusText}
+      </span>
+      <span className="text-neutral-500">
+        {nextParts.map((p, i) => (
+          <span
+            key={i}
+            className={p.emphasis === "value" ? "text-white" : ""}
+          >
+            {p.text}
+          </span>
+        ))}
+      </span>
+    </div>
+  );
+}
+
 function CurrentCloseCell({
   label,
   price,
   kstLine,
   usLine,
-  statusLabel,
-  statusParts,
 }: {
   label: string;
   price: string;
   kstLine: string;
   usLine: string;
-  statusLabel: string;
-  statusParts: ReadonlyArray<{ text: string; emphasis?: "value" }>;
 }) {
   return (
     <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
@@ -579,19 +629,6 @@ function CurrentCloseCell({
       <dd className="mt-1 text-2xl text-neutral-100">{price}</dd>
       <dd className="mt-2 text-sm text-neutral-100">{kstLine}</dd>
       <dd className="text-[11px] text-neutral-600">{usLine}</dd>
-      <dd className="mt-3 rounded-lg bg-neutral-900 px-3 py-2.5">
-        <div className="text-[11px] text-neutral-400">{statusLabel}</div>
-        <div className="mt-0.5 text-[11px] text-neutral-500">
-          {statusParts.map((p, i) => (
-            <span
-              key={i}
-              className={p.emphasis === "value" ? "text-white" : ""}
-            >
-              {p.text}
-            </span>
-          ))}
-        </div>
-      </dd>
     </div>
   );
 }

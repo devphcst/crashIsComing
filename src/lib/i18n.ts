@@ -211,7 +211,7 @@ const ko: Dict = {
     return ['일', '월', '화', '수', '목', '금', '토'][d.getUTCDay()];
   },
   currentCloseKst: (kstDateLabel, weekday) =>
-    `한국 ${kstDateLabel} (${weekday}) 새벽 마감`,
+    `한국 ${kstDateLabel} (${weekday})`,
   currentCloseUs: (usDateLabel, weekday) =>
     `미국 ${usDateLabel} (${weekday}) 종가`,
   dateWithWeekday: (dateLabel, weekday) => `${dateLabel} (${weekday})`,
@@ -430,7 +430,7 @@ const en: Dict = {
     return d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
   },
   currentCloseKst: (kstDateLabel, weekday) =>
-    `KST ${kstDateLabel} (${weekday}) close at dawn`,
+    `KST ${kstDateLabel} (${weekday})`,
   currentCloseUs: (usDateLabel, weekday) =>
     `US ${usDateLabel} (${weekday}) market close`,
   dateWithWeekday: (dateLabel, weekday) => `${dateLabel} (${weekday})`,

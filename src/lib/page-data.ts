@@ -15,7 +15,7 @@ import {
   readVisitorCounts,
 } from "./kv";
 import { getProvider } from "./providers";
-import type { SymbolMeta } from "./symbols";
+import { getExchange, type SymbolMeta } from "./symbols";
 import type { HeroData } from "@/components/HeroDrawdown";
 
 export type VisitorInfo = {
@@ -65,8 +65,11 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
     // 기간별 폭락(전기 대비) — 데이터 부족 항목은 null로 들어가 UI에서 숨김 처리.
     const periodDrawdowns = computePeriodDrawdowns(closes);
 
+    const exchange = getExchange(meta);
+
     return {
       ready: true,
+      exchange,
       current: latest,
       ath: {
         date: ath.date,
@@ -79,7 +82,8 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
         drawdownPct: calcDrawdown(latest.price, oneYear.price),
       },
       breakdown: periodDrawdowns,
-      marketStatus: computeMarketStatus(latest.date),
+      // KRX는 수동 입력이라 "다음 업데이트" 띠가 무의미 → null로 두면 UI 숨김.
+      marketStatus: exchange === "KRX" ? null : computeMarketStatus(latest.date),
       thresholds: {
         orange: meta.orangeThreshold,
         red: meta.redThreshold,

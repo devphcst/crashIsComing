@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { SymbolMeta } from "@/lib/symbols";
+import { getExchange, type SymbolMeta } from "@/lib/symbols";
 import { dictionaries } from "@/lib/i18n";
 
 const t = dictionaries.ko.admin.symbols;
@@ -39,6 +39,14 @@ export function SymbolTabs({
             aria-current={active ? "page" : undefined}
           >
             {m.displayName}
+            <span
+              className={
+                "ml-1.5 font-mono text-[10px] " +
+                (active ? "text-neutral-500" : "text-neutral-500")
+              }
+            >
+              {getExchange(m) === "KRX" ? "KR" : "US"}
+            </span>
           </Link>
         );
       })}

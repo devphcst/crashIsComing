@@ -1,7 +1,14 @@
 import type { Close } from "@/lib/providers/types";
 import { formatPrice } from "@/lib/format";
+import type { Exchange } from "@/lib/symbols";
 
-export function RecentClosesTable({ closes }: { closes: Close[] }) {
+export function RecentClosesTable({
+  closes,
+  exchange,
+}: {
+  closes: Close[];
+  exchange: Exchange;
+}) {
   if (!closes.length) {
     return <p className="text-xs text-neutral-500">아직 입력된 종가가 없습니다.</p>;
   }
@@ -19,7 +26,7 @@ export function RecentClosesTable({ closes }: { closes: Close[] }) {
           <tr key={c.date} className="border-t border-neutral-800">
             <td className="py-1 text-neutral-300">{c.date}</td>
             <td className="py-1 text-right text-neutral-100">
-              {formatPrice(c.price)}
+              {formatPrice(c.price, exchange)}
             </td>
           </tr>
         ))}

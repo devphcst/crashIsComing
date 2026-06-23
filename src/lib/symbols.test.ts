@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   defaultMetaFor,
   DEFAULT_SYMBOL,
+  getExchange,
   validateMeta,
   type SymbolMeta,
 } from "./symbols";
@@ -88,5 +89,35 @@ describe("defaultMetaFor", () => {
 
   it("produces a meta that passes validateMeta", () => {
     expect(validateMeta(defaultMetaFor(DEFAULT_SYMBOL))).toBeNull();
+  });
+});
+
+describe("exchange field", () => {
+  it("accepts undefined exchange (legacy meta)", () => {
+    expect(validateMeta(base())).toBeNull();
+  });
+
+  it("accepts NYSE and KRX", () => {
+    expect(validateMeta({ ...base(), exchange: "NYSE" })).toBeNull();
+    expect(
+      validateMeta({ ...base(), ticker: "kodex122630", exchange: "KRX" }),
+    ).toBeNull();
+  });
+
+  it("rejects unknown exchange", () => {
+    expect(
+      validateMeta({ ...base(), exchange: "NASDAQ" as never }),
+    ).toBe("exchange_invalid");
+  });
+});
+
+describe("getExchange", () => {
+  it("returns NYSE when exchange is undefined", () => {
+    expect(getExchange(base())).toBe("NYSE");
+  });
+
+  it("returns the stored exchange value", () => {
+    expect(getExchange({ ...base(), exchange: "KRX" })).toBe("KRX");
+    expect(getExchange({ ...base(), exchange: "NYSE" })).toBe("NYSE");
   });
 });

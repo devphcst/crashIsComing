@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { DEFAULT_SYMBOL, type SymbolMeta } from "@/lib/symbols";
+import { DEFAULT_SYMBOL, getExchange, type SymbolMeta } from "@/lib/symbols";
 
 const hrefFor = (ticker: string): string =>
   ticker === DEFAULT_SYMBOL ? "/" : `/${ticker}`;
@@ -52,9 +52,15 @@ export function MainSymbolTabs({
               }
               aria-current={active ? "page" : undefined}
             >
-              {/* 모바일: ticker만 (가로 한 줄에 압축). 데스크톱: displayName 전체. */}
+              {/* 모바일: ticker만 (가로 한 줄에 압축). 데스크톱: displayName + 거래소 라벨.
+                  모바일 라벨은 시각 잡음이라 생략. */}
               <span className="lg:hidden">{m.ticker.toUpperCase()}</span>
-              <span className="hidden lg:inline">{m.displayName}</span>
+              <span className="hidden lg:inline">
+                {m.displayName}
+                <span className="ml-1.5 font-mono text-[10px] text-neutral-500">
+                  {getExchange(m) === "KRX" ? "KR" : "US"}
+                </span>
+              </span>
             </Link>
           );
         })}

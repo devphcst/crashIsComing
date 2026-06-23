@@ -3,6 +3,7 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { setSeedAction, type ActionState } from "@/app/admin/actions";
 import type { SeedHighs } from "@/lib/providers/types";
+import type { Exchange } from "@/lib/symbols";
 import { dictionaries } from "@/lib/i18n";
 
 const initial: ActionState = { ok: false };
@@ -24,11 +25,16 @@ function SubmitButton() {
 export function SeedHighsForm({
   current,
   ticker,
+  exchange,
 }: {
   current: SeedHighs | undefined;
   ticker: string;
+  exchange: Exchange;
 }) {
   const [state, formAction] = useFormState(setSeedAction, initial);
+  const isKrx = exchange === "KRX";
+  const currencyLabel = isKrx ? "₩" : "$";
+  const step = isKrx ? "1" : "0.01";
 
   return (
     <form action={formAction} className="space-y-4">
@@ -53,11 +59,11 @@ export function SeedHighsForm({
             />
           </label>
           <label className="block text-xs text-neutral-400">
-            가격 ($)
+            가격 ({currencyLabel})
             <input
               type="number"
               name="athPrice"
-              step="0.01"
+              step={step}
               min="0"
               defaultValue={current?.ath?.price ?? ""}
               className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100"
@@ -81,11 +87,11 @@ export function SeedHighsForm({
             />
           </label>
           <label className="block text-xs text-neutral-400">
-            가격 ($)
+            가격 ({currencyLabel})
             <input
               type="number"
               name="oneYearPrice"
-              step="0.01"
+              step={step}
               min="0"
               defaultValue={current?.oneYearHigh?.price ?? ""}
               className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100"

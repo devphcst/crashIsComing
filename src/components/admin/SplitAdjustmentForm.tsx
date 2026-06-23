@@ -8,6 +8,7 @@ import {
   type SplitPreview,
 } from "@/app/admin/actions";
 import { formatPrice } from "@/lib/format";
+import type { Exchange } from "@/lib/symbols";
 
 type PreviewState = ActionState | SplitPreview;
 const initialPreview: PreviewState = { ok: false };
@@ -30,7 +31,13 @@ function Button({ label }: { label: string }) {
   );
 }
 
-export function SplitAdjustmentForm({ ticker }: { ticker: string }) {
+export function SplitAdjustmentForm({
+  ticker,
+  exchange,
+}: {
+  ticker: string;
+  exchange: Exchange;
+}) {
   const [previewState, previewAction] = useFormState(
     previewSplitAction,
     initialPreview,
@@ -90,9 +97,9 @@ export function SplitAdjustmentForm({ ticker }: { ticker: string }) {
                 {previewState.preview.map((p) => (
                   <tr key={p.date} className="border-t border-amber-800/30">
                     <td className="py-1">{p.date}</td>
-                    <td className="py-1 text-right">{formatPrice(p.before)}</td>
+                    <td className="py-1 text-right">{formatPrice(p.before, exchange)}</td>
                     <td className="py-1 text-right text-amber-200">
-                      {formatPrice(p.after)}
+                      {formatPrice(p.after, exchange)}
                     </td>
                   </tr>
                 ))}

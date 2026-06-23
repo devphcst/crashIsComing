@@ -65,6 +65,21 @@ export function AddSymbolForm({ currentSymbol }: { currentSymbol: string }) {
           </label>
         </div>
 
+        <label className="block text-xs text-neutral-400">
+          {t.exchangeLabel}
+          <select
+            name="exchange"
+            defaultValue="NYSE"
+            className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
+          >
+            <option value="NYSE">NYSE (미국)</option>
+            <option value="KRX">KRX (한국)</option>
+          </select>
+          <span className="mt-1 block text-[10px] text-neutral-500">
+            {t.exchangeHint}
+          </span>
+        </label>
+
         <fieldset className="space-y-3 rounded-md border border-neutral-800 p-3">
           <legend className="px-1 text-[10px] uppercase tracking-wide text-neutral-500">
             색상 임계값

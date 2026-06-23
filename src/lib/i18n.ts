@@ -26,6 +26,8 @@ export type Dict = {
   currentCloseKst: (kstDateLabel: string, weekday: string) => string;
   /** 최근 종가 카드 US 줄 — "미국 6월 18일 (목) 종가". 보조. */
   currentCloseUs: (usDateLabel: string, weekday: string) => string;
+  /** 한국 종목 등 KST↔ET 변환이 무의미한 종목 카드용 단일 라인. "2026년 6월 23일 (월) 종가". */
+  currentCloseSimple: (dateLabel: string, weekday: string) => string;
   /** 가격 카드 날짜 + 요일 표기 — ATH/52주 카드용 "2026년 4월 23일 (목)". */
   dateWithWeekday: (dateLabel: string, weekday: string) => string;
   /**
@@ -181,6 +183,8 @@ export type Dict = {
       tickerHint: string;
       displayNameLabel: string;
       displayNameHint: string;
+      exchangeLabel: string;
+      exchangeHint: string;
       orangeLabel: string;
       redLabel: string;
       thresholdHint: string;
@@ -218,6 +222,8 @@ const ko: Dict = {
     `한국 ${kstDateLabel} (${weekday})`,
   currentCloseUs: (usDateLabel, weekday) =>
     `미국 ${usDateLabel} (${weekday}) 종가`,
+  currentCloseSimple: (dateLabel, weekday) =>
+    `${dateLabel} (${weekday}) 종가`,
   dateWithWeekday: (dateLabel, weekday) => `${dateLabel} (${weekday})`,
   marketStatusLabel: {
     normal: '다음 업데이트',
@@ -392,6 +398,8 @@ const ko: Dict = {
       tickerHint: '소문자 영문으로 시작 · 식별자/URL에 사용 (예: soxl)',
       displayNameLabel: '표시 이름',
       displayNameHint: '화면에 표시되는 이름 (예: SOXL (반도체 3배))',
+      exchangeLabel: '거래소',
+      exchangeHint: 'KRX는 자동 fetch 미지원 — admin에서 종가 수동 입력.',
       orangeLabel: '주황 경계',
       redLabel: '빨강 경계',
       thresholdHint:
@@ -448,6 +456,8 @@ const en: Dict = {
     `KST ${kstDateLabel} (${weekday})`,
   currentCloseUs: (usDateLabel, weekday) =>
     `US ${usDateLabel} (${weekday}) market close`,
+  currentCloseSimple: (dateLabel, weekday) =>
+    `${dateLabel} (${weekday}) close`,
   dateWithWeekday: (dateLabel, weekday) => `${dateLabel} (${weekday})`,
   marketStatusLabel: {
     normal: 'Next update',
@@ -637,6 +647,8 @@ const en: Dict = {
         'Lowercase letter to start. Used as identifier/URL (e.g. soxl).',
       displayNameLabel: 'Display name',
       displayNameHint: 'Shown on screen (e.g. "SOXL (3x semis)").',
+      exchangeLabel: 'Exchange',
+      exchangeHint: 'KRX does not support auto-fetch — closes are entered manually in admin.',
       orangeLabel: 'Orange threshold',
       redLabel: 'Red threshold',
       thresholdHint:

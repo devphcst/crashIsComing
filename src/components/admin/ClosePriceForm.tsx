@@ -2,6 +2,7 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import { addCloseAction, type ActionState } from "@/app/admin/actions";
+import type { Exchange } from "@/lib/symbols";
 
 const initial: ActionState = { ok: false };
 
@@ -21,11 +22,17 @@ function SubmitButton({ label }: { label: string }) {
 export function ClosePriceForm({
   defaultDate,
   ticker,
+  exchange,
 }: {
   defaultDate: string;
   ticker: string;
+  exchange: Exchange;
 }) {
   const [state, formAction] = useFormState(addCloseAction, initial);
+  const isKrx = exchange === "KRX";
+  // KRX는 정수 원, NYSE는 센트 단위. step·라벨도 통화 단위에 맞춤.
+  const currencyLabel = isKrx ? "₩" : "$";
+  const step = isKrx ? "1" : "0.01";
 
   return (
     <form action={formAction} className="space-y-3">
@@ -42,12 +49,12 @@ export function ClosePriceForm({
           />
         </label>
         <label className="block text-xs text-neutral-400">
-          종가 ($)
+          종가 ({currencyLabel})
           <input
             type="number"
             name="price"
             required
-            step="0.01"
+            step={step}
             min="0"
             className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
           />

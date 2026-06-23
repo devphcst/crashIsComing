@@ -36,6 +36,8 @@ import {
 export type HeroData =
   | {
       ready: true;
+      /** 거래소. 통화 포맷·시장 상태 띠·KST 변환 분기에 사용. */
+      exchange: "NYSE" | "KRX";
       current: { date: string; price: number };
       ath: { date: string; price: number; drawdownPct: number };
       oneYear: { date: string; price: number; drawdownPct: number };
@@ -45,7 +47,8 @@ export type HeroData =
         oneWeek: PeriodPoint | null;
         oneMonth: PeriodPoint | null;
       };
-      marketStatus: MarketStatus;
+      /** KRX 등 자동 업데이트 없는 종목은 null — 시장 상태 띠 자체 미렌더. */
+      marketStatus: MarketStatus | null;
       thresholds: LevelThresholds;
     }
   | { ready: false };
@@ -181,16 +184,20 @@ export function HeroDrawdown({
                   }}
                 />
                 <Facts data={data} dict={d} lang={lang} />
-                <LastUpdated
-                  asOfUsText={d.asOfUs(formatDate(data.current.date, lang))}
-                  asOfKstText={(() => {
-                    const kst = usCloseInKst(data.current.date);
-                    return d.asOfKst(
-                      d.closeKst(kst.month, kst.day, kst.hour),
-                    );
-                  })()}
-                  scheduleText={d.updateSchedule}
-                />
+                {/* LastUpdated는 미국 자동 업데이트 안내 — KRX는 수동 입력이라
+                    가격 카드의 "YYYY년 M월 D일 (요일) 종가" 한 줄로 충분. */}
+                {data.exchange === "KRX" ? null : (
+                  <LastUpdated
+                    asOfUsText={d.asOfUs(formatDate(data.current.date, lang))}
+                    asOfKstText={(() => {
+                      const kst = usCloseInKst(data.current.date);
+                      return d.asOfKst(
+                        d.closeKst(kst.month, kst.day, kst.hour),
+                      );
+                    })()}
+                    scheduleText={d.updateSchedule}
+                  />
+                )}
               </>
             ) : (
               <NotReady dict={d} />
@@ -375,6 +382,7 @@ function HeroNumbers({
                     point={item.point}
                     dict={dict}
                     lang={lang}
+                    exchange={data.exchange}
                     active={activePeriod === item.key}
                     onToggle={() => toggle(item.key)}
                   />
@@ -424,6 +432,7 @@ function PeriodItem({
   onToggle,
   dict,
   lang,
+  exchange,
 }: {
   period: BreakdownKey;
   label: string;
@@ -432,6 +441,7 @@ function PeriodItem({
   onToggle: () => void;
   dict: ReturnType<typeof getDict>;
   lang: Lang;
+  exchange: "NYSE" | "KRX";
 }) {
   // 데이터 부족 시 — 항목 유지하되 비활성. 호버/탭/툴팁 모두 비활성.
   if (point === null) {
@@ -449,7 +459,7 @@ function PeriodItem({
   const detailText = dict.breakdownTooltip({
     period,
     dateLabel: formatShortDate(point.date, lang),
-    priceLabel: formatPrice(point.price),
+    priceLabel: formatPrice(point.price, exchange),
     pct: point.pct,
   });
   // 단일 패턴 — 모든 환경에서 클릭/탭 시 행 강조 + 아래 inline 박스 펼침.
@@ -498,10 +508,32 @@ function Facts({
   lang: Lang;
 }) {
   // 시장 상태 띠는 카드 셋 외부 (위) — 카드 세 개를 동일 높이로 정렬하기 위함.
-  // 최근 종가 카드: 큰 가격 + KST 날짜·요일·새벽 + US 날짜·요일·종가.
+  // 최근 종가 카드:
+  //   - NYSE: 큰 가격 + KST 날짜·요일·새벽 + US 날짜·요일·종가 (2줄).
+  //   - KRX:  큰 가격 + 단순 "YYYY년 M월 D일 (요일) 종가" 한 줄.
   // ATH·52주는 기존 표기에 (요일) 한 단어만 추가.
-  const usDate = data.current.date;
-  const kstISO = kstMomentToISO(usCloseInKst(usDate));
+  const isKrx = data.exchange === "KRX";
+  const currentDate = data.current.date;
+
+  let kstLine: string;
+  let usLine: string | undefined;
+  if (isKrx) {
+    kstLine = dict.currentCloseSimple(
+      formatDate(currentDate, lang),
+      dict.weekdayShort(currentDate),
+    );
+    usLine = undefined;
+  } else {
+    const kstISO = kstMomentToISO(usCloseInKst(currentDate));
+    kstLine = dict.currentCloseKst(
+      formatShortDate(kstISO, lang),
+      dict.weekdayShort(kstISO),
+    );
+    usLine = dict.currentCloseUs(
+      formatShortDate(currentDate, lang),
+      dict.weekdayShort(currentDate),
+    );
+  }
 
   return (
     <div className="flex w-full max-w-3xl flex-col gap-3">
@@ -509,19 +541,13 @@ function Facts({
       <dl className="grid grid-cols-1 gap-3 text-sm text-neutral-300 sm:grid-cols-3">
         <CurrentCloseCell
           label={dict.current}
-          price={formatPrice(data.current.price)}
-          kstLine={dict.currentCloseKst(
-            formatShortDate(kstISO, lang),
-            dict.weekdayShort(kstISO),
-          )}
-          usLine={dict.currentCloseUs(
-            formatShortDate(usDate, lang),
-            dict.weekdayShort(usDate),
-          )}
+          price={formatPrice(data.current.price, data.exchange)}
+          kstLine={kstLine}
+          usLine={usLine}
         />
         <Cell
           label={dict.ath}
-          value={formatPrice(data.ath.price)}
+          value={formatPrice(data.ath.price, data.exchange)}
           sub={dict.dateWithWeekday(
             formatDate(data.ath.date, lang),
             dict.weekdayShort(data.ath.date),
@@ -529,7 +555,7 @@ function Facts({
         />
         <Cell
           label={dict.oneYearHigh}
-          value={formatPrice(data.oneYear.price)}
+          value={formatPrice(data.oneYear.price, data.exchange)}
           sub={dict.dateWithWeekday(
             formatDate(data.oneYear.date, lang),
             dict.weekdayShort(data.oneYear.date),
@@ -553,6 +579,8 @@ function MarketStatusBanner({
   lang: Lang;
 }) {
   const ms = data.marketStatus;
+  // KRX 등 자동 업데이트 없는 종목은 띠 자체 렌더 안 함.
+  if (ms === null) return null;
   const nextKstISO = kstMomentToISO(usCloseInKst(ms.nextTradingDay));
   const nextParts = dict.marketNextUpdate(
     formatShortDate(nextKstISO, lang),
@@ -619,7 +647,8 @@ function CurrentCloseCell({
   label: string;
   price: string;
   kstLine: string;
-  usLine: string;
+  /** undefined = 단일 라인 카드 (KRX 등). 보조 ET 줄을 렌더하지 않음. */
+  usLine?: string;
 }) {
   return (
     <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
@@ -628,7 +657,9 @@ function CurrentCloseCell({
       </dt>
       <dd className="mt-1 text-2xl text-neutral-100">{price}</dd>
       <dd className="mt-2 text-sm text-neutral-100">{kstLine}</dd>
-      <dd className="text-[11px] text-neutral-600">{usLine}</dd>
+      {usLine ? (
+        <dd className="text-[11px] text-neutral-600">{usLine}</dd>
+      ) : null}
     </div>
   );
 }

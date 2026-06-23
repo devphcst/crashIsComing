@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { updateMetaAction, type ActionState } from "@/app/admin/actions";
-import type { SymbolMeta } from "@/lib/symbols";
+import { getExchange, type SymbolMeta } from "@/lib/symbols";
 import { dictionaries } from "@/lib/i18n";
 
 const t = dictionaries.ko.admin.symbols;
@@ -40,6 +40,21 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
           defaultValue={meta.displayName}
           className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
         />
+      </label>
+
+      <label className="block text-xs text-neutral-400">
+        {t.exchangeLabel}
+        <select
+          name="exchange"
+          defaultValue={getExchange(meta)}
+          className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
+        >
+          <option value="NYSE">NYSE (미국)</option>
+          <option value="KRX">KRX (한국)</option>
+        </select>
+        <span className="mt-1 block text-[10px] text-neutral-500">
+          {t.exchangeHint}
+        </span>
       </label>
 
       <fieldset className="space-y-3 rounded-md border border-neutral-800 p-3">

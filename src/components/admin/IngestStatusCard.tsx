@@ -2,6 +2,7 @@ import type { IngestStatus } from "@/lib/providers/types";
 import { dictionaries } from "@/lib/i18n";
 import { formatPrice } from "@/lib/format";
 import { calcSuccessRate } from "@/lib/ingest/stats";
+import type { Exchange } from "@/lib/symbols";
 
 const t = dictionaries.ko.admin.ingest;
 
@@ -16,9 +17,11 @@ const fmtPct = (rate: number): string => `${(rate * 100).toFixed(1)}%`;
 export function IngestStatusCard({
   status,
   provider,
+  exchange,
 }: {
   status: IngestStatus | null;
   provider: string;
+  exchange: Exchange;
 }) {
   const failing = (status?.consecutiveFailures ?? 0) > 0;
   const containerCls = failing
@@ -51,7 +54,7 @@ export function IngestStatusCard({
               {t.lastSuccess(
                 fmtTs(status.lastSuccess.ts),
                 status.lastSuccess.date,
-                formatPrice(status.lastSuccess.price),
+                formatPrice(status.lastSuccess.price, exchange),
               )}
             </p>
           ) : null}

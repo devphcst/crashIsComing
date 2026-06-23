@@ -3,6 +3,7 @@ import {
   isAbnormalChange,
   changePct,
   closePriceSchema,
+  closePriceSchemaFor,
   splitSchema,
 } from "./validation";
 
@@ -48,6 +49,40 @@ describe("closePriceSchema", () => {
     expect(
       closePriceSchema.safeParse({ date: "2026-05-19", price: 99999 }).success,
     ).toBe(false);
+  });
+});
+
+describe("closePriceSchemaFor(KRX)", () => {
+  it("accepts a typical Korean ETF price (33,000 won)", () => {
+    const r = closePriceSchemaFor("KRX").safeParse({
+      date: "2026-06-23",
+      price: 33000,
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("accepts a high-priced Korean stock (1,500,000 won)", () => {
+    const r = closePriceSchemaFor("KRX").safeParse({
+      date: "2026-06-23",
+      price: 1_500_000,
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects price above the KRX upper bound (2,000,000 won)", () => {
+    const r = closePriceSchemaFor("KRX").safeParse({
+      date: "2026-06-23",
+      price: 2_500_000,
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("NYSE schema still rejects 33,000 (treats it as USD)", () => {
+    const r = closePriceSchemaFor("NYSE").safeParse({
+      date: "2026-06-23",
+      price: 33000,
+    });
+    expect(r.success).toBe(false);
   });
 });
 

@@ -11,7 +11,7 @@ import {
   isKvConfigured,
 } from "@/lib/kv";
 import { readIngestStatus } from "@/lib/ingest/status";
-import { DEFAULT_SYMBOL } from "@/lib/symbols";
+import { DEFAULT_SYMBOL, getExchange } from "@/lib/symbols";
 import { ClosePriceForm } from "@/components/admin/ClosePriceForm";
 import { SeedHighsForm } from "@/components/admin/SeedHighsForm";
 import { SplitAdjustmentForm } from "@/components/admin/SplitAdjustmentForm";
@@ -118,7 +118,11 @@ export default async function AdminPage({
 
       {addOpen ? <AddSymbolForm currentSymbol={currentSymbol} /> : null}
 
-      <IngestStatusCard status={ingestStatus} provider={providerName} />
+      <IngestStatusCard
+        status={ingestStatus}
+        provider={providerName}
+        exchange={getExchange(currentMeta)}
+      />
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
         <h2 className="text-sm font-medium text-neutral-200">
@@ -136,6 +140,7 @@ export default async function AdminPage({
           key={currentSymbol}
           defaultDate={todayISO()}
           ticker={currentSymbol}
+          exchange={getExchange(currentMeta)}
         />
       </section>
 
@@ -147,6 +152,7 @@ export default async function AdminPage({
           key={currentSymbol}
           current={seed}
           ticker={currentSymbol}
+          exchange={getExchange(currentMeta)}
         />
       </section>
 
@@ -156,7 +162,11 @@ export default async function AdminPage({
           분할 발효일 이전 종가와 시드값을 일괄 갱신합니다. 적용 후 작업 로그가
           기록됩니다.
         </p>
-        <SplitAdjustmentForm key={currentSymbol} ticker={currentSymbol} />
+        <SplitAdjustmentForm
+          key={currentSymbol}
+          ticker={currentSymbol}
+          exchange={getExchange(currentMeta)}
+        />
         {adjustments.length ? (
           <div className="mt-4 space-y-1 text-xs text-neutral-500">
             <p className="text-neutral-400">최근 보정 로그:</p>
@@ -171,7 +181,7 @@ export default async function AdminPage({
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
         <h2 className="text-sm font-medium text-neutral-200">최근 입력 10건</h2>
-        <RecentClosesTable closes={closes} />
+        <RecentClosesTable closes={closes} exchange={getExchange(currentMeta)} />
       </section>
 
       {currentSymbol !== DEFAULT_SYMBOL ? (

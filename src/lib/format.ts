@@ -15,9 +15,19 @@ export const formatSignedPct = (n: number, digits = 1): string => {
     : `${rounded.toFixed(digits)}%`;
 };
 
-export const formatPrice = (n: number, digits = 2): string => {
+/**
+ * 통화 포맷. exchange === "KRX" 면 ₩ + 천 단위 콤마 + 정수,
+ * 그 외(기본 NYSE) 는 $ + 소수 2자리.
+ */
+export const formatPrice = (
+  n: number,
+  exchange?: "NYSE" | "KRX",
+): string => {
   if (!isFinite(n)) return "—";
-  return `$${n.toFixed(digits)}`;
+  if (exchange === "KRX") {
+    return `₩${Math.round(n).toLocaleString("en-US")}`;
+  }
+  return `$${n.toFixed(2)}`;
 };
 
 /** 'YYYY-MM-DD' → 로케일별 표기 */

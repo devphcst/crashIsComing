@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { readSymbolList, writeClose } from "@/lib/kv";
+import { readMeta, readSymbolList, writeClose } from "@/lib/kv";
 import { fetchLatestCloseFromTwelveData } from "@/lib/ingest/twelvedata-fetch";
 import { recordFailure, recordSuccess } from "@/lib/ingest/status";
 import { notifySystemAlert } from "@/lib/ingest/notify";
+import { getExchange } from "@/lib/symbols";
 
 /**
  * 메인 자동화 cron — 매일 22:00 UTC (07:00 KST) 실행.
@@ -29,7 +30,8 @@ const isAuthorized = (req: Request): boolean => {
 
 type SymbolResult =
   | { ticker: string; ok: true; written: { date: string; price: number } }
-  | { ticker: string; ok: false; error: string };
+  | { ticker: string; ok: false; error: string }
+  | { ticker: string; skipped: true; reason: "krx_manual" };
 
 export async function GET(req: Request) {
   if (!isAuthorized(req)) {
@@ -69,6 +71,12 @@ export async function GET(req: Request) {
   let anyWritten = false;
 
   for (const ticker of tickers) {
+    const meta = await readMeta(ticker);
+    // KRX는 자동 fetch 미지원(TwelveData Pro 미결제). 수동 입력 종목이라 cron skip.
+    if (getExchange(meta) === "KRX") {
+      results.push({ ticker, skipped: true, reason: "krx_manual" });
+      continue;
+    }
     try {
       const close = await fetchLatestCloseFromTwelveData(ticker);
       await writeClose(ticker, close);

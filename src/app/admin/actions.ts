@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { ADMIN_COOKIE, isTokenValid } from "@/lib/auth";
 import {
-  closePriceSchema,
-  seedHighsSchema,
+  closePriceSchemaFor,
+  seedHighsSchemaFor,
   splitSchema,
   isAbnormalChange,
   changePct,
@@ -14,6 +14,7 @@ import {
 import {
   getClose,
   readAllCloses,
+  readMeta,
   readSeed,
   readSymbolList,
   writeClose,
@@ -27,7 +28,9 @@ import {
 } from "@/lib/kv";
 import {
   DEFAULT_SYMBOL,
+  getExchange,
   validateMeta,
+  type Exchange,
   type MetaValidationError,
   type SymbolMeta,
 } from "@/lib/symbols";
@@ -66,6 +69,13 @@ const META_ERROR_MESSAGES: Record<MetaValidationError, string> = {
   red_must_be_negative: "빨강 경계는 음수여야 합니다.",
   orange_must_be_above_red:
     "주황 경계가 빨강 경계보다 0에 가까워야 합니다 (orange > red).",
+  exchange_invalid: "거래소는 NYSE 또는 KRX만 허용됩니다.",
+};
+
+/** 폼 'exchange' 값을 정규화 — undefined/빈문자/기타는 NYSE로 처리. */
+const parseExchange = (v: FormDataEntryValue | null): Exchange => {
+  if (v === "KRX") return "KRX";
+  return "NYSE";
 };
 
 const resolveTickerFromForm = async (
@@ -102,7 +112,11 @@ export async function addCloseAction(
   if (!resolved.ok) return { ok: false, message: resolved.message };
   const { ticker } = resolved;
 
-  const parsed = closePriceSchema.safeParse({
+  // 통화별 상한이 다르므로 schema 파싱 전에 exchange를 알아야 함.
+  const meta = await readMeta(ticker);
+  const exchange = getExchange(meta);
+
+  const parsed = closePriceSchemaFor(exchange).safeParse({
     date: String(formData.get("date") ?? ""),
     price: Number(formData.get("price") ?? NaN),
     confirmAbnormal: formData.get("confirmAbnormal") === "true",
@@ -120,7 +134,7 @@ export async function addCloseAction(
       return {
         ok: false,
         needsConfirm: true,
-        warning: `이 날짜에 이미 종가(${formatPrice(existing.price)})가 있습니다. 덮어쓰려면 '확인하고 저장'을 누르세요.`,
+        warning: `이 날짜에 이미 종가(${formatPrice(existing.price, exchange)})가 있습니다. 덮어쓰려면 '확인하고 저장'을 누르세요.`,
       };
     }
     const prev = findPrev(closes, date);
@@ -128,7 +142,7 @@ export async function addCloseAction(
       return {
         ok: false,
         needsConfirm: true,
-        warning: `전일 종가(${formatPrice(prev.price)}) 대비 ${formatSignedPct(changePct(price, prev.price))} 변동입니다. 오타가 아닌지 확인하세요.`,
+        warning: `전일 종가(${formatPrice(prev.price, exchange)}) 대비 ${formatSignedPct(changePct(price, prev.price))} 변동입니다. 오타가 아닌지 확인하세요.`,
       };
     }
   }
@@ -161,7 +175,8 @@ export async function setSeedAction(
     return v === null || v === "" ? undefined : String(v);
   };
 
-  const parsed = seedHighsSchema.safeParse({
+  const seedMeta = await readMeta(ticker);
+  const parsed = seedHighsSchemaFor(getExchange(seedMeta)).safeParse({
     athDate: strOrUndef("athDate"),
     athPrice: numOrUndef("athPrice"),
     oneYearDate: strOrUndef("oneYearDate"),
@@ -317,12 +332,14 @@ export async function addSymbolAction(
   const displayName = String(formData.get("displayName") ?? "").trim();
   const orangeThreshold = parseThreshold(formData.get("orangeThreshold"));
   const redThreshold = parseThreshold(formData.get("redThreshold"));
+  const exchange = parseExchange(formData.get("exchange"));
 
   const meta: SymbolMeta = {
     ticker,
     displayName,
     orangeThreshold,
     redThreshold,
+    exchange,
   };
   const err = validateMeta(meta);
   if (err) return { ok: false, message: META_ERROR_MESSAGES[err] };
@@ -353,12 +370,14 @@ export async function updateMetaAction(
   const displayName = String(formData.get("displayName") ?? "").trim();
   const orangeThreshold = parseThreshold(formData.get("orangeThreshold"));
   const redThreshold = parseThreshold(formData.get("redThreshold"));
+  const exchange = parseExchange(formData.get("exchange"));
 
   const meta: SymbolMeta = {
     ticker,
     displayName,
     orangeThreshold,
     redThreshold,
+    exchange,
   };
   const err = validateMeta(meta);
   if (err) return { ok: false, message: META_ERROR_MESSAGES[err] };

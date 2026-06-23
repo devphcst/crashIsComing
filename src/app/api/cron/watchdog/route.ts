@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  readMeta,
   readSymbolList,
   readWatchdogLastNotifyAt,
   writeWatchdogLastNotifyAt,
@@ -7,6 +8,7 @@ import {
 import { readIngestStatus } from "@/lib/ingest/status";
 import { isWithinDedup, notifyWatchdog } from "@/lib/ingest/notify";
 import { lastTradingDayBefore } from "@/lib/nyse-calendar";
+import { getExchange } from "@/lib/symbols";
 
 /**
  * Dead man's switch — 메인 cron(/api/cron/twelvedata)이 아예 실행 안 됐을 가능성을 catch.
@@ -51,6 +53,9 @@ export async function GET(req: Request) {
 
   const missing: Array<{ ticker: string; lastDate: string | null }> = [];
   for (const ticker of tickers) {
+    const meta = await readMeta(ticker);
+    // KRX 종목은 cron이 자동 fetch 안 함 → lastSuccess 누락이 정상. missing 판정 제외.
+    if (getExchange(meta) === "KRX") continue;
     const status = await readIngestStatus(ticker);
     const lastDate = status.lastSuccess?.date ?? null;
     // 마지막 성공 날짜가 expected에 미달이거나 아예 없으면 missing

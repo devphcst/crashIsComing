@@ -202,8 +202,8 @@ const ko: Dict = {
   athDrawdown: '전고점(ATH) 대비',
   oneYearDrawdown: '최근 52주 고점 대비',
   current: '최근 종가',
-  ath: '전고점',
-  oneYearHigh: '52주 고점',
+  ath: '전고점 (종가기준)',
+  oneYearHigh: '52주 고점 (종가기준)',
   asOfUs: (usDate) => `${usDate} 미국 시장 종가`,
   asOfKst: (kstLine) => `(${kstLine})`,
   updateSchedule: '거래일 기준 · 매일 미국 시장 마감 후 자동 업데이트됩니다.',
@@ -229,7 +229,7 @@ const ko: Dict = {
   marketNextUpdate: (kstDateLabel, weekday) => [
     { text: '한국 ' },
     { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
-    { text: ' 오전 7시 업데이트' },
+    { text: ' 오전 7시' },
   ],
   dateRangeShort: (startISO, endISO) => {
     const s = new Date(`${startISO}T00:00:00Z`);

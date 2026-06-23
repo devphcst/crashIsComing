@@ -17,6 +17,7 @@ import {
   readMeta,
   readSeed,
   readSymbolList,
+  renameSymbol,
   writeClose,
   writeManyCloses,
   writeSeed,
@@ -365,15 +366,30 @@ export async function updateMetaAction(
 
   const resolved = await resolveTickerFromForm(formData);
   if (!resolved.ok) return { ok: false, message: resolved.message };
-  const { ticker } = resolved;
+  const { ticker: oldTicker } = resolved;
 
   const displayName = String(formData.get("displayName") ?? "").trim();
   const orangeThreshold = parseThreshold(formData.get("orangeThreshold"));
   const redThreshold = parseThreshold(formData.get("redThreshold"));
   const exchange = parseExchange(formData.get("exchange"));
 
+  // newTicker는 옵셔널 — 폼이 안 보내면 기존 ticker 유지(rename 미사용).
+  const rawNewTicker = formData.get("newTicker");
+  const newTicker =
+    rawNewTicker === null || rawNewTicker === ""
+      ? oldTicker
+      : String(rawNewTicker).trim().toLowerCase();
+  const tickerChanged = newTicker !== oldTicker;
+
+  if (tickerChanged && oldTicker === DEFAULT_SYMBOL) {
+    return {
+      ok: false,
+      message: `기본 종목(${DEFAULT_SYMBOL})의 ticker는 변경할 수 없습니다.`,
+    };
+  }
+
   const meta: SymbolMeta = {
-    ticker,
+    ticker: newTicker,
     displayName,
     orangeThreshold,
     redThreshold,
@@ -382,7 +398,31 @@ export async function updateMetaAction(
   const err = validateMeta(meta);
   if (err) return { ok: false, message: META_ERROR_MESSAGES[err] };
 
-  await writeMeta(ticker, meta);
+  if (tickerChanged) {
+    // KV에서 newTicker 충돌 검사는 renameSymbol 내부에서 수행.
+    // symbolList 사전 검사로 더 정확한 에러 메시지를 먼저 제공.
+    const list = await readSymbolList();
+    if (list.includes(newTicker)) {
+      return { ok: false, message: `이미 사용 중인 ticker입니다: ${newTicker}` };
+    }
+    try {
+      await renameSymbol(oldTicker, meta);
+    } catch (e) {
+      return {
+        ok: false,
+        message: e instanceof Error ? e.message : String(e),
+      };
+    }
+    revalidatePath("/admin");
+    revalidatePath("/");
+    revalidatePath(`/${oldTicker}`);
+    revalidatePath(`/${newTicker}`);
+    revalidateTag("symbols");
+    // newTicker로 redirect — admin 폼이 새 ticker 컨텍스트로 갱신되도록.
+    redirect(`/admin?symbol=${newTicker}`);
+  }
+
+  await writeMeta(oldTicker, meta);
   revalidatePath("/admin");
   revalidatePath("/");
   revalidateTag("symbols");

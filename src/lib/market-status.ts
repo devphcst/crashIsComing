@@ -1,4 +1,9 @@
-import { getHolidayName, nextTradingDayAfter } from "./nyse-calendar";
+import {
+  getHolidayName,
+  nextTradingDayAfter,
+  nextWeekdayAfter,
+} from "./nyse-calendar";
+import type { Exchange } from "./symbols";
 
 /**
  * 가격 카드 위 "다음 업데이트" 띠의 분기.
@@ -55,7 +60,27 @@ const enumerateGap = (fromISO: string, toISO_: string): string[] => {
   return result;
 };
 
-export const computeMarketStatus = (latestCloseDate: string): MarketStatus => {
+export const computeMarketStatus = (
+  latestCloseDate: string,
+  exchange: Exchange = "NYSE",
+): MarketStatus => {
+  if (exchange === "KRX") {
+    // KRX 휴장일 맵 미구현 — 주말만 스킵. 공휴일(추석/설/광복절 등)이 다음 거래일에 끼면
+    // 띠가 가리키는 "다음 업데이트" 날짜가 하루 어긋남 (MVP 한계, 후속에서 캘린더 보강).
+    const next = nextWeekdayAfter(latestCloseDate);
+    const gap = enumerateGap(latestCloseDate, next);
+    if (gap.length === 0) {
+      return { kind: "normal", nextTradingDay: next };
+    }
+    const weekendDays = gap.filter(isWeekendISO);
+    return {
+      kind: "weekend",
+      nextTradingDay: next,
+      weekendStart: weekendDays[0],
+      weekendEnd: weekendDays[weekendDays.length - 1],
+    };
+  }
+
   const next = nextTradingDayAfter(latestCloseDate);
   const gap = enumerateGap(latestCloseDate, next);
 

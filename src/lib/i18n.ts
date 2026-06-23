@@ -50,11 +50,23 @@ export type Dict = {
   /**
    * 시장 상태 띠 우측 다음 업데이트 시각 — parts 배열.
    * 날짜+요일 부분만 value emphasis (text-white 강조 대상).
+   * 미국 종목: ET 16:00 close → KST 변환된 새벽 시각 (DST에 따라 오전 5/6시) 안내.
    */
   marketNextUpdate: (
     kstDateLabel: string,
     weekday: string,
   ) => Array<{ text: string; emphasis?: 'value' }>;
+  /** KRX 종목용 다음 업데이트 시각 — 한국시간 15:30 마감 기준. */
+  marketNextUpdateKrx: (
+    kstDateLabel: string,
+    weekday: string,
+  ) => Array<{ text: string; emphasis?: 'value' }>;
+  /** KRX 종목 푸터 — "{date} 한국 시장 종가" (자동/수동 구분 없이 사실만). */
+  asOfKrx: (krDateFormatted: string) => string;
+  /** KRX 종목 푸터 보조 — "(오후 3:30 마감)" 같은 마감 시각 표기. */
+  asOfKrxSuffix: string;
+  /** KRX 종목 푸터 — 자동 표현 없이 마감 시각 안내. */
+  updateScheduleKrx: string;
   /**
    * 두 ISO 날짜의 짧은 범위 표기.
    *   - 같은 달: '6월 21일~22일' / 'Jun 21–22'
@@ -237,6 +249,14 @@ const ko: Dict = {
     { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
     { text: ' 오전 7시' },
   ],
+  marketNextUpdateKrx: (kstDateLabel, weekday) => [
+    { text: '한국 ' },
+    { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
+    { text: ' 오후 3시 30분' },
+  ],
+  asOfKrx: (krDate) => `${krDate} 한국 시장 종가`,
+  asOfKrxSuffix: '(오후 3:30 마감)',
+  updateScheduleKrx: '한국 시장 마감(오후 3:30) 기준.',
   dateRangeShort: (startISO, endISO) => {
     const s = new Date(`${startISO}T00:00:00Z`);
     const e = new Date(`${endISO}T00:00:00Z`);
@@ -472,6 +492,14 @@ const en: Dict = {
     { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
     { text: ' dawn' },
   ],
+  marketNextUpdateKrx: (kstDateLabel, weekday) => [
+    { text: 'KST ' },
+    { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
+    { text: ' 15:30' },
+  ],
+  asOfKrx: (krDate) => `Korea market close on ${krDate}`,
+  asOfKrxSuffix: '(15:30 KST close)',
+  updateScheduleKrx: 'Korea market close (15:30 KST) basis.',
   dateRangeShort: (startISO, endISO) => {
     const months = [
       'Jan',

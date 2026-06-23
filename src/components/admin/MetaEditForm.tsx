@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { updateMetaAction, type ActionState } from "@/app/admin/actions";
-import { getExchange, type SymbolMeta } from "@/lib/symbols";
+import { DEFAULT_SYMBOL, getExchange, type SymbolMeta } from "@/lib/symbols";
 import { dictionaries } from "@/lib/i18n";
 
 const t = dictionaries.ko.admin.symbols;
@@ -26,10 +26,47 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
   const [state, formAction] = useFormState(updateMetaAction, initial);
   const [orange, setOrange] = useState(meta.orangeThreshold);
   const [red, setRed] = useState(meta.redThreshold);
+  const [newTicker, setNewTicker] = useState(meta.ticker);
+  // 기본 종목(DEFAULT_SYMBOL)은 코드 상수 매핑이 깨지므로 ticker 변경 금지 — UI 잠금.
+  const tickerLocked = meta.ticker === DEFAULT_SYMBOL;
+  const tickerChanged = !tickerLocked && newTicker !== meta.ticker;
 
   return (
     <form action={formAction} className="space-y-4">
+      {/* oldTicker — 서버 액션이 어떤 종목 row를 수정하는지 식별. 변경 불가. */}
       <input type="hidden" name="ticker" value={meta.ticker} />
+
+      <label className="block text-xs text-neutral-400">
+        {t.tickerLabel}
+        <input
+          type="text"
+          name="newTicker"
+          required
+          value={newTicker}
+          onChange={(e) =>
+            setNewTicker(e.target.value.trim().toLowerCase())
+          }
+          readOnly={tickerLocked}
+          disabled={tickerLocked}
+          className={
+            "mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none " +
+            (tickerLocked ? "opacity-60" : "")
+          }
+        />
+        {tickerLocked ? (
+          <span className="mt-1 block text-[10px] text-neutral-500">
+            기본 종목의 ticker는 변경할 수 없습니다.
+          </span>
+        ) : tickerChanged ? (
+          <span className="mt-1 block text-[10px] text-amber-400">
+            ticker 변경 시 종가/시드/분할 로그 등 모든 KV 키가 새 ticker로 이전됩니다.
+          </span>
+        ) : (
+          <span className="mt-1 block text-[10px] text-neutral-500">
+            {t.tickerHint}
+          </span>
+        )}
+      </label>
 
       <label className="block text-xs text-neutral-400">
         {t.displayNameLabel}

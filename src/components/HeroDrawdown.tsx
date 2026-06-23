@@ -47,8 +47,7 @@ export type HeroData =
         oneWeek: PeriodPoint | null;
         oneMonth: PeriodPoint | null;
       };
-      /** KRX 등 자동 업데이트 없는 종목은 null — 시장 상태 띠 자체 미렌더. */
-      marketStatus: MarketStatus | null;
+      marketStatus: MarketStatus;
       thresholds: LevelThresholds;
     }
   | { ready: false };
@@ -184,9 +183,14 @@ export function HeroDrawdown({
                   }}
                 />
                 <Facts data={data} dict={d} lang={lang} />
-                {/* LastUpdated는 미국 자동 업데이트 안내 — KRX는 수동 입력이라
-                    가격 카드의 "YYYY년 M월 D일 (요일) 종가" 한 줄로 충분. */}
-                {data.exchange === "KRX" ? null : (
+                {data.exchange === "KRX" ? (
+                  // KRX 종목 캡션 — 자동 표현 빼고 마감 시각 사실만.
+                  <LastUpdated
+                    asOfUsText={d.asOfKrx(formatDate(data.current.date, lang))}
+                    asOfKstText={d.asOfKrxSuffix}
+                    scheduleText={d.updateScheduleKrx}
+                  />
+                ) : (
                   <LastUpdated
                     asOfUsText={d.asOfUs(formatDate(data.current.date, lang))}
                     asOfKstText={(() => {
@@ -579,13 +583,15 @@ function MarketStatusBanner({
   lang: Lang;
 }) {
   const ms = data.marketStatus;
-  // KRX 등 자동 업데이트 없는 종목은 띠 자체 렌더 안 함.
-  if (ms === null) return null;
-  const nextKstISO = kstMomentToISO(usCloseInKst(ms.nextTradingDay));
-  const nextParts = dict.marketNextUpdate(
-    formatShortDate(nextKstISO, lang),
-    dict.weekdayShort(nextKstISO),
-  );
+  // 미국 종목: ET 16:00 close를 KST로 변환 (DST에 따라 다음 날 오전 5/6시).
+  // KRX 종목: 마감 시각이 KST 15:30이라 nextTradingDay 자체가 곧 한국 캘린더 날짜 — 변환 불필요.
+  const nextKstISO =
+    data.exchange === "KRX"
+      ? ms.nextTradingDay
+      : kstMomentToISO(usCloseInKst(ms.nextTradingDay));
+  const nextParts = (
+    data.exchange === "KRX" ? dict.marketNextUpdateKrx : dict.marketNextUpdate
+  )(formatShortDate(nextKstISO, lang), dict.weekdayShort(nextKstISO));
 
   let statusText: string;
   switch (ms.kind) {

@@ -289,6 +289,136 @@ export const writeSymbolList = async (tickers: string[]): Promise<void> => {
   await kv.set(KV_KEYS.symbolList, JSON.stringify(tickers));
 };
 
+/**
+ * 종목 ticker 변경 + 메타 갱신을 한 번에. ticker가 KV 키에 박혀 있으므로
+ * 데이터를 새 키로 옮기고 옛 키를 정리하는 마이그레이션이 필요하다.
+ *
+ * 단계 순서가 중요 — 중간 실패 시 데이터 유실 최소화:
+ *   1) 충돌 검사: 새 ticker가 이미 symbolList에 있거나 잔여 KV 키가 있으면 reject.
+ *   2) old의 모든 데이터를 read.
+ *   3) new 키에 모두 write (meta는 ticker 필드 갱신).
+ *   4) symbolList 교체.
+ *   5) old 키 일괄 del.
+ *
+ * 1~3 사이 실패: new 쪽에 데이터 없음 → 안전 (old 그대로).
+ * 4~5 사이 실패: list는 new를 가리키지만 old 키도 남음 → 페이지는 정상,
+ *   다음 호출이 "잔여 키" 검사에서 catch. "수동 정리 필요" 안내.
+ *
+ * 기본 종목(DEFAULT_SYMBOL)의 ticker 변경은 코드 상수 매핑이 깨지므로 금지.
+ */
+export const renameSymbol = async (
+  oldTicker: string,
+  newMeta: SymbolMeta,
+): Promise<void> => {
+  const newTicker = newMeta.ticker;
+  // ticker가 동일하면 단순 메타 갱신.
+  if (oldTicker === newTicker) {
+    await writeMeta(oldTicker, newMeta);
+    return;
+  }
+  if (oldTicker === DEFAULT_SYMBOL) {
+    throw new Error(
+      `기본 종목(${DEFAULT_SYMBOL})의 ticker는 변경할 수 없습니다.`,
+    );
+  }
+
+  // ---- dev store 분기 (로컬·테스트) ----
+  if (!isKvConfigured()) {
+    const s = await readDevStore();
+    if (s.symbols[newTicker]) {
+      throw new Error(`이미 사용 중인 ticker입니다: ${newTicker}`);
+    }
+    if (!s.symbols[oldTicker]) {
+      throw new Error(`이전 ticker가 없습니다: ${oldTicker}`);
+    }
+    s.symbols[newTicker] = {
+      ...s.symbols[oldTicker],
+      meta: { ...newMeta, ticker: newTicker },
+    };
+    delete s.symbols[oldTicker];
+    s.symbolList = s.symbolList.map((t) => (t === oldTicker ? newTicker : t));
+    await writeDevStore(s);
+    return;
+  }
+
+  // ---- KV 분기 (운영) ----
+  await beforeKv();
+
+  // 1) 충돌 검사 — list 멤버 + 잔여 KV 키 둘 다.
+  const list = await readSymbolList();
+  if (list.includes(newTicker)) {
+    throw new Error(`이미 사용 중인 ticker입니다: ${newTicker}`);
+  }
+  const residuals = await Promise.all([
+    kv.exists(KV_KEYS.meta(newTicker)),
+    kv.exists(KV_KEYS.closes(newTicker)),
+    kv.exists(KV_KEYS.seed(newTicker)),
+    kv.exists(KV_KEYS.adjustments(newTicker)),
+    kv.exists(KV_KEYS.ingest(newTicker)),
+  ]);
+  if (residuals.some((n) => Number(n) > 0)) {
+    throw new Error(
+      `'${newTicker}'에 이전 ticker 정리되지 않은 잔여 데이터가 있습니다. 관리자에게 수동 정리를 요청하세요.`,
+    );
+  }
+
+  // 2) old 데이터 일괄 read.
+  const [closesRaw, seedRaw, adjRaw, ingestRaw] = await Promise.all([
+    kv.hgetall(KV_KEYS.closes(oldTicker)) as Promise<Record<
+      string,
+      string | Close
+    > | null>,
+    kv.get<SeedHighs | string>(KV_KEYS.seed(oldTicker)),
+    kv.lrange(KV_KEYS.adjustments(oldTicker), 0, -1) as Promise<
+      (string | AdjustmentLog)[]
+    >,
+    kv.get<IngestStatus | string>(KV_KEYS.ingest(oldTicker)),
+  ]);
+
+  // 3) new 키에 일괄 write. meta는 ticker 필드 강제 갱신.
+  const metaToWrite: SymbolMeta = { ...newMeta, ticker: newTicker };
+  const writes: Promise<unknown>[] = [
+    kv.set(KV_KEYS.meta(newTicker), JSON.stringify(metaToWrite)),
+  ];
+  if (closesRaw && Object.keys(closesRaw).length) {
+    const payload: Record<string, string> = {};
+    for (const [date, v] of Object.entries(closesRaw)) {
+      payload[date] = typeof v === "string" ? v : JSON.stringify(v);
+    }
+    writes.push(kv.hset(KV_KEYS.closes(newTicker), payload));
+  }
+  if (seedRaw !== null && seedRaw !== undefined) {
+    const seedStr =
+      typeof seedRaw === "string" ? seedRaw : JSON.stringify(seedRaw);
+    writes.push(kv.set(KV_KEYS.seed(newTicker), seedStr));
+  }
+  if (adjRaw.length) {
+    const payload = adjRaw.map((v) =>
+      typeof v === "string" ? v : JSON.stringify(v),
+    );
+    writes.push(kv.rpush(KV_KEYS.adjustments(newTicker), ...payload));
+  }
+  if (ingestRaw !== null && ingestRaw !== undefined) {
+    const ingestStr =
+      typeof ingestRaw === "string" ? ingestRaw : JSON.stringify(ingestRaw);
+    writes.push(kv.set(KV_KEYS.ingest(newTicker), ingestStr));
+  }
+  await Promise.all(writes);
+
+  // 4) symbolList에서 old → new 교체.
+  const nextList = list.map((t) => (t === oldTicker ? newTicker : t));
+  await writeSymbolList(nextList);
+
+  // 5) old 키 일괄 삭제. 여기서 실패해도 list는 이미 new를 가리키므로 페이지는 정상.
+  await Promise.all([
+    kv.del(KV_KEYS.meta(oldTicker)),
+    kv.del(KV_KEYS.closes(oldTicker)),
+    kv.del(KV_KEYS.seed(oldTicker)),
+    kv.del(KV_KEYS.adjustments(oldTicker)),
+    kv.del(KV_KEYS.ingest(oldTicker)),
+  ]);
+};
+
 export const deleteSymbol = async (ticker: string): Promise<void> => {
   if (ticker === DEFAULT_SYMBOL) {
     throw new Error(`기본 종목(${DEFAULT_SYMBOL})은 삭제할 수 없습니다.`);

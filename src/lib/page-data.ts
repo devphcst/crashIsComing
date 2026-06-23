@@ -82,8 +82,7 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
         drawdownPct: calcDrawdown(latest.price, oneYear.price),
       },
       breakdown: periodDrawdowns,
-      // KRX는 수동 입력이라 "다음 업데이트" 띠가 무의미 → null로 두면 UI 숨김.
-      marketStatus: exchange === "KRX" ? null : computeMarketStatus(latest.date),
+      marketStatus: computeMarketStatus(latest.date, exchange),
       thresholds: {
         orange: meta.orangeThreshold,
         red: meta.redThreshold,

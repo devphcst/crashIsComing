@@ -93,6 +93,24 @@ export const lastTradingDayBefore = (now: Date): string => {
 };
 
 /**
+ * `dateISO` 다음 평일(월~금)을 반환 — KRX(한국 거래소)용 임시 캘린더.
+ * KRX 휴장일 맵 미구현이라 주말만 건너뛰고 공휴일은 무시한다. 추석·설·광복절 등
+ * 평일 공휴일이면 "다음 거래일" 시각이 하루(또는 그 이상) 어긋날 수 있음 — MVP 한계.
+ * 후속에서 KRX holiday map을 도입하면 nextTradingDayAfter처럼 보강할 것.
+ */
+export const nextWeekdayAfter = (dateISO: string): string => {
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const cursor = new Date(Date.UTC(y, m - 1, d));
+  for (let i = 0; i < 7; i++) {
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    if (!isWeekend(cursor)) return toUTCDateString(cursor);
+  }
+  throw new Error(
+    `nextWeekdayAfter: no weekday found within 7 days of ${dateISO}`,
+  );
+};
+
+/**
  * `dateISO` 다음 NYSE 거래일을 반환 (주말·공휴일 스킵).
  * 입력 자체가 비거래일이어도 OK — 단순히 다음 거래일을 찾는다.
  */

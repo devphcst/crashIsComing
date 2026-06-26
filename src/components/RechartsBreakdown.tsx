@@ -185,6 +185,39 @@ export function RechartsBreakdown({
   // 탭 진행 중 (start만 있음, end 없음) 인지.
   const tapInProgress = !!tappedStart && !tappedEnd;
 
+  // 두 점 사이 라인 색상 강조용 derived 데이터.
+  // 원본 closes 위에 두 번째 Line(`highlightedPrice` 키)을 덧그리되, 강조 구간 밖은 null →
+  // recharts가 `connectNulls=false`로 그 영역만 그림. 색·굵기는 변화율에 따라 분기.
+  // 비교 비활성 시 모든 값 null → 두 번째 Line은 사실상 안 그려짐.
+  const enrichedData = useMemo(() => {
+    if (!comparePoints) {
+      return closes.map((c) => ({
+        date: c.date,
+        price: c.price,
+        highlightedPrice: null as number | null,
+      }));
+    }
+    const startIdx = closes.findIndex(
+      (c) => c.date === comparePoints.start.date,
+    );
+    const endIdx = closes.findIndex(
+      (c) => c.date === comparePoints.end.date,
+    );
+    const [lo, hi] =
+      startIdx <= endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+    return closes.map((c, i) => ({
+      date: c.date,
+      price: c.price,
+      highlightedPrice: i >= lo && i <= hi ? c.price : (null as number | null),
+    }));
+  }, [closes, comparePoints]);
+
+  const highlightStroke = !comparePoints
+    ? "#888888"
+    : comparePoints.pct < 0
+      ? "#f87171" // 음수 — 빨강
+      : "#e5e5e5"; // 양수/0 — 밝은 회색
+
   if (closes.length < MIN_POINTS) {
     return (
       <div className="mt-4 flex h-32 items-center justify-center rounded-md border border-neutral-800 bg-neutral-950/40 text-xs text-neutral-500">
@@ -227,10 +260,12 @@ export function RechartsBreakdown({
         })}
       </div>
 
-      <div className="h-44 w-full">
+      {/* 클릭 시 브라우저 기본 focus outline 제거 — recharts SVG가 focus를 받으면
+          파란 ring이 사이트 톤과 충돌. 키보드 접근성은 빠른 비교 버튼이 담당. */}
+      <div className="h-44 w-full outline-none [&_*:focus]:outline-none [&_*:focus-visible]:outline-none">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={closes as Point[]}
+            data={enrichedData}
             margin={{ top: 8, right: 8, bottom: 4, left: 0 }}
             onClick={(state) => onTap(state?.activeLabel)}
           >
@@ -261,6 +296,18 @@ export function RechartsBreakdown({
                 stroke: "#0a0a0a",
                 strokeWidth: 1.5,
               }}
+            />
+            {/* 두 점 사이 강조 구간 — connectNulls=false라서 강조 외 영역은 빈 path.
+                양수 → 밝은 회색, 음수 → 빨강. 비교 비활성 시 모든 값 null로 안 그려짐. */}
+            <Line
+              type="monotone"
+              dataKey="highlightedPrice"
+              stroke={highlightStroke}
+              strokeWidth={2}
+              dot={false}
+              activeDot={false}
+              connectNulls={false}
+              isAnimationActive={false}
             />
             {/* 시작 마커 — 빠른 버튼이든 사용자 탭이든 같은 빨강. */}
             {startMarker ? (

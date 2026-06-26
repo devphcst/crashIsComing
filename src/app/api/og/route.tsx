@@ -1,12 +1,10 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { readMeta, readSeed, readSymbolList } from "@/lib/kv";
+import { readMeta, readSymbolList } from "@/lib/kv";
 import { getProvider } from "@/lib/providers";
 import { computeATH } from "@/lib/peaks";
 import { calcDrawdown } from "@/lib/drawdown";
-import { formatPrice } from "@/lib/format";
-import { levelFor } from "@/constants/thresholds";
 import {
   DEFAULT_SYMBOL,
   getExchange,
@@ -14,15 +12,25 @@ import {
 } from "@/lib/symbols";
 
 /**
- * 종목별 동적 OG 이미지. /api/og?ticker=soxl
+ * 종목별 동적 OG 이미지. /api/og?ticker=soxl[&lang=en]
  *
- * runtime은 nodejs — Vercel KV는 edge 호환이지만 우리 kv.ts가 dev에서 .dev-store.json을
- * 읽기 위해 node:fs/promises를 사용한다. edge로 바꾸면 로컬 개발이 깨지므로 node 유지.
- * OG는 SNS 캐시 + CDN 캐시(Cache-Control)로 부하 미미.
+ * runtime은 nodejs — Vercel KV 자체는 edge 호환이지만 우리 kv.ts가 dev에서
+ * .dev-store.json을 node:fs/promises로 읽는다. edge로 바꾸면 로컬 개발이 깨지므로
+ * node 유지. OG는 SNS 캐시 + CDN 캐시(Cache-Control)로 부하 미미.
+ *
+ * 디자인 (1200×630):
+ *   - 상단좌(60px padding): "폭락장은 온다" / "crash-is-coming"
+ *   - 가운데(수직 중앙):     종목명 / "전고점(ATH) 대비" / 큰 숫자(120px)
+ *   - 하단우(60px padding): "YYYY년 M월 D일 종가 기준"
+ *
+ * 색상 분기 — 큰 숫자만:
+ *   - 음수(< 0%): #f87171 (빨강)
+ *   - 양수/0 / 데이터 없음: #ffffff (흰색)
+ *
+ * 한글: PretendardStd(서브셋, ~310KB) 번들.
+ * 영문(?lang=en): 같은 폰트가 라틴 글리프 포함.
  *
  * 검색 엔진/SNS 크롤러가 미등록 ticker로 찌르면 DEFAULT_SYMBOL로 폴백.
- *
- * 한글: PretendardStd(서브셋, ~310KB) 번들. displayName + 사이트 카피만 한글이라 충분.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,10 +44,16 @@ const loadFont = (): Promise<ArrayBuffer> => {
   if (!fontPromise) {
     fontPromise = readFile(
       path.join(process.cwd(), "public/fonts/PretendardStd-Bold.otf"),
-    ).then((buf) => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+    ).then((buf) =>
+      buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+    );
   }
   return fontPromise;
 };
+
+type Lang = "ko" | "en";
+
+const parseLang = (raw: string | null): Lang => (raw === "en" ? "en" : "ko");
 
 const resolveTicker = async (raw: string | null): Promise<string> => {
   const t = (raw ?? DEFAULT_SYMBOL).trim().toLowerCase();
@@ -47,12 +61,10 @@ const resolveTicker = async (raw: string | null): Promise<string> => {
   return list.includes(t) ? t : DEFAULT_SYMBOL;
 };
 
-/** OG 화면에 필요한 최소 데이터 — 메타 + 최신 종가 + ATH 가격. */
 type OgData = {
   meta: SymbolMeta;
   pct: number | null;
-  latestPrice: number | null;
-  athPrice: number | null;
+  latestDate: string | null;
 };
 
 const loadOgData = async (ticker: string): Promise<OgData> => {
@@ -65,142 +77,162 @@ const loadOgData = async (ticker: string): Promise<OgData> => {
   ]);
   const ath = computeATH(closes, seed);
   if (!latest || !ath) {
-    return { meta, pct: null, latestPrice: null, athPrice: null };
+    return { meta, pct: null, latestDate: null };
   }
   return {
     meta,
     pct: calcDrawdown(latest.price, ath.price),
-    latestPrice: latest.price,
-    athPrice: ath.price,
+    latestDate: latest.date,
   };
 };
 
-/** levelFor → 색상 HEX. calm=중립, warn=주황, alarm=빨강. */
-const colorForLevel = (
-  pct: number,
-  thresholds: { orange: number; red: number },
-): string => {
-  switch (levelFor(pct, thresholds)) {
-    case "alarm":
-      return "#ef4444"; // red-500
-    case "warn":
-      return "#fbbf24"; // amber-400
-    case "calm":
-      return "#e5e5e5"; // neutral-200
-  }
-};
-
-/** "-25.0%" 형태. NaN/null이면 "—%". */
-const fmtPct = (pct: number | null): string => {
+/**
+ * "−15.7%" / "+5.2%" — U+2212 minus, U+002B plus. 한 자리 소수.
+ * pct가 null이면 "—%" (em dash).
+ */
+const fmtBigPct = (pct: number | null): string => {
   if (pct === null || !Number.isFinite(pct)) return "—%";
   const rounded = Number(pct.toFixed(1));
-  // toFixed가 부호 자동 처리. 0이면 "0.0%" — 사이트 정책 동일.
-  return `${rounded.toFixed(1)}%`;
+  if (rounded < 0) return `−${Math.abs(rounded).toFixed(1)}%`;
+  if (rounded > 0) return `+${rounded.toFixed(1)}%`;
+  return "0.0%";
 };
+
+const colorForPct = (pct: number | null): string => {
+  if (pct === null || !Number.isFinite(pct)) return "#ffffff";
+  return pct < 0 ? "#f87171" : "#ffffff";
+};
+
+/** "YYYY년 M월 D일 종가 기준" (ko) / "as of {Mon D, YYYY} close" (en). */
+const fmtAsOf = (dateISO: string | null, lang: Lang): string => {
+  if (!dateISO) return "";
+  const d = new Date(`${dateISO}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return "";
+  if (lang === "ko") {
+    return `${d.getUTCFullYear()}년 ${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 종가 기준`;
+  }
+  const formatted = d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  return `as of ${formatted} close`;
+};
+
+const COPY = {
+  ko: {
+    brand: "폭락장은 온다",
+    domain: "crash-is-coming",
+    athLabel: "전고점(ATH) 대비",
+  },
+  en: {
+    brand: "Crash Is Coming",
+    domain: "crash-is-coming",
+    athLabel: "ATH Drawdown",
+  },
+} as const;
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
+    const lang = parseLang(url.searchParams.get("lang"));
     const ticker = await resolveTicker(url.searchParams.get("ticker"));
-    const [{ meta, pct, latestPrice, athPrice }, fontData] = await Promise.all([
+    const [{ meta, pct, latestDate }, fontData] = await Promise.all([
       loadOgData(ticker),
       loadFont(),
     ]);
-    const exchange = getExchange(meta);
-    const thresholds = {
-      orange: meta.orangeThreshold,
-      red: meta.redThreshold,
-    };
-    const color = pct === null ? "#a3a3a3" : colorForLevel(pct, thresholds);
-    const pctText = fmtPct(pct);
-    const subText =
-      latestPrice !== null && athPrice !== null
-        ? `${formatPrice(latestPrice, exchange)}  /  ATH ${formatPrice(athPrice, exchange)}`
-        : "데이터 준비 중";
+    // exchange는 현재 OG에 노출 안 함 (날짜 라벨만으로 충분), 추후 KR 종목에
+    // 통화 보조 라인 추가 시 활용.
+    void getExchange(meta);
+
+    const copy = COPY[lang];
+    const pctText = fmtBigPct(pct);
+    const pctColor = colorForPct(pct);
+    const asOfText = fmtAsOf(latestDate, lang);
 
     return new ImageResponse(
       (
         <div
           style={{
+            position: "relative",
             width: "100%",
             height: "100%",
             display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "#0a0a0a",
+            background: "#000000",
             color: "#e5e5e5",
             fontFamily: "Pretendard",
-            padding: 64,
           }}
         >
-          {/* displayName pill */}
+          {/* 상단 좌 — 브랜드 (60px padding) */}
           <div
             style={{
-              border: "2px solid #525252",
-              background: "rgba(23,23,23,0.6)",
-              color: "#e5e5e5",
-              padding: "12px 32px",
-              borderRadius: 999,
-              fontSize: 40,
-              letterSpacing: 1,
-              marginBottom: 28,
-              maxWidth: 1000,
-              textAlign: "center",
-            }}
-          >
-            {meta.displayName}
-          </div>
-
-          <div
-            style={{
-              color: "#737373",
-              fontSize: 32,
-              marginBottom: 8,
-            }}
-          >
-            전고점 대비
-          </div>
-
-          {/* 큰 낙폭 숫자 — 임계값별 색상 */}
-          <div
-            style={{
-              fontSize: 240,
-              color,
-              letterSpacing: -8,
-              lineHeight: 1,
-            }}
-          >
-            {pctText}
-          </div>
-
-          {/* 가격 / ATH 보조 */}
-          <div
-            style={{
-              marginTop: 24,
-              color: "#a3a3a3",
-              fontSize: 32,
-              letterSpacing: 1,
-            }}
-          >
-            {subText}
-          </div>
-
-          {/* 브랜드 + 도메인 — 푸터 */}
-          <div
-            style={{
-              marginTop: 48,
-              color: "#737373",
-              fontSize: 28,
-              letterSpacing: 2,
+              position: "absolute",
+              top: 60,
+              left: 60,
               display: "flex",
-              gap: 16,
-              alignItems: "center",
+              flexDirection: "column",
+              gap: 4,
             }}
           >
-            <span>폭락장은 온다</span>
-            <span style={{ color: "#404040" }}>·</span>
-            <span style={{ color: "#525252" }}>crash-is-coming.vercel.app</span>
+            <div style={{ fontSize: 18, color: "#888888" }}>{copy.brand}</div>
+            <div style={{ fontSize: 14, color: "#555555" }}>{copy.domain}</div>
+          </div>
+
+          {/* 가운데 — 종목명 / ATH 라벨 / 큰 숫자. 절대 정중앙. */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 28,
+                color: "#aaaaaa",
+                letterSpacing: 1,
+                maxWidth: 1000,
+                textAlign: "center",
+              }}
+            >
+              {meta.displayName}
+            </div>
+            <div style={{ fontSize: 16, color: "#666666" }}>
+              {copy.athLabel}
+            </div>
+            <div
+              style={{
+                fontSize: 120,
+                color: pctColor,
+                letterSpacing: -4,
+                lineHeight: 1,
+                marginTop: 4,
+              }}
+            >
+              {pctText}
+            </div>
+          </div>
+
+          {/* 하단 우 — 날짜 (60px padding) */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 60,
+              right: 60,
+              display: "flex",
+              fontSize: 14,
+              color: "#555555",
+            }}
+          >
+            {asOfText}
           </div>
         </div>
       ),
@@ -216,7 +248,7 @@ export async function GET(req: Request) {
           },
         ],
         headers: {
-          // 종가는 하루 1회 갱신이라 1시간 CDN 캐시 + 6시간 SWR. SNS는 자체 캐시.
+          // 종가는 하루 1회 갱신 → 1h CDN 캐시 + 6h SWR. SNS 자체 캐시는 별도.
           "Cache-Control":
             "public, max-age=0, s-maxage=3600, stale-while-revalidate=21600",
         },

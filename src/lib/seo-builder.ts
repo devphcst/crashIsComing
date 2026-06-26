@@ -53,9 +53,9 @@ export const buildSymbolMetadata = (
   const description = descriptionForMeta(lang, meta);
   const path = canonicalPathFor(meta.ticker);
   const url = `${SITE_URL}${path}`;
-  // 동적 OG — 종목별 낙폭 숫자가 박힌 썸네일.
+  // 동적 OG — 종목별 낙폭 숫자가 박힌 썸네일. lang을 함께 전달해 ko/en 텍스트 분기.
   // metadataBase(layout.tsx)가 절대 URL로 변환.
-  const ogImageUrl = `/api/og?ticker=${meta.ticker}`;
+  const ogImageUrl = `/api/og?ticker=${meta.ticker}&lang=${lang}`;
   return {
     // absolute로 layout.tsx의 "%s | TQQQ" 템플릿이 덧붙지 않게 함
     // (title 자체가 이미 종목 + 브랜드 의미를 모두 담고 있음)

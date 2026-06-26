@@ -301,6 +301,13 @@ function HeroNumbers({
       point: data.breakdown.oneYear,
     },
   ];
+  // 4개 항목 같은 가로 막대 스케일 공유 — 시점 간 직관적 비교용.
+  // 최소 천장 5% — 모든 변동이 미세해도 막대가 0이 아닌 길이로 보이도록.
+  const MIN_BAR_SCALE = 5;
+  const maxAbsPct = Math.max(
+    MIN_BAR_SCALE,
+    ...visibleItems.map((i) => Math.abs(i.point?.pct ?? 0)),
+  );
   return (
     <div className="flex w-full max-w-full flex-col items-center gap-3 text-center">
       {/* SEO: pill을 <h1>로 마크업 — 종목 페이지마다 ticker가 페이지 주제 신호로
@@ -382,6 +389,7 @@ function HeroNumbers({
                     dict={dict}
                     lang={lang}
                     exchange={data.exchange}
+                    maxAbsPct={maxAbsPct}
                     active={activePeriod === item.key}
                     onToggle={() => toggle(item.key)}
                   />
@@ -432,6 +440,7 @@ function PeriodItem({
   dict,
   lang,
   exchange,
+  maxAbsPct,
 }: {
   period: BreakdownKey;
   label: string;
@@ -441,8 +450,10 @@ function PeriodItem({
   dict: ReturnType<typeof getDict>;
   lang: Lang;
   exchange: "NYSE" | "KRX";
+  /** 4개 항목 공유 스케일 — 정규화된 막대 길이 계산용. */
+  maxAbsPct: number;
 }) {
-  // 데이터 부족 시 — 항목 유지하되 비활성. 호버/탭/툴팁 모두 비활성.
+  // 데이터 부족 시 — 항목 유지하되 비활성. 호버/탭/툴팁/막대 모두 비활성.
   // !point: null + undefined 둘 다 처리 (stale cache나 빌드 캐시가 옛 shape를 들고 와
   // breakdown.oneYear가 undefined로 들어오는 케이스 가드).
   if (!point) {
@@ -456,7 +467,14 @@ function PeriodItem({
     );
   }
   const rounded = Number(point.pct.toFixed(1));
-  const valueClass = rounded < 0 ? "text-red-400" : "text-neutral-500";
+  const negative = rounded < 0;
+  const valueClass = negative ? "text-red-400" : "text-neutral-500";
+  // 가로 막대 길이 — 0 기준 좌/우 각각 50% 영역 안에서 |pct|/maxAbs 비율.
+  // rounded 기준으로 그려 텍스트 값과 막대가 시각적으로 일치하게.
+  const barWidthPct = Math.min(
+    50,
+    (Math.abs(rounded) / Math.max(maxAbsPct, 0.001)) * 50,
+  );
   const detailText = dict.breakdownTooltip({
     period,
     dateLabel: formatShortDate(point.date, lang),
@@ -473,13 +491,33 @@ function PeriodItem({
         aria-expanded={active}
         aria-controls={`breakdown-detail-${period}`}
         aria-label={detailText}
-        className={`flex w-full items-baseline justify-between rounded px-2 py-0.5 text-sm transition-colors hover:bg-neutral-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-700 ${
+        className={`block w-full rounded px-2 py-1 transition-colors hover:bg-neutral-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-700 ${
           active ? "bg-neutral-900/60" : ""
         }`}
       >
-        <span className="text-neutral-500">{label}</span>
-        <span className={`font-mono ${valueClass}`}>
-          {formatSignedPct(point.pct, 1)}
+        <span className="flex items-baseline justify-between text-sm">
+          <span className="text-neutral-500">{label}</span>
+          <span className={`font-mono ${valueClass}`}>
+            {formatSignedPct(point.pct, 1)}
+          </span>
+        </span>
+        {/* 가로 막대 — 4항목 공유 스케일. 0 기준 중앙 수직선 + 양/음 방향 막대. */}
+        <span
+          aria-hidden
+          className="relative mt-1 block h-[3px] w-full overflow-hidden rounded-sm bg-neutral-900"
+        >
+          {/* 0% 기준 중앙 가이드 */}
+          <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-neutral-700" />
+          {/* 실 막대 — 양수는 중앙→오른쪽, 음수는 중앙→왼쪽 */}
+          <span
+            className={
+              "absolute top-0 h-full " +
+              (negative
+                ? "right-1/2 bg-red-400"
+                : "left-1/2 bg-neutral-500")
+            }
+            style={{ width: `${barWidthPct}%` }}
+          />
         </span>
       </button>
       <div

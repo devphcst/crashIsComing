@@ -392,8 +392,10 @@ function HeroNumbers({
                 {dict.breakdownHint}
               </p>
 
-              {/* 섹션 1 — 시점별 변화율(막대 차트). 헤더(제목 + 부제) 후 8px 간격. */}
-              <div className="mx-auto mt-6 w-full max-w-[200px]">
+              {/* 섹션 1 — 시점별 변화율(막대 차트). 헤더(제목 + 부제) 후 8px 간격.
+                  outer max-w는 섹션 2와 동일(400px) — 두 섹션 헤더 첫 글자 X 좌표 일치.
+                  막대 row만 안쪽에서 max-w-[200px] mx-auto로 가운데 정렬 유지 (디자인 보존). */}
+              <div className="mx-auto mt-6 w-full max-w-[400px]">
                 <div className="mb-2 text-left">
                   <div className="text-xs font-medium text-neutral-300">
                     {dict.chart.sectionPeriod.title}
@@ -406,7 +408,7 @@ function HeroNumbers({
                 </div>
                 <div
                   ref={breakdownRowRef}
-                  className="flex w-full flex-col"
+                  className="mx-auto flex w-full max-w-[200px] flex-col"
                 >
                   {visibleItems.map((item) => (
                     <PeriodItem

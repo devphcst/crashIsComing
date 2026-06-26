@@ -175,8 +175,8 @@ export async function GET(req: Request) {
               gap: 4,
             }}
           >
-            <div style={{ fontSize: 18, color: "#888888" }}>{copy.brand}</div>
-            <div style={{ fontSize: 14, color: "#555555" }}>{copy.domain}</div>
+            <div style={{ fontSize: 24, color: "#888888" }}>{copy.brand}</div>
+            <div style={{ fontSize: 16, color: "#555555" }}>{copy.domain}</div>
           </div>
 
           {/* 가운데 — 종목명 / ATH 라벨 / 큰 숫자. 절대 정중앙. */}
@@ -196,7 +196,8 @@ export async function GET(req: Request) {
           >
             <div
               style={{
-                fontSize: 28,
+                fontSize: 36,
+                fontWeight: 500,
                 color: "#aaaaaa",
                 letterSpacing: 1,
                 maxWidth: 1000,
@@ -205,14 +206,14 @@ export async function GET(req: Request) {
             >
               {meta.displayName}
             </div>
-            <div style={{ fontSize: 16, color: "#666666" }}>
+            <div style={{ fontSize: 20, color: "#666666" }}>
               {copy.athLabel}
             </div>
             <div
               style={{
-                fontSize: 120,
+                fontSize: 140,
                 color: pctColor,
-                letterSpacing: -4,
+                letterSpacing: -2,
                 lineHeight: 1,
                 marginTop: 4,
               }}
@@ -228,7 +229,7 @@ export async function GET(req: Request) {
               bottom: 60,
               right: 60,
               display: "flex",
-              fontSize: 14,
+              fontSize: 18,
               color: "#555555",
             }}
           >

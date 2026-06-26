@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
 import {
@@ -33,6 +34,14 @@ import {
   CONTAINER_BASELINE_PX,
 } from "@/constants/layout";
 
+// recharts는 ~300KB. 펼침 토글이 열렸을 때만 import되도록 lazy load.
+// ssr:false — recharts ResponsiveContainer가 window 의존, 클라이언트에서만 마운트.
+// Phase 2 단계별 확장 예정 (B: 빠른 비교 버튼, C: 두 점 탭).
+const RechartsBreakdown = dynamic(
+  () => import("./RechartsBreakdown").then((m) => m.RechartsBreakdown),
+  { ssr: false, loading: () => <div className="mt-4 h-44 w-full" /> },
+);
+
 export type HeroData =
   | {
       ready: true;
@@ -50,6 +59,12 @@ export type HeroData =
       };
       marketStatus: MarketStatus;
       thresholds: LevelThresholds;
+      /**
+       * 최근 252거래일까지의 종가 (오름차순). 인터랙티브 차트가 사용.
+       * closes가 7일 미만이면 차트는 "데이터 누적 중" 폴백.
+       * 252개를 넘어도 252개로 잘라 페이로드 크기 일정 (한 종목 ≈ 8KB).
+       */
+      recentCloses: ReadonlyArray<{ date: string; price: number }>;
     }
   | { ready: false };
 
@@ -394,6 +409,15 @@ function HeroNumbers({
                     onToggle={() => toggle(item.key)}
                   />
                 ))}
+              </div>
+              {/* Phase 2-A: 기반 라인 차트. 빠른 비교 버튼·두 점 탭은 후속 sub-phase. */}
+              <div className="mx-auto mt-4 w-full max-w-[400px]">
+                <RechartsBreakdown
+                  closes={data.recentCloses}
+                  exchange={data.exchange}
+                  lang={lang}
+                  emptyText={dict.chart.empty}
+                />
               </div>
             </div>
           </div>

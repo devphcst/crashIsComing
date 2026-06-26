@@ -67,6 +67,13 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
 
     const exchange = getExchange(meta);
 
+    // 차트용 — 최근 252거래일까지만 잘라 client payload 크기 일정 유지(≈ 8KB).
+    // closes는 이미 오름차순. slice는 얕은 복사라 비용 미미.
+    const RECENT_LIMIT = 252;
+    const recentCloses = closes
+      .slice(-RECENT_LIMIT)
+      .map((c) => ({ date: c.date, price: c.price }));
+
     return {
       ready: true,
       exchange,
@@ -87,6 +94,7 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
         orange: meta.orangeThreshold,
         red: meta.redThreshold,
       },
+      recentCloses,
     };
   } catch (err) {
     console.error(`loadHeroData(${ticker}) failed:`, err);

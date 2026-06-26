@@ -108,6 +108,11 @@ export type Dict = {
     priceLabel: string;
     pct: number;
   }) => string;
+  /** 인터랙티브 차트 영역 라벨 (펼침 패널 안, Phase 1 막대 아래). */
+  chart: {
+    /** closes 7거래일 미만일 때 차트 자리 표시 — Phase 2-A. */
+    empty: string;
+  };
   menu: {
     title: string;
     about: string;
@@ -309,6 +314,9 @@ const ko: Dict = {
       return `${dateLabel} 종가 ${priceLabel} 대비 ${abs}% 내렸어요`;
     }
     return `${dateLabel} 종가 ${priceLabel} 대비 변동 없어요`;
+  },
+  chart: {
+    empty: '차트 데이터 누적 중',
   },
   menu: {
     title: '메뉴',
@@ -563,6 +571,9 @@ const en: Dict = {
       return `${dateLabel} close ${priceLabel} — down ${abs}%`;
     }
     return `${dateLabel} close ${priceLabel} — unchanged`;
+  },
+  chart: {
+    empty: 'Chart data still loading',
   },
   menu: {
     title: 'Menu',

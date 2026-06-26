@@ -34,8 +34,14 @@ export async function generateMetadata({
   // 기본 종목은 / 로 redirect되므로 메타데이터는 비워둠 (실제 응답 안 됨)
   if (normalize(params.ticker) === DEFAULT_SYMBOL) return {};
   const ticker = await resolveOr404(params.ticker);
-  const meta = await readMeta(ticker);
-  return buildSymbolMetadata(readLangFromCookie(), meta);
+  const [meta, hero] = await Promise.all([
+    readMeta(ticker),
+    // loadHeroData는 unstable_cache(symbols 태그)라 페이지 본문 fetch와 비용 공유.
+    loadHeroData(ticker),
+  ]);
+  // hero.ready=false면 시드/종가 부족 — drawdownPct undefined로 title 낙폭 prefix 생략.
+  const drawdownPct = hero.ready ? hero.ath.drawdownPct : undefined;
+  return buildSymbolMetadata(readLangFromCookie(), meta, drawdownPct);
 }
 
 export default async function TickerPage({

@@ -41,11 +41,12 @@ export type HeroData =
       current: { date: string; price: number };
       ath: { date: string; price: number; drawdownPct: number };
       oneYear: { date: string; price: number; drawdownPct: number };
-      /** 전날/1주일/1개월 보조 수치 — 기준 종가의 날짜·가격 포함. null = 데이터 부족(UI 숨김). */
+      /** 1일/1주/1개월/1년 보조 수치 — 기준 종가의 날짜·가격 포함. null = 데이터 부족(UI placeholder). */
       breakdown: {
         oneDay: PeriodPoint | null;
         oneWeek: PeriodPoint | null;
         oneMonth: PeriodPoint | null;
+        oneYear: PeriodPoint | null;
       };
       marketStatus: MarketStatus;
       thresholds: LevelThresholds;
@@ -273,17 +274,11 @@ function HeroNumbers({
   const toggle = (
     key: "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek",
   ) => setActivePeriod((cur) => (cur === key ? null : key));
-  // 52주 항목은 oneYear 데이터(이미 date/price 포함)를 PeriodPoint 모양으로 어댑트.
-  const fiftyTwoWeekPoint: PeriodPoint = {
-    pct: data.oneYear.drawdownPct,
-    date: data.oneYear.date,
-    price: data.oneYear.price,
-  };
   // 보조 수치 영역 펼침/접힘 — 기본 접힘. ticker 변경 시 페이지 재렌더로 자동 초기화.
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   // 항목 4개 항상 유지 — null이어도 "데이터 누적 중" placeholder로 표시
   // (사용자가 항목이 사라진 게 아니라 곧 채워질 거란 걸 알 수 있게).
-  // 52주는 seed 기반이라 항상 존재.
+  // "최근 1년"은 252거래일 lookback. 52주 고점 셀(상단)과는 별개의 데이터 — closes 부족하면 null.
   const visibleItems = [
     {
       key: "oneDay" as const,
@@ -303,7 +298,7 @@ function HeroNumbers({
     {
       key: "fiftyTwoWeek" as const,
       label: dict.breakdown.fiftyTwoWeek,
-      point: fiftyTwoWeekPoint,
+      point: data.breakdown.oneYear,
     },
   ];
   return (
@@ -448,7 +443,9 @@ function PeriodItem({
   exchange: "NYSE" | "KRX";
 }) {
   // 데이터 부족 시 — 항목 유지하되 비활성. 호버/탭/툴팁 모두 비활성.
-  if (point === null) {
+  // !point: null + undefined 둘 다 처리 (stale cache나 빌드 캐시가 옛 shape를 들고 와
+  // breakdown.oneYear가 undefined로 들어오는 케이스 가드).
+  if (!point) {
     return (
       <div className="flex w-full cursor-default items-baseline justify-between rounded px-2 py-0.5 text-sm">
         <span className="text-neutral-600">{label}</span>

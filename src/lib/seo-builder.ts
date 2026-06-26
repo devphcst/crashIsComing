@@ -25,16 +25,37 @@ const descriptionForMeta = (lang: Lang, meta?: SymbolMeta): string => {
   return SEO_TEXT[lang].descriptionFor(meta.displayName);
 };
 
+/**
+ * 낙폭(음수 %) → 짧은 표기. null/NaN이면 null 반환(=title에 안 박음).
+ * 양수면 "+X.X%", 음수/0이면 "-X.X%"/"0.0%" (toFixed 부호 자동).
+ */
+const formatDrawdownForTitle = (
+  pct: number | null | undefined,
+): string | null => {
+  if (pct === null || pct === undefined || !Number.isFinite(pct)) return null;
+  const rounded = Number(pct.toFixed(1));
+  if (rounded > 0) return `+${rounded.toFixed(1)}%`;
+  return `${rounded.toFixed(1)}%`;
+};
+
 export const buildSymbolMetadata = (
   lang: Lang,
   meta: SymbolMeta,
+  /** 옵셔널 — 현재 ATH 대비 낙폭. 전달 시 title 앞에 "[-25.0%]" prefix로 박힘. */
+  drawdownPct?: number | null,
 ): Metadata => {
   const t = SEO_TEXT[lang];
   const name = meta.displayName;
-  const title = t.titleFor(name);
+  const baseTitle = t.titleFor(name);
+  const dd = formatDrawdownForTitle(drawdownPct);
+  // 카톡/X 미리보기는 title 앞쪽을 더 보여주므로 낙폭을 맨 앞에 배치.
+  const title = dd ? `[${dd}] ${baseTitle}` : baseTitle;
   const description = descriptionForMeta(lang, meta);
   const path = canonicalPathFor(meta.ticker);
   const url = `${SITE_URL}${path}`;
+  // 동적 OG — 종목별 낙폭 숫자가 박힌 썸네일.
+  // metadataBase(layout.tsx)가 절대 URL로 변환.
+  const ogImageUrl = `/api/og?ticker=${meta.ticker}`;
   return {
     // absolute로 layout.tsx의 "%s | TQQQ" 템플릿이 덧붙지 않게 함
     // (title 자체가 이미 종목 + 브랜드 의미를 모두 담고 있음)
@@ -51,7 +72,7 @@ export const buildSymbolMetadata = (
       locale: lang === "ko" ? "ko_KR" : "en_US",
       images: [
         {
-          url: "/opengraph-image",
+          url: ogImageUrl,
           width: 1200,
           height: 630,
           alt: OG_IMAGE_ALT,
@@ -62,7 +83,7 @@ export const buildSymbolMetadata = (
       card: "summary_large_image",
       title,
       description,
-      images: ["/opengraph-image"],
+      images: [ogImageUrl],
     },
   };
 };

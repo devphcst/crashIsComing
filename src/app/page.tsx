@@ -18,8 +18,12 @@ const readLangFromCookie = (): Lang => {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const meta = await readMeta(DEFAULT_SYMBOL);
-  return buildSymbolMetadata(readLangFromCookie(), meta);
+  const [meta, hero] = await Promise.all([
+    readMeta(DEFAULT_SYMBOL),
+    loadHeroData(DEFAULT_SYMBOL),
+  ]);
+  const drawdownPct = hero.ready ? hero.ath.drawdownPct : undefined;
+  return buildSymbolMetadata(readLangFromCookie(), meta, drawdownPct);
 }
 
 export default async function Page() {

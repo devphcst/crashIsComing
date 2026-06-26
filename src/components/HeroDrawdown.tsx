@@ -391,28 +391,54 @@ function HeroNumbers({
               <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-neutral-600">
                 {dict.breakdownHint}
               </p>
-              <div
-                ref={breakdownRowRef}
-                className="mx-auto mt-2 flex w-full max-w-[200px] flex-col"
-              >
-                {visibleItems.map((item) => (
-                  <PeriodItem
-                    key={item.key}
-                    period={item.key}
-                    label={item.label}
-                    point={item.point}
-                    dict={dict}
-                    lang={lang}
-                    exchange={data.exchange}
-                    maxAbsPct={maxAbsPct}
-                    active={activePeriod === item.key}
-                    onToggle={() => toggle(item.key)}
-                  />
-                ))}
+
+              {/* 섹션 1 — 시점별 변화율(막대 차트). 헤더(제목 + 부제) 후 8px 간격. */}
+              <div className="mx-auto mt-6 w-full max-w-[200px]">
+                <div className="mb-2 text-left">
+                  <div className="text-xs font-medium text-neutral-300">
+                    {dict.chart.sectionPeriod.title}
+                  </div>
+                  <div className="text-[10px] text-neutral-600">
+                    {dict.chart.sectionPeriod.subtitle(
+                      formatPrice(data.current.price, data.exchange),
+                    )}
+                  </div>
+                </div>
+                <div
+                  ref={breakdownRowRef}
+                  className="flex w-full flex-col"
+                >
+                  {visibleItems.map((item) => (
+                    <PeriodItem
+                      key={item.key}
+                      period={item.key}
+                      label={item.label}
+                      point={item.point}
+                      dict={dict}
+                      lang={lang}
+                      exchange={data.exchange}
+                      maxAbsPct={maxAbsPct}
+                      active={activePeriod === item.key}
+                      onToggle={() => toggle(item.key)}
+                    />
+                  ))}
+                </div>
               </div>
-              {/* Phase 2 — 인터랙티브 라인 차트 + 빠른 비교 버튼.
-                  사용자 탭으로 두 점 비교(C)는 후속 sub-phase. */}
-              <div className="mx-auto mt-4 w-full max-w-[400px]">
+
+              {/* 섹션 구분선 — 위·아래 각각 28px. */}
+              <hr className="my-7 border-0 border-t-[0.5px] border-[#1f1f1f]" />
+
+              {/* 섹션 2 — 가격 추이(라인 차트). 헤더 후 12px 간격은 RechartsBreakdown
+                  자체 mb-3 (빠른 버튼 컨테이너)이 담당. */}
+              <div className="mx-auto w-full max-w-[400px]">
+                <div className="mb-3 text-left">
+                  <div className="text-xs font-medium text-neutral-300">
+                    {dict.chart.sectionTrend.title}
+                  </div>
+                  <div className="text-[10px] text-neutral-600">
+                    {dict.chart.sectionTrend.subtitle}
+                  </div>
+                </div>
                 <RechartsBreakdown
                   closes={data.recentCloses}
                   exchange={data.exchange}

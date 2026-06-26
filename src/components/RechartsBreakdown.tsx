@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -185,42 +185,35 @@ export function RechartsBreakdown({
   // 탭 진행 중 (start만 있음, end 없음) 인지.
   const tapInProgress = !!tappedStart && !tappedEnd;
 
-  // 두 점 사이 라인 색상 강조용 derived 데이터.
-  // 원본 closes 위에 두 번째 Line(`highlightedPrice` 키)을 덧그리되, 강조 구간 밖은 null →
-  // recharts가 `connectNulls=false`로 그 영역만 그림. 색·굵기는 변화율에 따라 분기.
-  // 비교 비활성 시 모든 값 null → 두 번째 Line은 사실상 안 그려짐.
-  const enrichedData = useMemo(() => {
-    if (!comparePoints) {
-      return closes.map((c) => ({
-        date: c.date,
-        price: c.price,
-        highlightedPrice: null as number | null,
-      }));
-    }
+  // 두 점 사이 라인 색상 강조 — 별도 Line 두 개로 덧그리면 path 보간이 한 번 더
+  // 계산되면서 좌표가 미세하게 어긋난다. 단일 Line + SVG linearGradient를 stroke에
+  // 적용해 같은 path 한 개만 그리고 색만 X 위치에 따라 분기.
+  // stop을 같은 offset에 두 개 두어 sharp transition. 회색 → 강조색 → 회색.
+  const gradientId = useId().replace(/:/g, "-");
+  const BASE_STROKE = "#888888";
+  const highlightColor = !comparePoints
+    ? BASE_STROKE
+    : comparePoints.pct < 0
+      ? "#f87171" // 음수 — 빨강
+      : "#e5e5e5"; // 양수/0 — 밝은 회색
+  const segmentPct = useMemo(() => {
+    if (!comparePoints || closes.length < 2) return null;
     const startIdx = closes.findIndex(
       (c) => c.date === comparePoints.start.date,
     );
     const endIdx = closes.findIndex(
       (c) => c.date === comparePoints.end.date,
     );
+    if (startIdx < 0 || endIdx < 0) return null;
     const [lo, hi] =
       startIdx <= endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
-    return closes.map((c, i) => ({
-      date: c.date,
-      price: c.price,
-      highlightedPrice: i >= lo && i <= hi ? c.price : (null as number | null),
-    }));
+    const denom = closes.length - 1;
+    return { startPct: (lo / denom) * 100, endPct: (hi / denom) * 100 };
   }, [closes, comparePoints]);
-
-  const highlightStroke = !comparePoints
-    ? "#888888"
-    : comparePoints.pct < 0
-      ? "#f87171" // 음수 — 빨강
-      : "#e5e5e5"; // 양수/0 — 밝은 회색
 
   if (closes.length < MIN_POINTS) {
     return (
-      <div className="mt-4 flex h-32 items-center justify-center rounded-md border border-neutral-800 bg-neutral-950/40 text-xs text-neutral-500">
+      <div className="flex h-32 items-center justify-center rounded-md border border-neutral-800 bg-neutral-950/40 text-xs text-neutral-500">
         {dict.empty}
       </div>
     );
@@ -232,7 +225,7 @@ export function RechartsBreakdown({
   const endMarker = comparePoints?.end ?? null;
 
   return (
-    <div className="mt-4">
+    <div>
       {/* 빠른 비교 버튼 — 탭 모드일 때 모두 unhighlighted. 클릭하면 탭 모드 해제. */}
       <div className="mb-3 flex flex-wrap justify-center gap-2">
         {PERIOD_ORDER.map((p) => {
@@ -265,10 +258,49 @@ export function RechartsBreakdown({
       <div className="h-44 w-full outline-none [&_*:focus]:outline-none [&_*:focus-visible]:outline-none">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={enrichedData}
+            data={closes as Point[]}
             margin={{ top: 8, right: 8, bottom: 4, left: 0 }}
             onClick={(state) => onTap(state?.activeLabel)}
           >
+            {/* X 방향 gradient를 stroke로. comparePoints 없으면 단색 회색,
+                있으면 [회색][강조][회색] 3구간을 같은 offset에 두 stop으로 sharp 전환. */}
+            <defs>
+              <linearGradient
+                id={gradientId}
+                x1="0"
+                y1="0"
+                x2="1"
+                y2="0"
+              >
+                {segmentPct ? (
+                  <>
+                    <stop offset="0%" stopColor={BASE_STROKE} />
+                    <stop
+                      offset={`${segmentPct.startPct}%`}
+                      stopColor={BASE_STROKE}
+                    />
+                    <stop
+                      offset={`${segmentPct.startPct}%`}
+                      stopColor={highlightColor}
+                    />
+                    <stop
+                      offset={`${segmentPct.endPct}%`}
+                      stopColor={highlightColor}
+                    />
+                    <stop
+                      offset={`${segmentPct.endPct}%`}
+                      stopColor={BASE_STROKE}
+                    />
+                    <stop offset="100%" stopColor={BASE_STROKE} />
+                  </>
+                ) : (
+                  <>
+                    <stop offset="0%" stopColor={BASE_STROKE} />
+                    <stop offset="100%" stopColor={BASE_STROKE} />
+                  </>
+                )}
+              </linearGradient>
+            </defs>
             <CartesianGrid stroke="#1a1a1a" vertical={false} />
             <XAxis
               dataKey="date"
@@ -285,7 +317,7 @@ export function RechartsBreakdown({
             <Line
               type="monotone"
               dataKey="price"
-              stroke="#888888"
+              stroke={`url(#${gradientId})`}
               strokeWidth={1.5}
               dot={false}
               isAnimationActive={false}
@@ -296,18 +328,6 @@ export function RechartsBreakdown({
                 stroke: "#0a0a0a",
                 strokeWidth: 1.5,
               }}
-            />
-            {/* 두 점 사이 강조 구간 — connectNulls=false라서 강조 외 영역은 빈 path.
-                양수 → 밝은 회색, 음수 → 빨강. 비교 비활성 시 모든 값 null로 안 그려짐. */}
-            <Line
-              type="monotone"
-              dataKey="highlightedPrice"
-              stroke={highlightStroke}
-              strokeWidth={2}
-              dot={false}
-              activeDot={false}
-              connectNulls={false}
-              isAnimationActive={false}
             />
             {/* 시작 마커 — 빠른 버튼이든 사용자 탭이든 같은 빨강. */}
             {startMarker ? (

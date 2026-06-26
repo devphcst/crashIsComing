@@ -123,8 +123,18 @@ export type Dict = {
     compareRange: (startDate: string, endDate: string) => string;
     /** 결과 박스 하단 — "[startPrice] → [endPrice]" 표기. */
     comparePriceLine: (startPrice: string, endPrice: string) => string;
-    /** Phase 2-C: 사용자 탭 모드 안내. */
+    /** Phase 2-C: 사용자 탭 모드 안내 — 결과 박스 자리 (start만 있고 end 없는 동안). */
     tapHint: string;
+    /** 섹션 1 (시점별 변화율 — 막대 차트). subtitle은 현재 가격 표시 라벨을 받음. */
+    sectionPeriod: {
+      title: string;
+      subtitle: (latestPriceLabel: string) => string;
+    };
+    /** 섹션 2 (가격 추이 — 라인 차트). */
+    sectionTrend: {
+      title: string;
+      subtitle: string;
+    };
   };
   menu: {
     title: string;
@@ -339,6 +349,14 @@ const ko: Dict = {
     compareRange: (start, end) => `${start} → ${end}`,
     comparePriceLine: (start, end) => `${start} → ${end}`,
     tapHint: '두 점을 탭해서 비교',
+    sectionPeriod: {
+      title: '시점별 변화율',
+      subtitle: (latestPrice) => `최근 종가(${latestPrice}) 기준 변화`,
+    },
+    sectionTrend: {
+      title: '가격 추이',
+      subtitle: '두 점을 탭하면 그 사이 변화를 보여줘요',
+    },
   },
   menu: {
     title: '메뉴',
@@ -605,6 +623,14 @@ const en: Dict = {
     compareRange: (start, end) => `${start} → ${end}`,
     comparePriceLine: (start, end) => `${start} → ${end}`,
     tapHint: 'Tap two points to compare',
+    sectionPeriod: {
+      title: 'Period change',
+      subtitle: (latestPrice) => `Change from latest close (${latestPrice})`,
+    },
+    sectionTrend: {
+      title: 'Price trend',
+      subtitle: 'Tap two points to compare',
+    },
   },
   menu: {
     title: 'Menu',

@@ -410,13 +410,14 @@ function HeroNumbers({
                   />
                 ))}
               </div>
-              {/* Phase 2-A: 기반 라인 차트. 빠른 비교 버튼·두 점 탭은 후속 sub-phase. */}
+              {/* Phase 2 — 인터랙티브 라인 차트 + 빠른 비교 버튼.
+                  사용자 탭으로 두 점 비교(C)는 후속 sub-phase. */}
               <div className="mx-auto mt-4 w-full max-w-[400px]">
                 <RechartsBreakdown
                   closes={data.recentCloses}
                   exchange={data.exchange}
                   lang={lang}
-                  emptyText={dict.chart.empty}
+                  dict={dict.chart}
                 />
               </div>
             </div>

@@ -112,6 +112,19 @@ export type Dict = {
   chart: {
     /** closes 7거래일 미만일 때 차트 자리 표시 — Phase 2-A. */
     empty: string;
+    /** 빠른 비교 버튼 4개 라벨 — 1일/1주/1개월/1년. */
+    compareButtons: {
+      day: string;
+      week: string;
+      month: string;
+      year: string;
+    };
+    /** 결과 박스 상단 — "[start] → [end]" 표기. */
+    compareRange: (startDate: string, endDate: string) => string;
+    /** 결과 박스 하단 — "[startPrice] → [endPrice]" 표기. */
+    comparePriceLine: (startPrice: string, endPrice: string) => string;
+    /** Phase 2-C: 사용자 탭 모드 안내. */
+    tapHint: string;
   };
   menu: {
     title: string;
@@ -317,6 +330,15 @@ const ko: Dict = {
   },
   chart: {
     empty: '차트 데이터 누적 중',
+    compareButtons: {
+      day: '1일',
+      week: '1주',
+      month: '1개월',
+      year: '1년',
+    },
+    compareRange: (start, end) => `${start} → ${end}`,
+    comparePriceLine: (start, end) => `${start} → ${end}`,
+    tapHint: '두 점을 탭해서 비교',
   },
   menu: {
     title: '메뉴',
@@ -574,6 +596,15 @@ const en: Dict = {
   },
   chart: {
     empty: 'Chart data still loading',
+    compareButtons: {
+      day: '1D',
+      week: '1W',
+      month: '1M',
+      year: '1Y',
+    },
+    compareRange: (start, end) => `${start} → ${end}`,
+    comparePriceLine: (start, end) => `${start} → ${end}`,
+    tapHint: 'Tap two points to compare',
   },
   menu: {
     title: 'Menu',

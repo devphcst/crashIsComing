@@ -92,6 +92,23 @@ const resolveTickerFromForm = async (
   return { ok: true, ticker: raw };
 };
 
+/**
+ * 종목 데이터를 KV에 쓴 직후 호출하는 캐시 무효화 묶음.
+ *   - revalidateTag('symbols')은 page-data.ts의 unstable_cache만 무효화.
+ *   - 그 위에 Next.js Page Cache(RSC payload)는 경로별로 별도. 기본 종목은 `/`,
+ *     그 외 종목은 `/${ticker}` — 둘 다 명시적으로 revalidatePath 안 부르면
+ *     수정 후 페이지 새로고침해도 옛 RSC 페이로드가 그대로 노출됨 (옛값 그대로 버그).
+ *   - `/admin`도 함께 갱신해 최근 입력 리스트가 즉시 반영되도록.
+ */
+const revalidateSymbolPaths = (ticker: string): void => {
+  revalidatePath("/admin");
+  revalidatePath("/");
+  if (ticker !== DEFAULT_SYMBOL) {
+    revalidatePath(`/${ticker}`);
+  }
+  revalidateTag("symbols");
+};
+
 const findPrev = (closes: Close[], date: string): Close | null => {
   for (let i = closes.length - 1; i >= 0; i--) {
     if (closes[i].date < date) return closes[i];
@@ -149,10 +166,12 @@ export async function addCloseAction(
   }
 
   await writeClose(ticker, { date, price });
-  revalidatePath("/");
-  revalidatePath("/admin");
-  revalidateTag("symbols");
-  return { ok: true, message: "저장되었습니다." };
+  revalidateSymbolPaths(ticker);
+  // 사용자가 어떤 값이 저장됐는지 실측 가능하도록 날짜·가격을 메시지에 포함.
+  return {
+    ok: true,
+    message: `${date} ${formatPrice(price, exchange)} 저장됨`,
+  };
 }
 
 export async function setSeedAction(
@@ -198,9 +217,7 @@ export async function setSeedAction(
   }
 
   await writeSeed(ticker, next);
-  revalidatePath("/");
-  revalidatePath("/admin");
-  revalidateTag("symbols");
+  revalidateSymbolPaths(ticker);
   return { ok: true, message: "시드값이 저장되었습니다." };
 }
 
@@ -285,9 +302,7 @@ export async function applySplitAction(
     affectedCount: changed.length,
   });
 
-  revalidatePath("/");
-  revalidatePath("/admin");
-  revalidateTag("symbols");
+  revalidateSymbolPaths(ticker);
   return {
     ok: true,
     message: `${changed.length}건이 보정되었습니다.`,
@@ -352,9 +367,7 @@ export async function addSymbolAction(
 
   await writeMeta(ticker, meta);
   await writeSymbolList([...list, ticker]);
-  revalidatePath("/admin");
-  revalidatePath("/");
-  revalidateTag("symbols");
+  revalidateSymbolPaths(ticker);
   redirect(`/admin?symbol=${ticker}`);
 }
 
@@ -423,9 +436,7 @@ export async function updateMetaAction(
   }
 
   await writeMeta(oldTicker, meta);
-  revalidatePath("/admin");
-  revalidatePath("/");
-  revalidateTag("symbols");
+  revalidateSymbolPaths(oldTicker);
   return { ok: true, message: "메타 정보를 저장했습니다." };
 }
 
@@ -453,9 +464,7 @@ export async function deleteSymbolAction(
   }
 
   await deleteSymbol(ticker);
-  revalidatePath("/admin");
-  revalidatePath("/");
-  revalidateTag("symbols");
+  revalidateSymbolPaths(ticker);
   redirect("/admin");
 }
 

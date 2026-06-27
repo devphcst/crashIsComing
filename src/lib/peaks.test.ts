@@ -33,6 +33,29 @@ describe("computeATH", () => {
     const seedLower = { ath: { date: "2021-11-19", price: 75 } };
     expect(computeATH(closes, seedLower)?.price).toBe(80);
   });
+
+  // 회귀 가드: seed.ath와 같은 date의 closes가 있으면 seed는 무시 — closes가 단일 진실.
+  // admin에서 그 date 종가를 낮춰 수정해도 옛 seed 값이 max 경쟁에서 이기지 못해야 함.
+  it("ignores seed when the closes hash has the same date (stale seed)", () => {
+    const closes = [
+      { date: "2025-01-01", price: 70 },
+      { date: "2026-06-03", price: 87.22 }, // 사용자가 수정한 새 값
+    ];
+    // 옛 seed: 사용자가 수정 전 시점에 등록되어 같은 date에 더 높은 가격이 박혀 있음
+    const staleSeed = { ath: { date: "2026-06-03", price: 88.09 } };
+    // 가드 적용 전이면 88.09(seed) 우승, 적용 후엔 closes max = 87.22
+    expect(computeATH(closes, staleSeed)).toEqual({
+      date: "2026-06-03",
+      price: 87.22,
+    });
+  });
+
+  it("still respects seed when the closes hash has no entry for that date", () => {
+    const closes = [{ date: "2026-06-10", price: 70 }];
+    const seed = { ath: { date: "2021-11-19", price: 91.68 } };
+    // 가드는 date 충돌일 때만 작동 — 그 외엔 기존 fallback 동작 유지.
+    expect(computeATH(closes, seed)?.price).toBe(91.68);
+  });
 });
 
 describe("computeOneYearHigh", () => {
@@ -60,6 +83,19 @@ describe("computeOneYearHigh", () => {
       oneYearHigh: { date: "2023-11-01", price: 200 },
     };
     expect(computeOneYearHigh(closes, seedStale, NOW)?.price).toBe(65);
+  });
+
+  // 같은 회귀 가드 — 52주 고점도 seed가 closes의 같은 date를 stale하게 가리지 못함.
+  it("ignores oneYearHigh seed when closes has the same date (stale seed)", () => {
+    const closes = [
+      { date: "2025-11-01", price: 50 },
+      { date: "2026-01-01", price: 65 },
+    ];
+    const staleSeed = { oneYearHigh: { date: "2026-01-01", price: 100 } };
+    expect(computeOneYearHigh(closes, staleSeed, NOW)).toEqual({
+      date: "2026-01-01",
+      price: 65,
+    });
   });
 });
 

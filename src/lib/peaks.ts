@@ -5,13 +5,26 @@ const dayMs = 86_400_000;
 const maxBy = <T>(items: T[], pick: (x: T) => number): T =>
   items.reduce((best, cur) => (pick(cur) > pick(best) ? cur : best));
 
+/**
+ * seed는 "이력 부족 시 fallback" — 같은 date의 closes가 있으면 closes가 단일 진실.
+ * 사용자가 admin에서 그 date 종가를 수정해도 seed가 옛 값(higher)을 들고 있으면
+ * computeATH의 max 경쟁에서 seed가 이겨 카드가 stale 값을 노출하는 버그 발생.
+ * 가드: seed.date의 closes 항목이 존재하면 seed는 그 date에 대해 무시.
+ */
+const seedOverriddenByClose = (
+  closes: Close[],
+  seedEntry: { date: string },
+): boolean => closes.some((c) => c.date === seedEntry.date);
+
 export const computeATH = (
   closes: Close[],
   seed?: SeedHighs,
 ): Close | null => {
   const candidates: Close[] = [];
   if (closes.length) candidates.push(maxBy(closes, (c) => c.price));
-  if (seed?.ath) candidates.push(seed.ath);
+  if (seed?.ath && !seedOverriddenByClose(closes, seed.ath)) {
+    candidates.push(seed.ath);
+  }
   if (!candidates.length) return null;
   return maxBy(candidates, (c) => c.price);
 };
@@ -27,7 +40,11 @@ export const computeOneYearHigh = (
   const candidates: Close[] = [];
   const recent = closes.filter((c) => within(c.date));
   if (recent.length) candidates.push(maxBy(recent, (c) => c.price));
-  if (seed?.oneYearHigh && within(seed.oneYearHigh.date)) {
+  if (
+    seed?.oneYearHigh &&
+    within(seed.oneYearHigh.date) &&
+    !seedOverriddenByClose(closes, seed.oneYearHigh)
+  ) {
     candidates.push(seed.oneYearHigh);
   }
   if (!candidates.length) return null;

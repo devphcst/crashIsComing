@@ -94,18 +94,23 @@ const resolveTickerFromForm = async (
 
 /**
  * 종목 데이터를 KV에 쓴 직후 호출하는 캐시 무효화 묶음.
- *   - revalidateTag('symbols')은 page-data.ts의 unstable_cache만 무효화.
- *   - 그 위에 Next.js Page Cache(RSC payload)는 경로별로 별도. 기본 종목은 `/`,
- *     그 외 종목은 `/${ticker}` — 둘 다 명시적으로 revalidatePath 안 부르면
- *     수정 후 페이지 새로고침해도 옛 RSC 페이로드가 그대로 노출됨 (옛값 그대로 버그).
- *   - `/admin`도 함께 갱신해 최근 입력 리스트가 즉시 반영되도록.
+ *
+ * 다층 캐시 모두 무효화해야 운영(Vercel)에서 옛 RSC payload가 안 노출됨:
+ *   1) `revalidateTag('symbols')` — page-data.ts의 `unstable_cache` 데이터 캐시.
+ *   2) `revalidatePath("/", "layout")` — 루트 layout 아래 모든 RSC payload + Full
+ *      Route Cache를 통째로 무효화. 종목별 페이지(`/[ticker]`)는 별도 라우트라
+ *      `revalidatePath("/")` (기본 "page")로는 형제 라우트가 안 비워진다.
+ *      "layout" 모드를 쓰면 그 path를 prefix로 하는 모든 cache 항목을 묶어서 비움.
+ *   3) `/${ticker}` 명시 — DEFAULT_SYMBOL(=/) 분기 안 함. tqqq면 /tqqq도 명시적으로
+ *      비워 [ticker]/page.tsx의 redirect 응답까지 fresh 보장.
+ *   4) `/admin` — admin 자체 화면(최근 입력 리스트 등) 즉시 반영.
  */
 const revalidateSymbolPaths = (ticker: string): void => {
+  // layout 모드로 / 트리 전체 RSC payload 무효화 — `/`와 `/[ticker]` 둘 다 포함.
+  revalidatePath("/", "layout");
+  // 추가 안전망: 종목별 동적 라우트 명시 (DEFAULT_SYMBOL 분기 없이 항상).
+  revalidatePath(`/${ticker}`);
   revalidatePath("/admin");
-  revalidatePath("/");
-  if (ticker !== DEFAULT_SYMBOL) {
-    revalidatePath(`/${ticker}`);
-  }
   revalidateTag("symbols");
 };
 

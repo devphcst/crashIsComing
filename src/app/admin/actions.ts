@@ -79,6 +79,10 @@ const parseExchange = (v: FormDataEntryValue | null): Exchange => {
   return "NYSE";
 };
 
+/** 폼 'hidden' checkbox 값을 boolean으로. 체크 해제면 form에 키 자체가 없거나 ""이라 false. */
+const parseHidden = (v: FormDataEntryValue | null): boolean =>
+  v === "on" || v === "true";
+
 const resolveTickerFromForm = async (
   formData: FormData,
 ): Promise<{ ok: true; ticker: string } | { ok: false; message: string }> => {
@@ -354,6 +358,7 @@ export async function addSymbolAction(
   const orangeThreshold = parseThreshold(formData.get("orangeThreshold"));
   const redThreshold = parseThreshold(formData.get("redThreshold"));
   const exchange = parseExchange(formData.get("exchange"));
+  const hidden = parseHidden(formData.get("hidden"));
 
   const meta: SymbolMeta = {
     ticker,
@@ -361,6 +366,7 @@ export async function addSymbolAction(
     orangeThreshold,
     redThreshold,
     exchange,
+    hidden,
   };
   const err = validateMeta(meta);
   if (err) return { ok: false, message: META_ERROR_MESSAGES[err] };
@@ -390,6 +396,7 @@ export async function updateMetaAction(
   const orangeThreshold = parseThreshold(formData.get("orangeThreshold"));
   const redThreshold = parseThreshold(formData.get("redThreshold"));
   const exchange = parseExchange(formData.get("exchange"));
+  const hidden = parseHidden(formData.get("hidden"));
 
   // newTicker는 옵셔널 — 폼이 안 보내면 기존 ticker 유지(rename 미사용).
   const rawNewTicker = formData.get("newTicker");
@@ -412,6 +419,7 @@ export async function updateMetaAction(
     orangeThreshold,
     redThreshold,
     exchange,
+    hidden,
   };
   const err = validateMeta(meta);
   if (err) return { ok: false, message: META_ERROR_MESSAGES[err] };

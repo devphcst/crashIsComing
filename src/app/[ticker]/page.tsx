@@ -3,9 +3,9 @@ import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
 import { readMeta, readSymbolList } from "@/lib/kv";
-import { loadAllMetas, loadHeroData, loadVisitorInfo } from "@/lib/page-data";
+import { loadHeroData, loadVisibleMetas, loadVisitorInfo } from "@/lib/page-data";
 import { buildJsonLd, buildSymbolMetadata } from "@/lib/seo-builder";
-import { DEFAULT_SYMBOL } from "@/lib/symbols";
+import { DEFAULT_SYMBOL, isHidden } from "@/lib/symbols";
 import type { Lang } from "@/lib/i18n";
 import { LANG_COOKIE } from "@/constants/seo";
 
@@ -23,6 +23,10 @@ const resolveOr404 = async (raw: string): Promise<string> => {
   const t = normalize(raw);
   const list = await readSymbolList();
   if (!list.includes(t)) notFound();
+  // hidden=true 종목은 사용자에게 존재하지 않는 것처럼 처리 (SEO도 깔끔하게 404).
+  // admin 화면은 readMeta로 별도 접근하므로 영향 없음.
+  const meta = await readMeta(t);
+  if (isHidden(meta)) notFound();
   return t;
 };
 
@@ -55,7 +59,7 @@ export default async function TickerPage({
   const [data, visitor, metas, meta] = await Promise.all([
     loadHeroData(ticker),
     loadVisitorInfo(),
-    loadAllMetas(),
+    loadVisibleMetas(),
     readMeta(ticker),
   ]);
   return (

@@ -3,6 +3,7 @@ import {
   defaultMetaFor,
   DEFAULT_SYMBOL,
   getExchange,
+  isHidden,
   validateMeta,
   type SymbolMeta,
 } from "./symbols";
@@ -119,5 +120,19 @@ describe("getExchange", () => {
   it("returns the stored exchange value", () => {
     expect(getExchange({ ...base(), exchange: "KRX" })).toBe("KRX");
     expect(getExchange({ ...base(), exchange: "NYSE" })).toBe("NYSE");
+  });
+});
+
+describe("isHidden", () => {
+  it("returns false when hidden is undefined (legacy meta)", () => {
+    expect(isHidden(base())).toBe(false);
+  });
+
+  it("returns false when hidden is explicitly false", () => {
+    expect(isHidden({ ...base(), hidden: false })).toBe(false);
+  });
+
+  it("returns true only when hidden === true", () => {
+    expect(isHidden({ ...base(), hidden: true })).toBe(true);
   });
 });

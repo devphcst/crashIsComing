@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
 import { readMeta } from "@/lib/kv";
-import { loadAllMetas, loadHeroData, loadVisitorInfo } from "@/lib/page-data";
+import { loadHeroData, loadVisibleMetas, loadVisitorInfo } from "@/lib/page-data";
 import { buildJsonLd, buildSymbolMetadata } from "@/lib/seo-builder";
 import { DEFAULT_SYMBOL } from "@/lib/symbols";
 import type { Lang } from "@/lib/i18n";
@@ -31,7 +31,7 @@ export default async function Page() {
   const [data, visitor, metas, meta] = await Promise.all([
     loadHeroData(DEFAULT_SYMBOL),
     loadVisitorInfo(),
-    loadAllMetas(),
+    loadVisibleMetas(),
     readMeta(DEFAULT_SYMBOL),
   ]);
   return (

@@ -225,6 +225,10 @@ export type Dict = {
       displayNameHint: string;
       exchangeLabel: string;
       exchangeHint: string;
+      hiddenLabel: string;
+      hiddenHint: string;
+      /** 종목 탭에서 hidden 종목 옆에 붙는 배지 ("숨김" / "hidden"). */
+      hiddenBadge: string;
       orangeLabel: string;
       redLabel: string;
       thresholdHint: string;
@@ -468,6 +472,10 @@ const ko: Dict = {
       displayNameHint: '화면에 표시되는 이름 (예: SOXL (반도체 3배))',
       exchangeLabel: '거래소',
       exchangeHint: 'KRX는 자동 fetch 미지원 — admin에서 종가 수동 입력.',
+      hiddenLabel: '사용자에게 숨김',
+      hiddenHint:
+        '체크하면 메인 페이지 종목 탭에서 빠지고 /{ticker} 직접 접근도 404. 데이터(종가/시드/메타)는 그대로 보존됨 — 언제든 다시 켜기 가능.',
+      hiddenBadge: '숨김',
       orangeLabel: '주황 경계',
       redLabel: '빨강 경계',
       thresholdHint:
@@ -745,6 +753,10 @@ const en: Dict = {
       displayNameHint: 'Shown on screen (e.g. "SOXL (3x semis)").',
       exchangeLabel: 'Exchange',
       exchangeHint: 'KRX does not support auto-fetch — closes are entered manually in admin.',
+      hiddenLabel: 'Hide from visitors',
+      hiddenHint:
+        'When checked, the symbol disappears from main tabs and /{ticker} returns 404. KV data (closes/seed/meta) is preserved — toggle off to restore.',
+      hiddenBadge: 'hidden',
       orangeLabel: 'Orange threshold',
       redLabel: 'Red threshold',
       thresholdHint:

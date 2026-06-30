@@ -80,6 +80,21 @@ export function AddSymbolForm({ currentSymbol }: { currentSymbol: string }) {
           </span>
         </label>
 
+        <label className="flex items-start gap-2 text-xs text-neutral-400">
+          <input
+            type="checkbox"
+            name="hidden"
+            defaultChecked={false}
+            className="mt-0.5 accent-neutral-200"
+          />
+          <span>
+            <span className="block text-neutral-200">{t.hiddenLabel}</span>
+            <span className="mt-0.5 block text-[10px] text-neutral-500">
+              {t.hiddenHint}
+            </span>
+          </span>
+        </label>
+
         <fieldset className="space-y-3 rounded-md border border-neutral-800 p-3">
           <legend className="px-1 text-[10px] uppercase tracking-wide text-neutral-500">
             색상 임계값

@@ -8,6 +8,7 @@ import { calcDrawdown } from "@/lib/drawdown";
 import {
   DEFAULT_SYMBOL,
   getExchange,
+  isHidden,
   type SymbolMeta,
 } from "@/lib/symbols";
 
@@ -58,7 +59,11 @@ const parseLang = (raw: string | null): Lang => (raw === "en" ? "en" : "ko");
 const resolveTicker = async (raw: string | null): Promise<string> => {
   const t = (raw ?? DEFAULT_SYMBOL).trim().toLowerCase();
   const list = await readSymbolList();
-  return list.includes(t) ? t : DEFAULT_SYMBOL;
+  if (!list.includes(t)) return DEFAULT_SYMBOL;
+  // hidden 종목은 SNS 미리보기에 노출되면 사용자 페이지와 모순(404). DEFAULT로 폴백.
+  const meta = await readMeta(t);
+  if (isHidden(meta)) return DEFAULT_SYMBOL;
+  return t;
 };
 
 type OgData = {

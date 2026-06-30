@@ -11,6 +11,13 @@ export type SymbolMeta = {
   redThreshold: number;
   /** 거래소. undefined ≡ "NYSE" — 기존 종목 호환을 위해 옵셔널. KRX는 자동 fetch 미지원(수동 입력). */
   exchange?: Exchange;
+  /**
+   * 사용자에게 숨김. undefined ≡ false (기존 종목 호환).
+   * true면 메인 페이지 종목 탭에서 빠지고 `/{ticker}` 직접 접근도 404.
+   * admin에는 그대로 노출되며 closes/seed/메타는 KV에 보존 — 데이터 유실 없이 재활성화 가능.
+   * cron(자동 fetch)도 그대로 — hidden 동안에도 데이터 누적해 재공개 시 즉시 사용.
+   */
+  hidden?: boolean;
 };
 
 export type MetaValidationError =
@@ -46,3 +53,6 @@ export const defaultMetaFor = (ticker: string): SymbolMeta => ({
 /** SymbolMeta의 exchange를 안전하게 읽기. undefined ≡ "NYSE" (기존 종목 호환). */
 export const getExchange = (meta: SymbolMeta): Exchange =>
   meta.exchange ?? "NYSE";
+
+/** SymbolMeta의 hidden을 안전하게 읽기. undefined ≡ false. */
+export const isHidden = (meta: SymbolMeta): boolean => meta.hidden === true;

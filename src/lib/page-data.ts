@@ -15,7 +15,7 @@ import {
   readVisitorCounts,
 } from "./kv";
 import { getProvider } from "./providers";
-import { getExchange, type SymbolMeta } from "./symbols";
+import { getExchange, isHidden, type SymbolMeta } from "./symbols";
 import type { HeroData } from "@/components/HeroDrawdown";
 
 export type VisitorInfo = {
@@ -134,6 +134,16 @@ export const loadAllMetas = unstable_cache(_loadAllMetas, ["all-metas"], {
   revalidate: CACHE_TTL_SECONDS,
   tags: [CACHE_TAG],
 });
+
+/**
+ * 사용자 페이지(메인 / 종목)용 — hidden 종목 제외한 메타.
+ * admin은 loadAllMetas를 그대로 써서 hidden 종목도 관리 화면에 노출된다.
+ * KV 호출 비용을 피하려고 loadAllMetas 결과 위에서 필터.
+ */
+export const loadVisibleMetas = async (): Promise<SymbolMeta[]> => {
+  const all = await loadAllMetas();
+  return all.filter((m) => !isHidden(m));
+};
 
 /**
  * 방문자 정보는 캐시하지 않는다 — 일별 카운터(`today`)가 자정에 리셋되고

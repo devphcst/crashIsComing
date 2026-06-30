@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { updateMetaAction, type ActionState } from "@/app/admin/actions";
-import { DEFAULT_SYMBOL, getExchange, type SymbolMeta } from "@/lib/symbols";
+import {
+  DEFAULT_SYMBOL,
+  getExchange,
+  isHidden,
+  type SymbolMeta,
+} from "@/lib/symbols";
 import { dictionaries } from "@/lib/i18n";
 
 const t = dictionaries.ko.admin.symbols;
@@ -91,6 +96,26 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
         </select>
         <span className="mt-1 block text-[10px] text-neutral-500">
           {t.exchangeHint}
+        </span>
+      </label>
+
+      <label className="flex items-start gap-2 text-xs text-neutral-400">
+        <input
+          type="checkbox"
+          name="hidden"
+          defaultChecked={isHidden(meta)}
+          // DEFAULT_SYMBOL은 메인 페이지(`/`) 콘텐츠라 숨기면 사이트 자체가 깨짐.
+          // 기본 종목 ticker 변경을 막은 것과 같은 이유로 hidden 토글도 비활성.
+          disabled={meta.ticker === DEFAULT_SYMBOL}
+          className="mt-0.5 accent-neutral-200"
+        />
+        <span>
+          <span className="block text-neutral-200">{t.hiddenLabel}</span>
+          <span className="mt-0.5 block text-[10px] text-neutral-500">
+            {meta.ticker === DEFAULT_SYMBOL
+              ? "기본 종목은 숨길 수 없습니다."
+              : t.hiddenHint}
+          </span>
         </span>
       </label>
 

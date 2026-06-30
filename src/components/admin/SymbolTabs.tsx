@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getExchange, type SymbolMeta } from "@/lib/symbols";
+import { getExchange, isHidden, type SymbolMeta } from "@/lib/symbols";
 import { dictionaries } from "@/lib/i18n";
 
 const t = dictionaries.ko.admin.symbols;
@@ -26,6 +26,7 @@ export function SymbolTabs({
     >
       {metas.map((m) => {
         const active = m.ticker === current;
+        const hidden = isHidden(m);
         return (
           <Link
             key={m.ticker}
@@ -34,7 +35,9 @@ export function SymbolTabs({
               "rounded-md px-3 py-1.5 text-sm transition-colors " +
               (active
                 ? "bg-neutral-100 font-medium text-neutral-900"
-                : "border border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
+                : hidden
+                  ? "border border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-neutral-400"
+                  : "border border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
             }
             aria-current={active ? "page" : undefined}
           >
@@ -47,6 +50,11 @@ export function SymbolTabs({
             >
               {getExchange(m) === "KRX" ? "KR" : "US"}
             </span>
+            {hidden ? (
+              <span className="ml-1 font-mono text-[10px] text-neutral-600">
+                ({t.hiddenBadge})
+              </span>
+            ) : null}
           </Link>
         );
       })}

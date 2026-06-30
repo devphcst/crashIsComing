@@ -259,7 +259,11 @@ export function RechartsBreakdown({
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={closes as Point[]}
-            margin={{ top: 8, right: 8, bottom: 4, left: 0 }}
+            // X축 tick 라벨은 tick 점 중심으로 그려져 첫·마지막 라벨의 절반이
+            // plot 영역 밖으로 빠짐. ResponsiveContainer가 가둬서 오른쪽 끝
+            // "M월 D일"이 "M월 D"로 잘리는 증상의 원인. 좌·우 margin을 넉넉히
+            // 잡아 plot 영역을 안쪽으로 밀어 라벨이 통째로 들어오게.
+            margin={{ top: 8, right: 32, bottom: 4, left: 12 }}
             onClick={(state) => onTap(state?.activeLabel)}
           >
             {/* X 방향 gradient를 stroke로. comparePoints 없으면 단색 회색,

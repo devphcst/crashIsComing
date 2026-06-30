@@ -397,10 +397,10 @@ function HeroNumbers({
                   막대 row만 안쪽에서 max-w-[200px] mx-auto로 가운데 정렬 유지 (디자인 보존). */}
               <div className="mx-auto mt-6 w-full max-w-[400px]">
                 <div className="mb-2 text-left">
-                  <div className="text-xs font-medium text-neutral-300">
+                  <div className="text-base font-medium text-neutral-200">
                     {dict.chart.sectionPeriod.title}
                   </div>
-                  <div className="text-[10px] text-neutral-600">
+                  <div className="text-xs text-neutral-500">
                     {dict.chart.sectionPeriod.subtitle(
                       formatPrice(data.current.price, data.exchange),
                     )}
@@ -434,10 +434,10 @@ function HeroNumbers({
                   자체 mb-3 (빠른 버튼 컨테이너)이 담당. */}
               <div className="mx-auto w-full max-w-[400px]">
                 <div className="mb-3 text-left">
-                  <div className="text-xs font-medium text-neutral-300">
+                  <div className="text-base font-medium text-neutral-200">
                     {dict.chart.sectionTrend.title}
                   </div>
-                  <div className="text-[10px] text-neutral-600">
+                  <div className="text-xs text-neutral-500">
                     {dict.chart.sectionTrend.subtitle}
                   </div>
                 </div>

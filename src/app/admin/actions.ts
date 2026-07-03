@@ -42,6 +42,11 @@ import {
 } from "@/lib/splits";
 import { formatPrice, formatSignedPct } from "@/lib/format";
 import type { Close, SeedHighs } from "@/lib/providers/types";
+import {
+  mergeParsedFiles,
+  mergeWithExisting,
+  parseInvestingCsv,
+} from "@/lib/csv-import";
 
 export type ActionState = {
   ok: boolean;
@@ -510,3 +515,148 @@ export async function reorderSymbolsAction(
   revalidatePath("/");
   revalidateTag("symbols");
 }
+
+// ---- CSV import ----
+
+export type CsvImportState =
+  | { ok: false; message?: string }
+  | {
+      ok: true;
+      /** 총 파싱 성공 행 (파일 여러 개 합쳐서 dedupe 후). */
+      parsedCount: number;
+      /** 기존 KV에 없던 새 date 개수. */
+      newCount: number;
+      /** 기존 KV 값과 다르게 덮어쓴 개수. */
+      overwriteCount: number;
+      /** 파싱 실패 행 (요약; 상위 몇 개만 message로 반환). */
+      errorCount: number;
+      /** 시드 갱신 여부 + 새 값 (있으면). */
+      seedUpdated: null | { previous: number | null; next: number; date: string };
+      message: string;
+    };
+
+/**
+ * Investing.com CSV 파일들을 하나로 병합 후 기존 종가 배열과 병합해 KV에 저장.
+ *
+ * 동작:
+ *   1. 파일별 파싱 → dedup (뒤 파일 우선) → 기존 closes와 병합 (CSV 우선).
+ *   2. 새 최대 종가가 기존 seed.ath 가격보다 크면 seed 자동 갱신.
+ *      peaks.ts의 seedOverriddenByClose 가드 덕분에 seed.date의 close 실측이
+ *      있으면 seed는 그 date에 대해 무시되므로 안전하게 넉넉히 새로 써도 됨.
+ *   3. revalidateSymbolPaths(ticker).
+ *
+ * FormData 규약:
+ *   - ticker: 대상 종목
+ *   - files:  multiple File. 순서대로 병합, 뒤 파일이 앞을 덮어씀.
+ *
+ * 상한:
+ *   - 파일 크기 합계 5MB. Investing.com 26년치 두 파일 실측 ~640KB이라 넉넉.
+ *   - 초과 시 reject.
+ */
+const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
+
+export async function importCsvAction(
+  _prev: CsvImportState,
+  formData: FormData,
+): Promise<CsvImportState> {
+  if (!checkAuth()) return { ok: false, message: "권한이 없습니다." };
+
+  const resolved = await resolveTickerFromForm(formData);
+  if (!resolved.ok) return { ok: false, message: resolved.message };
+  const { ticker } = resolved;
+
+  const files = formData.getAll("files").filter((v): v is File => v instanceof File);
+  if (files.length === 0) {
+    return { ok: false, message: "CSV 파일을 선택하세요." };
+  }
+  const totalBytes = files.reduce((s, f) => s + f.size, 0);
+  if (totalBytes > MAX_TOTAL_BYTES) {
+    return {
+      ok: false,
+      message: `파일 크기 합계가 ${Math.round(MAX_TOTAL_BYTES / 1024 / 1024)}MB를 초과했습니다.`,
+    };
+  }
+
+  const parseResults = [];
+  for (const file of files) {
+    const text = await file.text();
+    parseResults.push(parseInvestingCsv(text));
+  }
+  const { rows: incoming, errors } = mergeParsedFiles(parseResults);
+
+  if (incoming.length === 0) {
+    const first = errors[0];
+    const detail = first
+      ? `${first.lineNo}행: ${first.reason}`
+      : "파싱된 행이 없습니다.";
+    return { ok: false, message: `CSV 파싱 실패 — ${detail}` };
+  }
+
+  const existing = await readAllCloses(ticker);
+  const merged = mergeWithExisting(existing, incoming);
+
+  // 새 date + 덮어쓰기 카운트.
+  const existingMap = new Map(existing.map((c) => [c.date, c.price]));
+  let newCount = 0;
+  let overwriteCount = 0;
+  const toWrite: Close[] = [];
+  for (const c of incoming) {
+    const prev = existingMap.get(c.date);
+    if (prev === undefined) {
+      newCount++;
+      toWrite.push(c);
+    } else if (prev !== c.price) {
+      overwriteCount++;
+      toWrite.push(c);
+    }
+    // 동일 값이면 write 스킵 (KV 호출 절약).
+  }
+
+  if (toWrite.length) {
+    await writeManyCloses(ticker, toWrite);
+  }
+
+  // 시드 자동 갱신 — merged 배열에서 최고 종가 찾음.
+  // 기존 seed.ath.price보다 크면 갱신. 같으면 skip.
+  const seed = await readSeed(ticker);
+  const currentAthSeedPrice = seed?.ath?.price ?? null;
+  let seedInfo: { previous: number | null; next: number; date: string } | null =
+    null;
+  if (merged.length) {
+    const top = merged.reduce((a, b) => (a.price >= b.price ? a : b));
+    if (currentAthSeedPrice === null || top.price > currentAthSeedPrice) {
+      const nextSeed: SeedHighs = {
+        ...(seed ?? {}),
+        ath: { date: top.date, price: top.price },
+      };
+      await writeSeed(ticker, nextSeed);
+      seedInfo = {
+        previous: currentAthSeedPrice,
+        next: top.price,
+        date: top.date,
+      };
+    }
+  }
+
+  revalidateSymbolPaths(ticker);
+
+  const parts: string[] = [];
+  parts.push(`${incoming.length}개 파싱 (신규 ${newCount} / 덮어쓰기 ${overwriteCount})`);
+  if (seedInfo) {
+    parts.push(`ATH 시드 갱신 → ${seedInfo.next} (${seedInfo.date})`);
+  }
+  if (errors.length) {
+    parts.push(`오류 ${errors.length}건 무시`);
+  }
+
+  return {
+    ok: true,
+    parsedCount: incoming.length,
+    newCount,
+    overwriteCount,
+    errorCount: errors.length,
+    seedUpdated: seedInfo,
+    message: parts.join(" · "),
+  };
+}
+

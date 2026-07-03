@@ -23,6 +23,7 @@ import { AddSymbolForm } from "@/components/admin/AddSymbolForm";
 import { MetaEditForm } from "@/components/admin/MetaEditForm";
 import { DeleteSymbolForm } from "@/components/admin/DeleteSymbolForm";
 import { SymbolReorderList } from "@/components/admin/SymbolReorderList";
+import { CsvImportForm } from "@/components/admin/CsvImportForm";
 import { logoutAction } from "./actions";
 import { dictionaries } from "@/lib/i18n";
 
@@ -154,6 +155,15 @@ export default async function AdminPage({
           ticker={currentSymbol}
           exchange={getExchange(currentMeta)}
         />
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
+        <h2 className="text-sm font-medium text-neutral-200">CSV 일괄 가져오기</h2>
+        <p className="text-xs text-neutral-500">
+          Investing.com 다운로드 형식(한글 헤더, UTF-8) CSV 파일들을 업로드하면 기존 종가와 병합됩니다.
+          중복 날짜는 CSV 값이 우선. 가져오기 후 새 최고 종가가 시드 ATH를 넘으면 자동 갱신됩니다.
+        </p>
+        <CsvImportForm key={currentSymbol} ticker={currentSymbol} />
       </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">

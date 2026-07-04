@@ -5,7 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
-import { formatPct, formatPrice, formatShortDate } from "@/lib/format";
+import { formatPct, formatPrice } from "@/lib/format";
 import type { SymbolMeta, Exchange } from "@/lib/symbols";
 import type { CrashCandidate } from "@/lib/crashes";
 import { SiteHeader } from "./SiteHeader";
@@ -151,7 +151,6 @@ export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) 
                       crash={crash}
                       closes={closes}
                       exchange={exchange}
-                      lang={lang}
                       dict={d}
                     />
                   ))}
@@ -184,19 +183,17 @@ function CrashCard({
   crash,
   closes,
   exchange,
-  lang,
   dict,
 }: {
   crash: CrashCandidate;
   closes: ReadonlyArray<{ date: string; price: number }>;
   exchange: Exchange;
-  lang: Lang;
   dict: ReturnType<typeof getDict>;
 }) {
-  const dpText = dict.historyPage.crashCardName(crash.troughDate);
-  const range =
+  const dpText = dict.historyPage.crashCardName(crash.peakDate);
+  const rangeEnd =
     crash.recoveryDate ?? closes[closes.length - 1]?.date ?? crash.troughDate;
-  const rangeLabel = `${formatShortDate(crash.peakDate, lang)} — ${formatShortDate(range, lang)}`;
+  const rangeLabel = dict.historyPage.crashRange(crash.peakDate, rangeEnd);
 
   return (
     <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">

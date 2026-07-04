@@ -119,6 +119,10 @@ const revalidateSymbolPaths = (ticker: string): void => {
   revalidatePath("/", "layout");
   // 추가 안전망: 종목별 동적 라우트 명시 (DEFAULT_SYMBOL 분기 없이 항상).
   revalidatePath(`/${ticker}`);
+  // 서브 페이지도 명시 — layout 무효화가 Full Route Cache까지 항상 커버하지 못하는
+  // 케이스 대비. history 페이지는 `force-dynamic`이라 캐시 자체가 없지만 dev 모드 등
+  // fallback을 위해 유지.
+  revalidatePath(`/${ticker}/history`);
   revalidatePath("/admin");
   revalidateTag("symbols");
 };

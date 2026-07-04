@@ -191,8 +191,17 @@ export type Dict = {
     multiplierLabel: (ratio: number) => string;
     /** 폭락 카드 섹션 헤더. */
     crashesHeader: string;
-    /** 카드 자동 이름 — "2000년 3월 하락" / "Mar 2000 crash". */
-    crashCardName: (troughISO: string) => string;
+    /**
+     * 카드 자동 이름 — 하락 "시작" 시점 기준 ("YYYY년 M월 시작" / "Starting MMM YYYY").
+     * peak 시점을 넘김 (trough가 아님) — 사용자가 하락 시작 시기로 인식하도록.
+     * Phase 3에서 admin이 통칭(닷컴 버블 등)으로 덮어씀.
+     */
+    crashCardName: (peakISO: string) => string;
+    /**
+     * 카드 기간 라벨 — 서로 다른 연도 걸치면 "YYYY년 M월 – YYYY년 M월",
+     * 같은 연도면 "YYYY년 M월 D일 – M월 D일".
+     */
+    crashRange: (startISO: string, endISO: string) => string;
     /** 카드 낙폭 라벨. */
     crashDrawdownLabel: string;
     /** 카드 회복 라벨 — recovered=true / false. */
@@ -466,9 +475,21 @@ const ko: Dict = {
       return rounded > 0 ? `+${rounded.toFixed(1)}%` : `${rounded.toFixed(1)}%`;
     },
     crashesHeader: '역사적 폭락',
-    crashCardName: (troughISO) => {
-      const d = new Date(`${troughISO}T00:00:00Z`);
-      return `${d.getUTCFullYear()}년 ${d.getUTCMonth() + 1}월 하락`;
+    crashCardName: (peakISO) => {
+      const d = new Date(`${peakISO}T00:00:00Z`);
+      return `${d.getUTCFullYear()}년 ${d.getUTCMonth() + 1}월 시작`;
+    },
+    crashRange: (startISO, endISO) => {
+      const s = new Date(`${startISO}T00:00:00Z`);
+      const e = new Date(`${endISO}T00:00:00Z`);
+      const sy = s.getUTCFullYear();
+      const ey = e.getUTCFullYear();
+      const sm = s.getUTCMonth() + 1;
+      const em = e.getUTCMonth() + 1;
+      const sd = s.getUTCDate();
+      const ed = e.getUTCDate();
+      if (sy !== ey) return `${sy}년 ${sm}월 – ${ey}년 ${em}월`;
+      return `${sy}년 ${sm}월 ${sd}일 – ${em}월 ${ed}일`;
     },
     crashDrawdownLabel: '최대 낙폭',
     crashRecoveredLabel: '전고점 회복',
@@ -784,13 +805,29 @@ const en: Dict = {
       return rounded > 0 ? `+${rounded.toFixed(1)}%` : `${rounded.toFixed(1)}%`;
     },
     crashesHeader: 'Historical crashes',
-    crashCardName: (troughISO) => {
+    crashCardName: (peakISO) => {
       const months = [
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
       ];
-      const d = new Date(`${troughISO}T00:00:00Z`);
-      return `${months[d.getUTCMonth()]} ${d.getUTCFullYear()} decline`;
+      const d = new Date(`${peakISO}T00:00:00Z`);
+      return `Starting ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+    },
+    crashRange: (startISO, endISO) => {
+      const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      ];
+      const s = new Date(`${startISO}T00:00:00Z`);
+      const e = new Date(`${endISO}T00:00:00Z`);
+      const sy = s.getUTCFullYear();
+      const ey = e.getUTCFullYear();
+      const sm = months[s.getUTCMonth()];
+      const em = months[e.getUTCMonth()];
+      const sd = s.getUTCDate();
+      const ed = e.getUTCDate();
+      if (sy !== ey) return `${sm} ${sy} – ${em} ${ey}`;
+      return `${sm} ${sd} – ${em} ${ed}, ${sy}`;
     },
     crashDrawdownLabel: 'Max drawdown',
     crashRecoveredLabel: 'Reclaimed peak',

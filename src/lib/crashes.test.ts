@@ -135,6 +135,28 @@ describe("extractCrashes", () => {
     expect(crashes[0].recovered).toBe(true);
   });
 
+  it("recovery is reported as the actual peak-reclaim date, not the stagnation-split date", () => {
+    // Long crash: peak 100 (idx 0), trough 20 (idx 4), stagnates for a while, then reclaims
+    // peak much later at idx=20. With stagnationTradingDays=5, episode ends around idx=10,
+    // but recoveryDate should reflect the true reclaim at idx=20, not the internal split.
+    const closes = daily(
+      "2000-01-01",
+      [
+        100, 80, 60, 40, 20, // idx 0..4: descent, trough=20
+        22, 25, 22, 25, 22, 25, // idx 5..10: stagnation → episode split near here
+        28, 30, 35, 40, 50, 60, 70, 80, 90, 100, // idx 11..20: slow climb back to 100
+      ],
+    );
+    const crashes = extractCrashes(closes, { stagnationTradingDays: 5 });
+    expect(crashes.length).toBe(1);
+    expect(crashes[0].peakPrice).toBe(100);
+    expect(crashes[0].troughPrice).toBe(20);
+    expect(crashes[0].recovered).toBe(true);
+    expect(crashes[0].recoveryDate).toBe("2000-01-21"); // idx 20
+    // trough at idx 4 (2000-01-05) → recovery at idx 20 (2000-01-21) → 16 days ≈ 1 month
+    expect(crashes[0].recoveryMonths).toBe(1);
+  });
+
   it("full recovery beats stagnation when peak is reclaimed within threshold", () => {
     // Long recovery path but reaches peak before stagnationTradingDays expire.
     const closes = daily(

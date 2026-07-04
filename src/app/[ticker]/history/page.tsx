@@ -18,6 +18,11 @@ import { getDict } from "@/lib/i18n";
  * 폭락 카드는 서버에서 extractCrashes로 상위 5개 미리 계산 후 전달.
  */
 
+// closes 데이터는 admin CSV 임포트 · cron · 종가 편집으로 실시간 갱신되므로
+// route level 캐시 없이 매 요청 fresh. revalidatePath 게이트가 놓쳐도 사용자가
+// stale 값을 보지 않게 보장.
+export const dynamic = "force-dynamic";
+
 const readLangFromCookie = (): Lang => {
   const v = cookies().get(LANG_COOKIE)?.value;
   return v === "en" ? "en" : "ko";

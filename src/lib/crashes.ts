@@ -31,13 +31,18 @@ export type CrashCandidate = {
   /** 낙폭 최심 지점. */
   troughDate: string;
   troughPrice: number;
-  /** 종료 — 전고점 회복이든 정체 판정이든. 데이터 끝까지 진행 중이면 null. */
+  /**
+   * 사용자 관점의 "회복 시점": 진짜로 peakPrice 이상 종가에 처음 도달한 날.
+   * closes 배열에서 peakDate 이후를 스캔해 실측. 데이터 끝까지 못 도달하면 null.
+   *
+   * 알고리즘 내부의 에피소드 종료 시점(stagnation split 등)과는 별개 — 후처리로 덮어씀.
+   */
   recoveryDate: string | null;
   /** 음수(예 -82.3). trough 기준 peak 대비 낙폭 %. */
   drawdownPct: number;
   /** trough 이후 recoveryDate까지 개월수(반올림, 30.44일 기준). recovery 없으면 null. */
   recoveryMonths: number | null;
-  /** 전고점 회복(a)이면 true. 정체 판정(b)/미회복(c)이면 false. */
+  /** 전고점(peakPrice)을 이후에 실제로 재도달했으면 true. */
   recovered: boolean;
 };
 
@@ -140,6 +145,29 @@ export const extractCrashes = (
   // 진행 중이면 미회복 상태로 emit.
   if (inCrash) {
     emit(null, false);
+  }
+
+  // 후처리: 각 crash의 recoveryDate를 실측 재도달 기준으로 재계산.
+  // 에피소드 종료 시점(정체 판정 포함)은 알고리즘 내부용이고, 사용자에게 노출되는
+  // "회복"은 peakPrice 이상 종가에 처음 도달한 날. peakDate 이후를 순회.
+  //
+  // 대소 비교는 부동소수점 정확도 이슈가 있을 수 있어 아주 근소한 마진(1e-6)만 허용.
+  for (const crash of crashes) {
+    let actualRecovery: string | null = null;
+    // closes는 오름차순. peakDate보다 뒤이면서 처음 price>=peakPrice인 종가.
+    // findIndex/find로 한 번만 순회. 각 crash당 최악 O(N)이지만 crashes는 소수(≤5).
+    for (const c of closes) {
+      if (c.date <= crash.peakDate) continue;
+      if (c.price + 1e-6 >= crash.peakPrice) {
+        actualRecovery = c.date;
+        break;
+      }
+    }
+    crash.recoveryDate = actualRecovery;
+    crash.recovered = actualRecovery !== null;
+    crash.recoveryMonths = actualRecovery
+      ? monthsBetween(crash.troughDate, actualRecovery)
+      : null;
   }
 
   // 낙폭 큰 순 정렬 (drawdownPct는 음수 → 절댓값 큰 순).

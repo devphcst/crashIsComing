@@ -162,6 +162,49 @@ export type Dict = {
     note: string;
     chartAriaLabel: (year: string, mdd: number, months: number) => string;
   };
+  /** /[ticker]/history 페이지 전용 문구 — 미니멀 라벨만. */
+  historyPage: {
+    /** 요약 페이지 진입 링크 문구. 실제 데이터 범위(연 단위)에 따라 동적. */
+    entryLink: (years: number) => string;
+    /** 페이지 상·하단 뒤로 가기. */
+    back: string;
+    /** 페이지 제목 서브라인. */
+    subtitle: (rangeLabel: string) => string;
+    /** 종목 배지 옆에 붙는 제목 — 실제 데이터 범위(연 단위)에 따라 동적. */
+    title: (years: number) => string;
+    /** 데이터 범위 — "YYYY년 M월 ~ YYYY년 M월" / "MMM YYYY – MMM YYYY". */
+    dateRange: (startISO: string, endISO: string) => string;
+    /** 차트 범위 버튼 라벨 4개. */
+    rangeButtons: {
+      oneYear: string;
+      fiveYear: string;
+      tenYear: string;
+      all: string;
+    };
+    /** 차트 하단 요약 — "$27.40 → $725.17 (26배 상승)". */
+    chartSummary: (
+      startPrice: string,
+      endPrice: string,
+      multiplier: string,
+    ) => string;
+    /** 배수 라벨 포맷 — ratio >= 2일 때 "26배 상승" / "26×", 아니면 "+37.8%" / "−12.3%". */
+    multiplierLabel: (ratio: number) => string;
+    /** 폭락 카드 섹션 헤더. */
+    crashesHeader: string;
+    /** 카드 자동 이름 — "2000년 3월 하락" / "Mar 2000 crash". */
+    crashCardName: (troughISO: string) => string;
+    /** 카드 낙폭 라벨. */
+    crashDrawdownLabel: string;
+    /** 카드 회복 라벨 — recovered=true / false. */
+    crashRecoveredLabel: string;
+    crashOngoingLabel: string;
+    /** 회복 개월 표기. */
+    crashRecoveryMonths: (months: number) => string;
+    /** 미회복 시. */
+    crashUnrecovered: string;
+    /** 폭락 카드 데이터 없음 안내. */
+    crashesEmpty: string;
+  };
   allInWarning: {
     title: string;
     paragraphs: string[];
@@ -397,6 +440,42 @@ const ko: Dict = {
     note: '위 곡선은 실제 일별 주가 데이터가 아니라 흐름을 보여주기 위한 형태 예시이며, 최대 하락률과 회복 기간은 근사값이고 곡선의 중간 굴곡은 실제 가격 움직임과 다릅니다.',
     chartAriaLabel: (year, mdd, months) =>
       `${year} 폭락: 고점 대비 ${mdd}%까지 하락 후 ${months}개월 만에 회복`,
+  },
+  historyPage: {
+    entryLink: (years) => `이 종목의 ${years}년 역사 →`,
+    back: '← 요약으로',
+    title: (years) => `${years}년 역사`,
+    subtitle: (rangeLabel) => rangeLabel,
+    dateRange: (startISO, endISO) => {
+      const s = new Date(`${startISO}T00:00:00Z`);
+      const e = new Date(`${endISO}T00:00:00Z`);
+      return `${s.getUTCFullYear()}년 ${s.getUTCMonth() + 1}월 ~ ${e.getUTCFullYear()}년 ${e.getUTCMonth() + 1}월`;
+    },
+    rangeButtons: {
+      oneYear: '1년',
+      fiveYear: '5년',
+      tenYear: '10년',
+      all: '전체',
+    },
+    chartSummary: (start, end, multiplier) => `${start} → ${end} (${multiplier})`,
+    multiplierLabel: (ratio) => {
+      if (ratio >= 2) return `${ratio.toFixed(1)}배 상승`;
+      const pct = (ratio - 1) * 100;
+      const rounded = Number(pct.toFixed(1));
+      if (rounded === 0) return '0.0%';
+      return rounded > 0 ? `+${rounded.toFixed(1)}%` : `${rounded.toFixed(1)}%`;
+    },
+    crashesHeader: '역사적 폭락',
+    crashCardName: (troughISO) => {
+      const d = new Date(`${troughISO}T00:00:00Z`);
+      return `${d.getUTCFullYear()}년 ${d.getUTCMonth() + 1}월 하락`;
+    },
+    crashDrawdownLabel: '최대 낙폭',
+    crashRecoveredLabel: '전고점 회복',
+    crashOngoingLabel: '진행 중',
+    crashRecoveryMonths: (months) => `${months}개월`,
+    crashUnrecovered: '미회복',
+    crashesEmpty: '30% 이상 낙폭 없음',
   },
   allInWarning: {
     title: '그래서, 역사적 폭락에 올인(All-in)하는 것이 옳은가?',
@@ -675,6 +754,50 @@ const en: Dict = {
     note: 'The curves above are illustrative shapes meant to convey the overall movement, not actual daily price data. The maximum drawdowns and recovery periods are approximate, and the intermediate fluctuations differ from real price action.',
     chartAriaLabel: (year, mdd, months) =>
       `${year} crash: dropped ${mdd}% from peak, recovered in ${months} months`,
+  },
+  historyPage: {
+    entryLink: (years) => `${years}-year history of this ticker →`,
+    back: '← Back to summary',
+    title: (years) => `${years}-year history`,
+    subtitle: (rangeLabel) => rangeLabel,
+    dateRange: (startISO, endISO) => {
+      const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      ];
+      const s = new Date(`${startISO}T00:00:00Z`);
+      const e = new Date(`${endISO}T00:00:00Z`);
+      return `${months[s.getUTCMonth()]} ${s.getUTCFullYear()} – ${months[e.getUTCMonth()]} ${e.getUTCFullYear()}`;
+    },
+    rangeButtons: {
+      oneYear: '1Y',
+      fiveYear: '5Y',
+      tenYear: '10Y',
+      all: 'All',
+    },
+    chartSummary: (start, end, multiplier) => `${start} → ${end} (${multiplier})`,
+    multiplierLabel: (ratio) => {
+      if (ratio >= 2) return `${ratio.toFixed(1)}×`;
+      const pct = (ratio - 1) * 100;
+      const rounded = Number(pct.toFixed(1));
+      if (rounded === 0) return '0.0%';
+      return rounded > 0 ? `+${rounded.toFixed(1)}%` : `${rounded.toFixed(1)}%`;
+    },
+    crashesHeader: 'Historical crashes',
+    crashCardName: (troughISO) => {
+      const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      ];
+      const d = new Date(`${troughISO}T00:00:00Z`);
+      return `${months[d.getUTCMonth()]} ${d.getUTCFullYear()} decline`;
+    },
+    crashDrawdownLabel: 'Max drawdown',
+    crashRecoveredLabel: 'Reclaimed peak',
+    crashOngoingLabel: 'Ongoing',
+    crashRecoveryMonths: (months) => `${months} month${months === 1 ? '' : 's'}`,
+    crashUnrecovered: 'Not reclaimed',
+    crashesEmpty: 'No drawdowns exceeding 30%',
   },
   allInWarning: {
     title: 'Is it right to go all-in on a historic crash?',

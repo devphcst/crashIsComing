@@ -17,10 +17,17 @@ export function MobileMenu({
   lang,
   onChangeLang,
   dict,
+  anchorBase,
 }: {
   lang: Lang;
   onChangeLang: (l: Lang) => void;
   dict: Dict;
+  /**
+   * 앵커 링크 접두어. 기본 "" — 같은 페이지 앵커(#about 등)로 부드러운 스크롤.
+   * 요약 페이지 외 서브 페이지에서 "/qqq" 등을 전달하면 각 링크는 "/qqq#about" 처럼
+   * 전체 URL이 되어 클릭 시 요약 페이지로 이동한다.
+   */
+  anchorBase?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -53,6 +60,12 @@ export function MobileMenu({
     e: React.MouseEvent<HTMLAnchorElement>,
     href: string,
   ) => {
+    // anchorBase가 있으면 다른 페이지로의 이동이므로 기본 브라우저 네비게이션에 맡김.
+    // 드로어만 닫고 preventDefault 안 함.
+    if (anchorBase) {
+      setOpen(false);
+      return;
+    }
     e.preventDefault();
     const target = document.querySelector(href);
     if (target) {
@@ -116,17 +129,20 @@ export function MobileMenu({
             {dict.menu.title}
           </div>
           <ul className="divide-y divide-neutral-900">
-            {MENU_ITEMS.map((item) => (
-              <li key={item.key}>
-                <a
-                  href={item.href}
-                  onClick={(e) => handleAnchorClick(e, item.href)}
-                  className="block py-3 text-base text-neutral-200 hover:text-white"
-                >
-                  {dict.menu[item.key]}
-                </a>
-              </li>
-            ))}
+            {MENU_ITEMS.map((item) => {
+              const href = anchorBase ? `${anchorBase}${item.href}` : item.href;
+              return (
+                <li key={item.key}>
+                  <a
+                    href={href}
+                    onClick={(e) => handleAnchorClick(e, href)}
+                    className="block py-3 text-base text-neutral-200 hover:text-white"
+                  >
+                    {dict.menu[item.key]}
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 

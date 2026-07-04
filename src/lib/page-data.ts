@@ -95,6 +95,8 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
         red: meta.redThreshold,
       },
       recentCloses,
+      totalClosesCount: closes.length,
+      firstCloseDate: closes.length ? closes[0].date : latest.date,
     };
   } catch (err) {
     console.error(`loadHeroData(${ticker}) failed:`, err);

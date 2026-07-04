@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
 import {
@@ -65,6 +66,15 @@ export type HeroData =
        * 252개를 넘어도 252개로 잘라 페이로드 크기 일정 (한 종목 ≈ 8KB).
        */
       recentCloses: ReadonlyArray<{ date: string; price: number }>;
+      /**
+       * 전체 종가 개수 — /[ticker]/history 진입 링크 게이트에 사용 (>=500 이면 노출).
+       * 실제 히스토리 페이지 차트는 route 자체에서 전체 closes를 다시 로드.
+       */
+      totalClosesCount: number;
+      /**
+       * 가장 오래된 종가 날짜 — 진입 링크 문구에 "N년 역사" 계산용. closes[0].date.
+       */
+      firstCloseDate: string;
     }
   | { ready: false };
 
@@ -223,6 +233,15 @@ export function HeroDrawdown({
               <NotReady dict={d} />
             )}
           </section>
+
+          {data.ready && data.totalClosesCount >= 500 ? (
+            <HistoryEntryLink
+              lang={lang}
+              ticker={current}
+              firstCloseDate={data.firstCloseDate}
+              latestDate={data.current.date}
+            />
+          ) : null}
 
           <div id="ad">
             <ProductAdBanner lang={lang} />
@@ -777,6 +796,45 @@ function Cell({
     </div>
   );
 }
+
+/**
+ * /[ticker]/history 진입 링크 — 요약 페이지 광고 카드 위 세로 축에 살짝 흐린 톤으로.
+ * "이 종목의 N년 역사 →". N은 firstCloseDate~latestDate에서 계산.
+ */
+function HistoryEntryLink({
+  lang,
+  ticker,
+  firstCloseDate,
+  latestDate,
+}: {
+  lang: Lang;
+  ticker: string;
+  firstCloseDate: string;
+  latestDate: string;
+}) {
+  const dict = getDict(lang);
+  const years = yearsBetween(firstCloseDate, latestDate);
+  if (years < 1) return null;
+  return (
+    <div className="mx-auto flex w-full max-w-[400px] flex-col items-center gap-2 px-6 py-6">
+      <div className="h-px w-16 bg-neutral-800" />
+      <Link
+        href={`/${ticker}/history`}
+        className="text-xs text-neutral-500 hover:text-neutral-300"
+      >
+        {dict.historyPage.entryLink(years)}
+      </Link>
+    </div>
+  );
+}
+
+const yearsBetween = (fromISO: string, toISO: string): number => {
+  const a = new Date(`${fromISO}T00:00:00Z`);
+  const b = new Date(`${toISO}T00:00:00Z`);
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return 0;
+  const ms = b.getTime() - a.getTime();
+  return Math.max(0, Math.floor(ms / (365.25 * 24 * 60 * 60 * 1000)));
+};
 
 function NotReady({ dict }: { dict: ReturnType<typeof getDict> }) {
   return (

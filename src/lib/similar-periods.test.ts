@@ -54,11 +54,43 @@ describe("computeSimilarSummary", () => {
     const summary = computeSimilarSummary(closes, -18, { rangePpBp: 3 });
     // Range = [-21, -15]. Should catch -18% and both -20% eps but not -5%.
     expect(summary.similarPeriods.length).toBe(3);
-    // 오래된 순 정렬.
-    const dates = summary.similarPeriods.map((p) => p.peakDate);
-    expect(dates).toEqual([...dates].sort());
     // avg recovery is finite.
     expect(summary.avgRecoveryMonths).not.toBeNull();
+  });
+
+  it("sorts periods by similarity to current drawdown (closest first)", () => {
+    // 서로 다른 낙폭 3개. current=-20, 유사도 순으로 -20, -18, -16 나와야.
+    const closes = daily(
+      "2020-01-01",
+      [
+        100, 82, 100, // -18%
+        150, 120, 150, // -20%
+        200, 168, 200, // -16%
+      ],
+    );
+    const summary = computeSimilarSummary(closes, -20, { rangePpBp: 5 });
+    const drawdowns = summary.similarPeriods.map((p) =>
+      Math.round(p.drawdownPct),
+    );
+    expect(drawdowns).toEqual([-20, -18, -16]);
+  });
+
+  it("excludes shallow dips below the default minCrashDrawdownPct (15)", () => {
+    // -10% dip은 새 기본 임계값(15%) 아래라 리스트에서 제외.
+    const closes = daily("2020-01-01", [100, 90, 100]);
+    const summary = computeSimilarSummary(closes, -10, { rangePpBp: 3 });
+    expect(summary.similarPeriods).toEqual([]);
+  });
+
+  it("respects a custom minCrashDrawdownPct override", () => {
+    // -10% dip은 minCrashDrawdownPct=8로 낮추면 포함됨.
+    const closes = daily("2020-01-01", [100, 90, 100]);
+    const summary = computeSimilarSummary(closes, -10, {
+      rangePpBp: 3,
+      minCrashDrawdownPct: 8,
+    });
+    expect(summary.similarPeriods.length).toBe(1);
+    expect(summary.minCrashDrawdownPct).toBe(8);
   });
 
   it("returns an empty list and null avg when no episode matches", () => {

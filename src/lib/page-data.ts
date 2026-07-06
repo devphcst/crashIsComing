@@ -17,6 +17,7 @@ import {
 import { getProvider } from "./providers";
 import {
   getExchange,
+  getMinCrashDrawdownPct,
   getSimilarRangePpBp,
   isHidden,
   type SymbolMeta,
@@ -93,6 +94,7 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
       closes.length >= SIMILAR_SUMMARY_MIN_CLOSES
         ? computeSimilarSummary(closes, athDrawdownPct, {
             rangePpBp: getSimilarRangePpBp(meta),
+            minCrashDrawdownPct: getMinCrashDrawdownPct(meta),
           })
         : null;
 

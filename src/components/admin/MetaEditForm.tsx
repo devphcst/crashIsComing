@@ -5,10 +5,14 @@ import { useFormState, useFormStatus } from "react-dom";
 import { updateMetaAction, type ActionState } from "@/app/admin/actions";
 import {
   DEFAULT_SYMBOL,
+  DEFAULT_MIN_CRASH_DRAWDOWN_PCT,
   DEFAULT_SIMILAR_RANGE_PPBP,
+  MIN_CRASH_DRAWDOWN_PCT_MAX,
+  MIN_CRASH_DRAWDOWN_PCT_MIN,
   SIMILAR_RANGE_PPBP_MAX,
   SIMILAR_RANGE_PPBP_MIN,
   getExchange,
+  getMinCrashDrawdownPct,
   getSimilarRangePpBp,
   isHidden,
   type SymbolMeta,
@@ -36,6 +40,7 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
   const [orange, setOrange] = useState(meta.orangeThreshold);
   const [red, setRed] = useState(meta.redThreshold);
   const [similarPp, setSimilarPp] = useState<number>(getSimilarRangePpBp(meta));
+  const [minCrash, setMinCrash] = useState<number>(getMinCrashDrawdownPct(meta));
   const [newTicker, setNewTicker] = useState(meta.ticker);
   // 기본 종목(DEFAULT_SYMBOL)은 코드 상수 매핑이 깨지므로 ticker 변경 금지 — UI 잠금.
   const tickerLocked = meta.ticker === DEFAULT_SYMBOL;
@@ -187,6 +192,28 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
         />
         <span className="mt-1 block text-[10px] text-neutral-500">
           {t.similarRangeHint} (기본 {DEFAULT_SIMILAR_RANGE_PPBP})
+        </span>
+      </label>
+
+      <label className="block text-xs text-neutral-400">
+        <span className="flex items-center justify-between">
+          <span>{t.minCrashLabel}</span>
+          <span className="font-mono text-sm text-neutral-200">
+            {minCrash}%
+          </span>
+        </span>
+        <input
+          type="range"
+          name="minCrashDrawdownPct"
+          min={MIN_CRASH_DRAWDOWN_PCT_MIN}
+          max={MIN_CRASH_DRAWDOWN_PCT_MAX}
+          step="1"
+          value={minCrash}
+          onChange={(e) => setMinCrash(Number(e.target.value))}
+          className="mt-1 w-full accent-neutral-300"
+        />
+        <span className="mt-1 block text-[10px] text-neutral-500">
+          {t.minCrashHint} (기본 {DEFAULT_MIN_CRASH_DRAWDOWN_PCT})
         </span>
       </label>
 

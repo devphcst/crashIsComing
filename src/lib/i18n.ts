@@ -168,15 +168,22 @@ export type Dict = {
     maxDrawdown: (pctLabel: string) => string;
     /** "이 정도 낙폭 N번 있었어요" */
     count: (n: number) => string;
-    /** "N년 이후 기준" */
-    sinceYear: (year: number) => string;
+    /**
+     * 부제 — "N년 이후 · 최소 낙폭 -X%".
+     * 데이터 시작 연도 + 계산 기준(최소 낙폭)을 한 줄로.
+     */
+    sinceYear: (year: number, minCrashPctLabel: string) => string;
     /** 토글 pill — 열기/닫기 */
     toggleOpen: string;
     toggleClose: string;
     /** 펼침 상태 헤더 안내 — "현재 낙폭 -X% ~ -Y% 범위의 과거 시기" */
     rangeHint: (lowerPctLabel: string, upperPctLabel: string) => string;
-    /** 각 행 회복 개월 표기 */
+    /** 각 행 회복 개월 표기. months=0이면 "1개월 미만"으로 자동 처리. */
     rowRecovery: (months: number) => string;
+    /** 각 행 "회복까지" 부제 라벨. */
+    rowRecoveryLabel: string;
+    /** 각 행 "낙폭 -X.X%" 부제 표기. */
+    rowDrawdown: (pctLabel: string) => string;
     /** 하단 요약 — "평균 회복 X.X개월" */
     avgRecovery: (monthsLabel: string) => string;
     /** 펼침 상태 리스트 비었을 때 */
@@ -309,6 +316,9 @@ export type Dict = {
       /** 유사 시기 반경 slider — "이 정도 낙폭 N번" 블록 필터. */
       similarRangeLabel: string;
       similarRangeHint: string;
+      /** "폭락" 최소 낙폭 slider — 유사 시기 리스트에 포함될 에피소드 하한. */
+      minCrashLabel: string;
+      minCrashHint: string;
       addSubmit: string;
       metaSectionTitle: string;
       metaSubmit: string;
@@ -478,11 +488,14 @@ const ko: Dict = {
   similarPeriods: {
     maxDrawdown: (pctLabel) => `역대 최대 낙폭 ${pctLabel}`,
     count: (n) => `이 정도 낙폭 ${n}번 있었어요`,
-    sinceYear: (year) => `${year}년 이후 기준`,
+    sinceYear: (year, minCrashPctLabel) =>
+      `${year}년 이후 · 최소 낙폭 ${minCrashPctLabel}`,
     toggleOpen: '비슷한 시기 보기',
     toggleClose: '접기',
     rangeHint: (lower, upper) => `현재 낙폭 ${upper} ~ ${lower} 범위의 과거 시기`,
-    rowRecovery: (months) => `${months}개월`,
+    rowRecovery: (months) => (months <= 0 ? '1개월 미만' : `${months}개월`),
+    rowRecoveryLabel: '회복까지',
+    rowDrawdown: (pctLabel) => `낙폭 ${pctLabel}`,
     avgRecovery: (label) => `평균 회복 ${label}`,
     emptyList: '유사 시기 없음',
     periodLabel: (peakISO) => {
@@ -623,6 +636,9 @@ const ko: Dict = {
       similarRangeLabel: '유사 시기 반경 (±%p)',
       similarRangeHint:
         '"이 정도 낙폭 N번 있었어요" 블록에서 현재 낙폭과 얼마나 가까워야 유사 시기로 볼지. 기본 3.',
+      minCrashLabel: '"폭락" 최소 낙폭 (%)',
+      minCrashHint:
+        '유사 시기 리스트에 포함될 과거 에피소드의 하한. 이보다 얕은 dip은 제외. 기본 15.',
       addSubmit: '추가',
       metaSectionTitle: '종목 정보 (메타)',
       metaSubmit: '메타 저장',
@@ -822,11 +838,14 @@ const en: Dict = {
   similarPeriods: {
     maxDrawdown: (pctLabel) => `All-time max drawdown ${pctLabel}`,
     count: (n) => `${n} similar period${n === 1 ? '' : 's'} in the past`,
-    sinceYear: (year) => `Since ${year}`,
+    sinceYear: (year, minCrashPctLabel) =>
+      `Since ${year} · min drawdown ${minCrashPctLabel}`,
     toggleOpen: 'View similar periods',
     toggleClose: 'Collapse',
     rangeHint: (lower, upper) => `Historical periods in the ${upper} — ${lower} range`,
-    rowRecovery: (months) => `${months} mo`,
+    rowRecovery: (months) => (months <= 0 ? '< 1 mo' : `${months} mo`),
+    rowRecoveryLabel: 'Recovered in',
+    rowDrawdown: (pctLabel) => `Drawdown ${pctLabel}`,
     avgRecovery: (label) => `Avg recovery ${label}`,
     emptyList: 'No similar periods',
     periodLabel: (peakISO) => {
@@ -986,6 +1005,9 @@ const en: Dict = {
       similarRangeLabel: 'Similar-period radius (±%p)',
       similarRangeHint:
         'How close a past drawdown must be to the current drawdown to count as a "similar period". Default 3.',
+      minCrashLabel: 'Min "crash" drawdown (%)',
+      minCrashHint:
+        'Lower bound on past episodes eligible for the similar-periods list. Shallower dips are excluded. Default 15.',
       addSubmit: 'Add',
       metaSectionTitle: 'Symbol info (meta)',
       metaSubmit: 'Save meta',

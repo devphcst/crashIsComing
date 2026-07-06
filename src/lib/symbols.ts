@@ -24,6 +24,12 @@ export type SymbolMeta = {
    * undefined ≡ DEFAULT_SIMILAR_RANGE_PPBP (기존 종목 호환).
    */
   similarRangePpBp?: number;
+  /**
+   * 유사 시기 후보로 인정할 최소 낙폭(%p, 양수). 기본 15.
+   * "폭락" 정의를 사이트 정체성에 맞춰 좁힘 — 5% 조정 같은 얕은 dip은 리스트에서 제외.
+   * undefined ≡ DEFAULT_MIN_CRASH_DRAWDOWN_PCT.
+   */
+  minCrashDrawdownPct?: number;
 };
 
 /** SymbolMeta의 similarRangePpBp 기본값. */
@@ -33,6 +39,13 @@ export const DEFAULT_SIMILAR_RANGE_PPBP = 3;
 export const SIMILAR_RANGE_PPBP_MIN = 0.1;
 export const SIMILAR_RANGE_PPBP_MAX = 20;
 
+/** SymbolMeta의 minCrashDrawdownPct 기본값. "폭락"으로 인정하는 최소 낙폭(%). */
+export const DEFAULT_MIN_CRASH_DRAWDOWN_PCT = 15;
+
+/** admin 검증 및 UI 슬라이더 범위. */
+export const MIN_CRASH_DRAWDOWN_PCT_MIN = 5;
+export const MIN_CRASH_DRAWDOWN_PCT_MAX = 30;
+
 export type MetaValidationError =
   | "ticker_empty"
   | "ticker_invalid"
@@ -41,7 +54,8 @@ export type MetaValidationError =
   | "red_must_be_negative"
   | "orange_must_be_above_red"
   | "exchange_invalid"
-  | "similar_range_out_of_bounds";
+  | "similar_range_out_of_bounds"
+  | "min_crash_out_of_bounds";
 
 export const validateMeta = (meta: SymbolMeta): MetaValidationError | null => {
   if (!meta.ticker) return "ticker_empty";
@@ -61,6 +75,15 @@ export const validateMeta = (meta: SymbolMeta): MetaValidationError | null => {
       meta.similarRangePpBp > SIMILAR_RANGE_PPBP_MAX
     ) {
       return "similar_range_out_of_bounds";
+    }
+  }
+  if (meta.minCrashDrawdownPct !== undefined) {
+    if (
+      !Number.isFinite(meta.minCrashDrawdownPct) ||
+      meta.minCrashDrawdownPct < MIN_CRASH_DRAWDOWN_PCT_MIN ||
+      meta.minCrashDrawdownPct > MIN_CRASH_DRAWDOWN_PCT_MAX
+    ) {
+      return "min_crash_out_of_bounds";
     }
   }
   return null;
@@ -85,3 +108,10 @@ export const getSimilarRangePpBp = (meta: SymbolMeta): number =>
   meta.similarRangePpBp !== undefined && Number.isFinite(meta.similarRangePpBp)
     ? meta.similarRangePpBp
     : DEFAULT_SIMILAR_RANGE_PPBP;
+
+/** SymbolMeta의 minCrashDrawdownPct를 안전하게 읽기. undefined ≡ DEFAULT_MIN_CRASH_DRAWDOWN_PCT. */
+export const getMinCrashDrawdownPct = (meta: SymbolMeta): number =>
+  meta.minCrashDrawdownPct !== undefined &&
+  Number.isFinite(meta.minCrashDrawdownPct)
+    ? meta.minCrashDrawdownPct
+    : DEFAULT_MIN_CRASH_DRAWDOWN_PCT;

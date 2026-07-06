@@ -29,6 +29,8 @@ import {
 } from "@/lib/kv";
 import {
   DEFAULT_SYMBOL,
+  MIN_CRASH_DRAWDOWN_PCT_MAX,
+  MIN_CRASH_DRAWDOWN_PCT_MIN,
   SIMILAR_RANGE_PPBP_MAX,
   SIMILAR_RANGE_PPBP_MIN,
   getExchange,
@@ -79,6 +81,7 @@ const META_ERROR_MESSAGES: Record<MetaValidationError, string> = {
     "주황 경계가 빨강 경계보다 0에 가까워야 합니다 (orange > red).",
   exchange_invalid: "거래소는 NYSE 또는 KRX만 허용됩니다.",
   similar_range_out_of_bounds: `유사 시기 반경은 ${SIMILAR_RANGE_PPBP_MIN} ~ ${SIMILAR_RANGE_PPBP_MAX} 사이여야 합니다.`,
+  min_crash_out_of_bounds: `"폭락" 최소 낙폭은 ${MIN_CRASH_DRAWDOWN_PCT_MIN} ~ ${MIN_CRASH_DRAWDOWN_PCT_MAX}% 사이여야 합니다.`,
 };
 
 /** 폼 'exchange' 값을 정규화 — undefined/빈문자/기타는 NYSE로 처리. */
@@ -99,6 +102,19 @@ const parseHidden = (v: FormDataEntryValue | null): boolean =>
  * 실제 범위 검증은 validateMeta에서.
  */
 const parseSimilarRangePpBp = (
+  v: FormDataEntryValue | null,
+): number | undefined => {
+  if (v === null || v === "") return undefined;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return undefined;
+  return n;
+};
+
+/**
+ * 폼 'minCrashDrawdownPct' 파싱. parseSimilarRangePpBp과 동일 규약.
+ * 검증(범위)은 validateMeta에서.
+ */
+const parseMinCrashDrawdownPct = (
   v: FormDataEntryValue | null,
 ): number | undefined => {
   if (v === null || v === "") return undefined;
@@ -390,6 +406,9 @@ export async function addSymbolAction(
   const similarRangePpBp = parseSimilarRangePpBp(
     formData.get("similarRangePpBp"),
   );
+  const minCrashDrawdownPct = parseMinCrashDrawdownPct(
+    formData.get("minCrashDrawdownPct"),
+  );
 
   const meta: SymbolMeta = {
     ticker,
@@ -399,6 +418,7 @@ export async function addSymbolAction(
     exchange,
     hidden,
     similarRangePpBp,
+    minCrashDrawdownPct,
   };
   const err = validateMeta(meta);
   if (err) return { ok: false, message: META_ERROR_MESSAGES[err] };
@@ -432,6 +452,9 @@ export async function updateMetaAction(
   const similarRangePpBp = parseSimilarRangePpBp(
     formData.get("similarRangePpBp"),
   );
+  const minCrashDrawdownPct = parseMinCrashDrawdownPct(
+    formData.get("minCrashDrawdownPct"),
+  );
 
   // newTicker는 옵셔널 — 폼이 안 보내면 기존 ticker 유지(rename 미사용).
   const rawNewTicker = formData.get("newTicker");
@@ -456,6 +479,7 @@ export async function updateMetaAction(
     exchange,
     hidden,
     similarRangePpBp,
+    minCrashDrawdownPct,
   };
   const err = validateMeta(meta);
   if (err) return { ok: false, message: META_ERROR_MESSAGES[err] };

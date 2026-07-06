@@ -173,9 +173,12 @@ export type Dict = {
      * 데이터 시작 연도 + 계산 기준(최소 낙폭)을 한 줄로.
      */
     sinceYear: (year: number, minCrashPctLabel: string) => string;
-    /** 토글 pill — 열기/닫기 */
+    /** 모달 트리거 버튼 라벨. */
     toggleOpen: string;
-    toggleClose: string;
+    /** 모달 헤더 제목. */
+    modalTitle: string;
+    /** 모달 닫기 버튼 aria-label. */
+    modalCloseAria: string;
     /** 펼침 상태 헤더 안내 — "현재 낙폭 -X% ~ -Y% 범위의 과거 시기" */
     rangeHint: (lowerPctLabel: string, upperPctLabel: string) => string;
     /** 각 행 회복 개월 표기. months=0이면 "1개월 미만"으로 자동 처리. */
@@ -491,7 +494,8 @@ const ko: Dict = {
     sinceYear: (year, minCrashPctLabel) =>
       `${year}년 이후 · 최소 낙폭 ${minCrashPctLabel}`,
     toggleOpen: '비슷한 시기 보기',
-    toggleClose: '접기',
+    modalTitle: '비슷한 시기',
+    modalCloseAria: '닫기',
     rangeHint: (lower, upper) => `현재 낙폭 ${upper} ~ ${lower} 범위의 과거 시기`,
     rowRecovery: (months) => (months <= 0 ? '1개월 미만' : `${months}개월`),
     rowRecoveryLabel: '회복까지',
@@ -841,7 +845,8 @@ const en: Dict = {
     sinceYear: (year, minCrashPctLabel) =>
       `Since ${year} · min drawdown ${minCrashPctLabel}`,
     toggleOpen: 'View similar periods',
-    toggleClose: 'Collapse',
+    modalTitle: 'Similar periods',
+    modalCloseAria: 'Close',
     rangeHint: (lower, upper) => `Historical periods in the ${upper} — ${lower} range`,
     rowRecovery: (months) => (months <= 0 ? '< 1 mo' : `${months} mo`),
     rowRecoveryLabel: 'Recovered in',

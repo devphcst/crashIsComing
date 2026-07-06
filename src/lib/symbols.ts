@@ -18,7 +18,20 @@ export type SymbolMeta = {
    * cron(자동 fetch)도 그대로 — hidden 동안에도 데이터 누적해 재공개 시 즉시 사용.
    */
   hidden?: boolean;
+  /**
+   * "이 정도 낙폭 N번 있었어요" 블록에서 유사 시기 판정 반경(±%p). 기본 3.
+   * 현재 낙폭이 -18%일 때 3이면 [-21, -15] 범위의 회복된 과거 에피소드를 찾음.
+   * undefined ≡ DEFAULT_SIMILAR_RANGE_PPBP (기존 종목 호환).
+   */
+  similarRangePpBp?: number;
 };
+
+/** SymbolMeta의 similarRangePpBp 기본값. */
+export const DEFAULT_SIMILAR_RANGE_PPBP = 3;
+
+/** admin 검증 및 UI 슬라이더 범위. */
+export const SIMILAR_RANGE_PPBP_MIN = 0.1;
+export const SIMILAR_RANGE_PPBP_MAX = 20;
 
 export type MetaValidationError =
   | "ticker_empty"
@@ -27,7 +40,8 @@ export type MetaValidationError =
   | "orange_must_be_negative_or_zero"
   | "red_must_be_negative"
   | "orange_must_be_above_red"
-  | "exchange_invalid";
+  | "exchange_invalid"
+  | "similar_range_out_of_bounds";
 
 export const validateMeta = (meta: SymbolMeta): MetaValidationError | null => {
   if (!meta.ticker) return "ticker_empty";
@@ -39,6 +53,15 @@ export const validateMeta = (meta: SymbolMeta): MetaValidationError | null => {
     return "orange_must_be_above_red";
   if (meta.exchange !== undefined && meta.exchange !== "NYSE" && meta.exchange !== "KRX") {
     return "exchange_invalid";
+  }
+  if (meta.similarRangePpBp !== undefined) {
+    if (
+      !Number.isFinite(meta.similarRangePpBp) ||
+      meta.similarRangePpBp < SIMILAR_RANGE_PPBP_MIN ||
+      meta.similarRangePpBp > SIMILAR_RANGE_PPBP_MAX
+    ) {
+      return "similar_range_out_of_bounds";
+    }
   }
   return null;
 };
@@ -56,3 +79,9 @@ export const getExchange = (meta: SymbolMeta): Exchange =>
 
 /** SymbolMeta의 hidden을 안전하게 읽기. undefined ≡ false. */
 export const isHidden = (meta: SymbolMeta): boolean => meta.hidden === true;
+
+/** SymbolMeta의 similarRangePpBp를 안전하게 읽기. undefined ≡ DEFAULT_SIMILAR_RANGE_PPBP. */
+export const getSimilarRangePpBp = (meta: SymbolMeta): number =>
+  meta.similarRangePpBp !== undefined && Number.isFinite(meta.similarRangePpBp)
+    ? meta.similarRangePpBp
+    : DEFAULT_SIMILAR_RANGE_PPBP;

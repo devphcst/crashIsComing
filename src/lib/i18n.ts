@@ -162,6 +162,28 @@ export type Dict = {
     note: string;
     chartAriaLabel: (year: string, mdd: number, months: number) => string;
   };
+  /** 요약 페이지 큰 숫자 아래 "유사 시기" 블록 전용 문구. */
+  similarPeriods: {
+    /** "역대 최대 낙폭 -X.X%" */
+    maxDrawdown: (pctLabel: string) => string;
+    /** "이 정도 낙폭 N번 있었어요" */
+    count: (n: number) => string;
+    /** "N년 이후 기준" */
+    sinceYear: (year: number) => string;
+    /** 토글 pill — 열기/닫기 */
+    toggleOpen: string;
+    toggleClose: string;
+    /** 펼침 상태 헤더 안내 — "현재 낙폭 -X% ~ -Y% 범위의 과거 시기" */
+    rangeHint: (lowerPctLabel: string, upperPctLabel: string) => string;
+    /** 각 행 회복 개월 표기 */
+    rowRecovery: (months: number) => string;
+    /** 하단 요약 — "평균 회복 X.X개월" */
+    avgRecovery: (monthsLabel: string) => string;
+    /** 펼침 상태 리스트 비었을 때 */
+    emptyList: string;
+    /** 행 시기 라벨 — "YYYY년 M월" / "MMM YYYY" */
+    periodLabel: (peakISO: string) => string;
+  };
   /** /[ticker]/history 페이지 전용 문구 — 미니멀 라벨만. */
   historyPage: {
     /** 요약 페이지 진입 링크 문구. 실제 데이터 범위(연 단위)에 따라 동적. */
@@ -284,6 +306,9 @@ export type Dict = {
       orangeLabel: string;
       redLabel: string;
       thresholdHint: string;
+      /** 유사 시기 반경 slider — "이 정도 낙폭 N번" 블록 필터. */
+      similarRangeLabel: string;
+      similarRangeHint: string;
       addSubmit: string;
       metaSectionTitle: string;
       metaSubmit: string;
@@ -450,6 +475,21 @@ const ko: Dict = {
     chartAriaLabel: (year, mdd, months) =>
       `${year} 폭락: 고점 대비 ${mdd}%까지 하락 후 ${months}개월 만에 회복`,
   },
+  similarPeriods: {
+    maxDrawdown: (pctLabel) => `역대 최대 낙폭 ${pctLabel}`,
+    count: (n) => `이 정도 낙폭 ${n}번 있었어요`,
+    sinceYear: (year) => `${year}년 이후 기준`,
+    toggleOpen: '비슷한 시기 보기',
+    toggleClose: '접기',
+    rangeHint: (lower, upper) => `현재 낙폭 ${upper} ~ ${lower} 범위의 과거 시기`,
+    rowRecovery: (months) => `${months}개월`,
+    avgRecovery: (label) => `평균 회복 ${label}`,
+    emptyList: '유사 시기 없음',
+    periodLabel: (peakISO) => {
+      const d = new Date(`${peakISO}T00:00:00Z`);
+      return `${d.getUTCFullYear()}년 ${d.getUTCMonth() + 1}월`;
+    },
+  },
   historyPage: {
     entryLink: (years) => `이 종목의 ${years}년 역사 →`,
     back: '← 요약으로',
@@ -580,6 +620,9 @@ const ko: Dict = {
       redLabel: '빨강 경계',
       thresholdHint:
         '드로다운이 이 % 이하로 떨어지면 해당 색상이 적용됩니다. 주황이 빨강보다 0에 가까워야 합니다.',
+      similarRangeLabel: '유사 시기 반경 (±%p)',
+      similarRangeHint:
+        '"이 정도 낙폭 N번 있었어요" 블록에서 현재 낙폭과 얼마나 가까워야 유사 시기로 볼지. 기본 3.',
       addSubmit: '추가',
       metaSectionTitle: '종목 정보 (메타)',
       metaSubmit: '메타 저장',
@@ -776,6 +819,25 @@ const en: Dict = {
     chartAriaLabel: (year, mdd, months) =>
       `${year} crash: dropped ${mdd}% from peak, recovered in ${months} months`,
   },
+  similarPeriods: {
+    maxDrawdown: (pctLabel) => `All-time max drawdown ${pctLabel}`,
+    count: (n) => `${n} similar period${n === 1 ? '' : 's'} in the past`,
+    sinceYear: (year) => `Since ${year}`,
+    toggleOpen: 'View similar periods',
+    toggleClose: 'Collapse',
+    rangeHint: (lower, upper) => `Historical periods in the ${upper} — ${lower} range`,
+    rowRecovery: (months) => `${months} mo`,
+    avgRecovery: (label) => `Avg recovery ${label}`,
+    emptyList: 'No similar periods',
+    periodLabel: (peakISO) => {
+      const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      ];
+      const d = new Date(`${peakISO}T00:00:00Z`);
+      return `${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+    },
+  },
   historyPage: {
     entryLink: (years) => `${years}-year history of this ticker →`,
     back: '← Back to summary',
@@ -921,6 +983,9 @@ const en: Dict = {
       redLabel: 'Red threshold',
       thresholdHint:
         'Color applies when drawdown is at or below this %. Orange must be closer to 0 than red.',
+      similarRangeLabel: 'Similar-period radius (±%p)',
+      similarRangeHint:
+        'How close a past drawdown must be to the current drawdown to count as a "similar period". Default 3.',
       addSubmit: 'Add',
       metaSectionTitle: 'Symbol info (meta)',
       metaSubmit: 'Save meta',

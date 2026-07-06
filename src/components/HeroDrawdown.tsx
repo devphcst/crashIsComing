@@ -15,6 +15,8 @@ import {
 import { usCloseInKst } from "@/lib/market-time";
 import type { PeriodPoint } from "@/lib/peaks";
 import type { MarketStatus } from "@/lib/market-status";
+import type { SimilarSummary } from "@/lib/similar-periods";
+import { SimilarPeriodsBlock } from "./SimilarPeriodsBlock";
 import {
   levelFor,
   type DrawdownLevel,
@@ -75,6 +77,11 @@ export type HeroData =
        * 가장 오래된 종가 날짜 — 진입 링크 문구에 "N년 역사" 계산용. closes[0].date.
        */
       firstCloseDate: string;
+      /**
+       * "역대 최대 낙폭 / 유사 시기" 블록 데이터. closes < 500이면 null → 블록 자체 미노출.
+       * 서버에서 pre-compute.
+       */
+      similarSummary: SimilarSummary | null;
     }
   | { ready: false };
 
@@ -365,6 +372,9 @@ function HeroNumbers({
       >
         {formatPct(data.ath.drawdownPct, 1)}
       </span>
+      {data.similarSummary ? (
+        <SimilarPeriodsBlock summary={data.similarSummary} lang={lang} />
+      ) : null}
       {/* 시점별 변화율 — 기본 접힘. pill 버튼으로 토글.
           표시 항목 0개면(불가능 케이스) pill 자체 숨김.
           펼침 애니메이션: grid-template-rows 0fr→1fr (200ms ease-out). */}

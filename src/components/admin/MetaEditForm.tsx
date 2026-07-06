@@ -5,7 +5,11 @@ import { useFormState, useFormStatus } from "react-dom";
 import { updateMetaAction, type ActionState } from "@/app/admin/actions";
 import {
   DEFAULT_SYMBOL,
+  DEFAULT_SIMILAR_RANGE_PPBP,
+  SIMILAR_RANGE_PPBP_MAX,
+  SIMILAR_RANGE_PPBP_MIN,
   getExchange,
+  getSimilarRangePpBp,
   isHidden,
   type SymbolMeta,
 } from "@/lib/symbols";
@@ -31,6 +35,7 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
   const [state, formAction] = useFormState(updateMetaAction, initial);
   const [orange, setOrange] = useState(meta.orangeThreshold);
   const [red, setRed] = useState(meta.redThreshold);
+  const [similarPp, setSimilarPp] = useState<number>(getSimilarRangePpBp(meta));
   const [newTicker, setNewTicker] = useState(meta.ticker);
   // 기본 종목(DEFAULT_SYMBOL)은 코드 상수 매핑이 깨지므로 ticker 변경 금지 — UI 잠금.
   const tickerLocked = meta.ticker === DEFAULT_SYMBOL;
@@ -162,6 +167,28 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
 
         <p className="text-[10px] text-neutral-500">{t.thresholdHint}</p>
       </fieldset>
+
+      <label className="block text-xs text-neutral-400">
+        <span className="flex items-center justify-between">
+          <span>{t.similarRangeLabel}</span>
+          <span className="font-mono text-sm text-neutral-200">
+            ±{similarPp}%p
+          </span>
+        </span>
+        <input
+          type="range"
+          name="similarRangePpBp"
+          min={SIMILAR_RANGE_PPBP_MIN}
+          max={SIMILAR_RANGE_PPBP_MAX}
+          step="0.5"
+          value={similarPp}
+          onChange={(e) => setSimilarPp(Number(e.target.value))}
+          className="mt-1 w-full accent-neutral-300"
+        />
+        <span className="mt-1 block text-[10px] text-neutral-500">
+          {t.similarRangeHint} (기본 {DEFAULT_SIMILAR_RANGE_PPBP})
+        </span>
+      </label>
 
       <div className="flex items-center gap-3">
         <SubmitButton />

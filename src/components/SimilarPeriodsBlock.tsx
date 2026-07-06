@@ -120,7 +120,7 @@ function SimilarPeriodsModal({
       />
 
       {/* Card */}
-      <div className="relative z-10 flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-lg border border-neutral-800 bg-neutral-950 shadow-xl">
+      <div className="relative z-10 flex max-h-[80vh] w-full max-w-[400px] flex-col overflow-hidden rounded-lg border border-neutral-800 bg-neutral-950 shadow-xl">
         <header className="flex items-center justify-between border-b border-neutral-900 px-4 py-3">
           <h2
             id={titleId}

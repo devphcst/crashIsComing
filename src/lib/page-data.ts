@@ -15,21 +15,8 @@ import {
   readVisitorCounts,
 } from "./kv";
 import { getProvider } from "./providers";
-import {
-  getExchange,
-  getMinCrashDrawdownPct,
-  getSimilarRangePpBp,
-  isHidden,
-  type SymbolMeta,
-} from "./symbols";
-import { computeSimilarSummary } from "./similar-periods";
+import { getExchange, isHidden, type SymbolMeta } from "./symbols";
 import type { HeroData } from "@/components/HeroDrawdown";
-
-/**
- * 닫힌 상태 블록 표시 최소 종가 개수. 이보다 적으면 신규 종목으로 간주하고 블록 자체 미노출.
- * 유사 시기 계산 자체는 짧은 데이터에서도 동작하지만 노출 게이팅으로 UI 잡음 방지.
- */
-const SIMILAR_SUMMARY_MIN_CLOSES = 500;
 
 export type VisitorInfo = {
   show: boolean;
@@ -88,15 +75,6 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
       .map((c) => ({ date: c.date, price: c.price }));
 
     const athDrawdownPct = calcDrawdown(latest.price, ath.price);
-    // similarSummary는 종가 누적이 충분한 종목에만 계산 → 클라이언트에 전달.
-    // closes 짧은 종목은 null → HeroDrawdown이 블록 자체를 렌더 안 함.
-    const similarSummary =
-      closes.length >= SIMILAR_SUMMARY_MIN_CLOSES
-        ? computeSimilarSummary(closes, athDrawdownPct, {
-            rangePpBp: getSimilarRangePpBp(meta),
-            minCrashDrawdownPct: getMinCrashDrawdownPct(meta),
-          })
-        : null;
 
     return {
       ready: true,
@@ -121,7 +99,6 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
       recentCloses,
       totalClosesCount: closes.length,
       firstCloseDate: closes.length ? closes[0].date : latest.date,
-      similarSummary,
     };
   } catch (err) {
     console.error(`loadHeroData(${ticker}) failed:`, err);

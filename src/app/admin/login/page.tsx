@@ -8,11 +8,13 @@ async function login(formData: FormData) {
   if (!isTokenValid(token)) {
     redirect("/admin/login?error=1");
   }
+  // path=/ : /admin과 /lab 모두에서 쿠키를 읽을 수 있어야 함.
+  // 미들웨어가 두 경로에 걸쳐 있고 lab는 실험실 도구라 admin과 동일 세션 사용.
   cookies().set(ADMIN_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    path: "/admin",
+    path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
   redirect("/admin");

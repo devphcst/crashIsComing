@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ADMIN_COOKIE } from "@/lib/admin-cookie";
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/lab/:path*"],
 };
 
 export function middleware(req: NextRequest) {

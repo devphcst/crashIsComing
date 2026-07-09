@@ -88,6 +88,81 @@ describe("parseInvestingCsv", () => {
   });
 });
 
+describe("parseInvestingCsv — yfinance format", () => {
+  const YF_HEADER =
+    "Price,Close,High,Low,Open,Volume\n" +
+    "Ticker,QQQ,QQQ,QQQ,QQQ,QQQ\n" +
+    "Date,,,,,";
+
+  it("parses yfinance 3-row multi-header", () => {
+    const text =
+      YF_HEADER +
+      "\n" +
+      "2020-01-02,209.68,209.79,208.79,209.11,29551000\n" +
+      "2020-01-03,208.02,208.28,206.44,207.09,26922100\n";
+    const result = parseInvestingCsv(text);
+    expect(result.errors).toEqual([]);
+    expect(result.rows.length).toBe(2);
+    expect(result.rows[0].close).toEqual({ date: "2020-01-02", price: 209.68 });
+    expect(result.rows[1].close).toEqual({ date: "2020-01-03", price: 208.02 });
+    expect(result.headerMap).toEqual({ date: 0, close: 1 });
+  });
+
+  it("picks the Close column even when its position differs", () => {
+    const text =
+      "Price,Open,High,Low,Close,Volume\n" +
+      "Ticker,TQQQ,TQQQ,TQQQ,TQQQ,TQQQ\n" +
+      "Date,,,,,\n" +
+      "2020-01-02,50.10,51.00,49.90,50.75,1000000\n";
+    const result = parseInvestingCsv(text);
+    expect(result.errors).toEqual([]);
+    expect(result.rows[0].close.price).toBeCloseTo(50.75, 2);
+    expect(result.headerMap).toEqual({ date: 0, close: 4 });
+  });
+
+  it("falls back to Adj Close when Close is absent", () => {
+    const text =
+      "Price,Adj Close,High,Low,Open,Volume\n" +
+      "Ticker,SOXL,SOXL,SOXL,SOXL,SOXL\n" +
+      "Date,,,,,\n" +
+      "2020-01-02,42.00,43.00,41.00,42.50,500000\n";
+    const result = parseInvestingCsv(text);
+    expect(result.rows[0].close.price).toBeCloseTo(42.0, 2);
+  });
+
+  it("does not misread column 0 'Price' as the close column", () => {
+    // Regression: "Price" is in CLOSE_KEYS, so naive findHeader would return
+    // date=-1, close=0 for row 0. The yfinance branch must run first.
+    const text =
+      YF_HEADER + "\n2020-01-02,111.11,112.00,110.00,110.50,100\n";
+    const result = parseInvestingCsv(text);
+    expect(result.rows[0].close.price).toBeCloseTo(111.11, 2);
+  });
+
+  it("collects bad-row errors with correct lineNo (data starts at line 4)", () => {
+    const text =
+      YF_HEADER +
+      "\n" +
+      "bogus,100,100,100,100,100\n" +
+      "2020-01-03,208.02,208.28,206.44,207.09,26922100\n";
+    const result = parseInvestingCsv(text);
+    expect(result.rows.length).toBe(1);
+    expect(result.errors.length).toBe(1);
+    expect(result.errors[0].lineNo).toBe(4);
+    expect(result.errors[0].reason).toMatch(/bad_date/);
+  });
+
+  it("handles CRLF line endings", () => {
+    const text =
+      YF_HEADER.replace(/\n/g, "\r\n") +
+      "\r\n" +
+      "2020-01-02,209.68,209.79,208.79,209.11,29551000\r\n";
+    const result = parseInvestingCsv(text);
+    expect(result.rows.length).toBe(1);
+    expect(result.rows[0].close.price).toBeCloseTo(209.68, 2);
+  });
+});
+
 describe("mergeParsedFiles", () => {
   it("dedupes by date with later file winning", () => {
     const a = parseInvestingCsv(

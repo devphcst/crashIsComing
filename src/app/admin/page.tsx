@@ -96,6 +96,12 @@ export default async function AdminPage({
           >
             {t.viewMain} ↗
           </Link>
+          <Link
+            href="/lab"
+            className="rounded-md border border-neutral-700 px-3 py-1 text-xs text-neutral-400 hover:text-neutral-200"
+          >
+            실험실 ↗
+          </Link>
           <form action={logoutAction}>
             <button
               type="submit"

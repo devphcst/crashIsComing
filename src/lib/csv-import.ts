@@ -1,21 +1,21 @@
 import type { Close } from "./providers/types";
 
 /**
- * Investing.com CSV 파서.
+ * CSV 파서 — Investing.com 및 yfinance 두 포맷을 자동 감지.
  *
- * 형식(예):
+ * Investing.com 예:
  *   "날짜","종가","시가","고가","저가","거래량","변동 %"
  *   "2019- 11- 12","201.43","201.02","202.10","200.71","14.78M","0.29%"
+ *   - UTF-8 BOM, 한글 헤더, 공백 낀 날짜 "2019- 11- 12", 천단위 콤마, 역순(최신→과거).
  *
- * 특징:
- *   - UTF-8 BOM (﻿) 선두에 붙는 경우가 있음.
- *   - 헤더는 한글 ("날짜", "종가", ...). 위치는 파일에 따라 다를 수 있음.
- *   - 날짜에 공백이 들어감: "2019- 11- 12" → "2019-11-12".
- *   - 종가에 천단위 콤마 있을 수 있음: "1,234.56".
- *   - 행 순서는 역순 정렬(최신 → 과거).
- *   - 큰따옴표로 감싼 필드. 따옴표 안쪽에 콤마는 이 형식에는 없음(값 자체에 콤마는
- *     오직 종가 등 숫자 부분에만 등장 — 그러나 필드는 각 셀이 quote로 감싸여 있어
- *     안전한 split이 가능).
+ * yfinance 예 (yf.download() 기본 출력 — 3행 멀티헤더):
+ *   Price,Close,High,Low,Open,Volume
+ *   Ticker,QQQ,QQQ,QQQ,QQQ,QQQ
+ *   Date,,,,,
+ *   2020-01-02,209.68,209.79,208.79,209.11,29551000
+ *   - 헤더 3행: 필드명 / 티커 / 인덱스명(Date). 데이터는 4번째 줄부터.
+ *   - 날짜 컬럼은 항상 0번, 종가는 1행에서 "Close" 위치.
+ *   - 오름차순(과거→최신), 콤마·따옴표 없음.
  *
  * 반환값: 파싱 성공한 { date, price }를 오름차순으로. 실패 행은 errors에 원본과 이유.
  */
@@ -92,6 +92,36 @@ const findHeader = (
 };
 
 /**
+ * yfinance yf.download() 기본 출력의 3행 멀티헤더 감지.
+ * 시그니처: 1행 첫 셀 "Price", 2행 첫 셀 "Ticker", 3행 첫 셀 "Date".
+ * 매칭되면 { headerMap, dataStart } 반환, 아니면 null.
+ *
+ * 날짜는 항상 컬럼 0. 종가는 1행에서 "Close" (없으면 "Adj Close") 위치.
+ * "Price" (컬럼 0의 인덱스명)는 CLOSE_KEYS 에 있어 오탐되므로, 컬럼 0은 건너뜀.
+ */
+const detectYfinanceMultiHeader = (
+  lines: string[],
+): { headerMap: { date: number; close: number }; dataStart: number } | null => {
+  if (lines.length < 4) return null;
+  const row0 = splitCsvLine(lines[0]);
+  const row1 = splitCsvLine(lines[1]);
+  const row2 = splitCsvLine(lines[2]);
+  if (
+    row0[0]?.trim() !== "Price" ||
+    row1[0]?.trim() !== "Ticker" ||
+    row2[0]?.trim() !== "Date"
+  ) {
+    return null;
+  }
+  let closeIdx = row0.findIndex((h, i) => i > 0 && h.trim() === "Close");
+  if (closeIdx < 0) {
+    closeIdx = row0.findIndex((h, i) => i > 0 && h.trim() === "Adj Close");
+  }
+  if (closeIdx < 0) return null;
+  return { headerMap: { date: 0, close: closeIdx }, dataStart: 3 };
+};
+
+/**
  * "2019- 11- 12" 또는 "2019-11-12" 또는 "11/12/2019" 등을 YYYY-MM-DD로.
  * 실패 시 null.
  */
@@ -133,36 +163,16 @@ const parsePrice = (raw: string): number | null => {
 };
 
 /**
- * CSV 원문을 파싱. 헤더 인식 실패 시 rows는 비고 errors에 "no_header".
- * 중복 date는 파싱 단계에선 그대로 두고, 병합 단계에서 처리.
- * 반환된 rows는 오름차순 정렬.
+ * 데이터 행들을 파싱해 rows/errors 채움. lineNo는 원본 파일의 1-based 위치.
  */
-export const parseInvestingCsv = (text: string): ParseResult => {
-  const clean = stripBom(text).replace(/\r\n?/g, "\n");
-  const lines = clean.split("\n").filter((l) => l.trim().length > 0);
-  if (lines.length === 0) {
-    return { rows: [], errors: [{ lineNo: 0, raw: "", reason: "empty" }] };
-  }
-
-  const header = splitCsvLine(lines[0]);
-  const map = findHeader(header);
-  if (!map) {
-    return {
-      rows: [],
-      errors: [
-        {
-          lineNo: 1,
-          raw: lines[0],
-          reason: "header_not_recognized",
-        },
-      ],
-    };
-  }
-
+const parseDataRows = (
+  lines: string[],
+  startIdx: number,
+  map: { date: number; close: number },
+): { rows: ParsedRow[]; errors: ParseError[] } => {
   const rows: ParsedRow[] = [];
   const errors: ParseError[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = startIdx; i < lines.length; i++) {
     const raw = lines[i];
     const cells = splitCsvLine(raw);
     if (cells.length <= Math.max(map.date, map.close)) {
@@ -183,13 +193,47 @@ export const parseInvestingCsv = (text: string): ParseResult => {
     }
     rows.push({ lineNo: i + 1, close: { date, price } });
   }
+  return { rows, errors };
+};
 
-  // 오름차순 정렬 (원본은 보통 역순).
+/**
+ * CSV 원문을 파싱. Investing.com / yfinance 자동 감지.
+ * 헤더 인식 실패 시 rows는 비고 errors에 "header_not_recognized".
+ * 중복 date는 파싱 단계에선 그대로 두고, 병합 단계에서 처리.
+ * 반환된 rows는 오름차순 정렬.
+ */
+export const parseInvestingCsv = (text: string): ParseResult => {
+  const clean = stripBom(text).replace(/\r\n?/g, "\n");
+  const lines = clean.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length === 0) {
+    return { rows: [], errors: [{ lineNo: 0, raw: "", reason: "empty" }] };
+  }
+
+  const yf = detectYfinanceMultiHeader(lines);
+  const detected = yf
+    ? { map: yf.headerMap, dataStart: yf.dataStart }
+    : (() => {
+        const m = findHeader(splitCsvLine(lines[0]));
+        return m ? { map: m, dataStart: 1 } : null;
+      })();
+
+  if (!detected) {
+    return {
+      rows: [],
+      errors: [
+        { lineNo: 1, raw: lines[0], reason: "header_not_recognized" },
+      ],
+    };
+  }
+
+  const { rows, errors } = parseDataRows(lines, detected.dataStart, detected.map);
+
+  // 오름차순 정렬 (Investing.com은 역순, yfinance는 이미 오름차순).
   rows.sort((a, b) =>
     a.close.date < b.close.date ? -1 : a.close.date > b.close.date ? 1 : 0,
   );
 
-  return { rows, errors, headerMap: map };
+  return { rows, errors, headerMap: detected.map };
 };
 
 /**

@@ -267,17 +267,17 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            label="역대 최고 종가"
+            label="기간 최고 종가"
             value={stats.high ? formatPrice(stats.high.price, primary.exchange) : "—"}
             sub={stats.high?.date}
           />
           <StatCard
-            label="역대 최저 종가"
+            label="기간 최저 종가"
             value={stats.low ? formatPrice(stats.low.price, primary.exchange) : "—"}
             sub={stats.low?.date}
           />
           <StatCard
-            label="역대 최대 낙폭"
+            label="기간 최대 낙폭"
             value={
               stats.maxDrawdownPct !== 0
                 ? formatSignedPct(stats.maxDrawdownPct, 1)
@@ -285,13 +285,13 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
             }
           />
           <StatCard
-            label="회복까지"
+            label="전고점 회복까지"
             value={
               stats.recoveryMonths === null
                 ? "미회복"
                 : `${stats.recoveryMonths}개월`
             }
-            sub={stats.recoveryDate ?? undefined}
+            sub={stats.troughDate ? `저점 ${stats.troughDate}` : undefined}
           />
           <StatCard
             label="기간 총 상승"
@@ -301,12 +301,20 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
                 : formatSignedPct(stats.totalReturnPct, 1)
             }
           />
-          <StatCard
-            label="연평균 상승 (CAGR)"
-            value={
-              stats.cagrPct === null ? "—" : formatSignedPct(stats.cagrPct, 1)
-            }
-          />
+          {stats.periodYears !== null && stats.periodYears >= 1 ? (
+            <StatCard
+              label="연평균 상승 (CAGR)"
+              value={
+                stats.cagrPct === null ? "—" : formatSignedPct(stats.cagrPct, 1)
+              }
+            />
+          ) : (
+            // 1년 미만 기간에선 CAGR 의미 없어 카드 내용 감춤. 슬롯은 유지해
+            // 4×2 그리드 배치가 흔들리지 않도록 invisible + aria-hidden.
+            <div className="invisible" aria-hidden>
+              <StatCard label="연평균 상승 (CAGR)" value="—" />
+            </div>
+          )}
           <StatCard
             label="일간 변동성"
             value={

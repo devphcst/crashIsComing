@@ -19,6 +19,8 @@ export type PeriodStats = {
   low: Close | null;
   /** 역대 최대 낙폭 % (음수). 데이터 없으면 0. */
   maxDrawdownPct: number;
+  /** 최대 낙폭 트로프 날짜. 데이터 부족이면 null. UI에서 회복 카드 부제로 사용. */
+  troughDate: string | null;
   /**
    * 최대 낙폭 트로프 이후 처음으로 이전 peak 이상 종가에 도달한 날.
    * 미회복이면 null. 데이터 부족이면 null.
@@ -30,6 +32,8 @@ export type PeriodStats = {
   totalReturnPct: number | null;
   /** 연평균 상승률(CAGR) %. 데이터 부족이면 null. */
   cagrPct: number | null;
+  /** first → last 기간(년). 데이터 부족이면 null. UI에서 짧은 기간 CAGR 숨김 판단. */
+  periodYears: number | null;
   /**
    * 일간 log return 표준편차(모집단, ddof=0) × 100. 즉 일간 변동성 %.
    * 데이터 부족이면 null.
@@ -159,10 +163,12 @@ export const computePeriodStats = (
       high: null,
       low: null,
       maxDrawdownPct: 0,
+      troughDate: null,
       recoveryDate: null,
       recoveryMonths: null,
       totalReturnPct: null,
       cagrPct: null,
+      periodYears: null,
       dailyVolatilityPct: null,
       crashCount: 0,
     };
@@ -199,6 +205,7 @@ export const computePeriodStats = (
     first.price > 0 ? ((last.price - first.price) / first.price) * 100 : null;
 
   const cagrPct = computeCagrPct(first, last);
+  const periodYears = yearsBetween(first.date, last.date);
   const dailyVolatilityPct = computeDailyVolatilityPct(closes);
 
   const crashCount = extractCrashes(closes, {
@@ -211,10 +218,12 @@ export const computePeriodStats = (
     high,
     low,
     maxDrawdownPct,
+    troughDate: episode?.trough.date ?? null,
     recoveryDate,
     recoveryMonths,
     totalReturnPct,
     cagrPct,
+    periodYears,
     dailyVolatilityPct,
     crashCount,
   };

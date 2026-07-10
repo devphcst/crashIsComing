@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { Exchange } from "@/lib/symbols";
 import { formatPrice, formatSignedPct, formatShortDate } from "@/lib/format";
@@ -67,6 +67,42 @@ const PRESETS: PresetSpec[] = [
   { key: "custom", label: "사용자 지정" },
 ];
 
+// ---- 사용자 저장 프리셋 (localStorage) ----
+
+type SavedPreset = {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+};
+
+/** localStorage key. schema 바뀌면 v2로 올림 — 파싱 실패 시 조용히 무시. */
+const SAVED_PRESETS_KEY = "lab.savedPresets.v1";
+
+/** 선택된 preset — 빌트인 union 또는 저장된 프리셋 id ("saved:..."). */
+type PresetKey = PeriodPreset | `saved:${string}`;
+
+const loadSavedPresets = (): SavedPreset[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(SAVED_PRESETS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (p: unknown): p is SavedPreset =>
+        typeof p === "object" &&
+        p !== null &&
+        typeof (p as SavedPreset).id === "string" &&
+        typeof (p as SavedPreset).name === "string" &&
+        typeof (p as SavedPreset).start === "string" &&
+        typeof (p as SavedPreset).end === "string",
+    );
+  } catch {
+    return [];
+  }
+};
+
 // SSR 회피 — recharts는 클라이언트 전용.
 const LabChart = dynamic(() => import("./LabChart").then((m) => m.LabChart), {
   ssr: false,
@@ -84,14 +120,20 @@ const isoMinus = (isoLatest: string, yearsBack: number): string => {
 };
 
 const resolveRange = (
-  preset: PeriodPreset,
+  preset: PresetKey,
   customStart: string,
   customEnd: string,
   closes: ReadonlyArray<LabClose>,
+  savedPresets: ReadonlyArray<SavedPreset>,
 ): { start?: string; end?: string } => {
   if (closes.length === 0) return {};
   const first = closes[0].date;
   const last = closes[closes.length - 1].date;
+  if (preset.startsWith("saved:")) {
+    const id = preset.slice("saved:".length);
+    const saved = savedPresets.find((p) => p.id === id);
+    return saved ? { start: saved.start, end: saved.end } : {};
+  }
   const spec = PRESETS.find((p) => p.key === preset);
   if (!spec) return {};
   if (spec.key === "all") return { start: first, end: last };
@@ -117,9 +159,32 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
     symbols[0]?.ticker ?? "",
   );
   const [compareTicker, setCompareTicker] = useState<string>("");
-  const [preset, setPreset] = useState<PeriodPreset>("all");
+  const [preset, setPreset] = useState<PresetKey>("all");
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
+  const [savedPresets, setSavedPresets] = useState<SavedPreset[]>([]);
+  const [saveName, setSaveName] = useState<string>("");
+  const hydratedRef = useRef(false);
+
+  // SSR 하이드레이션 이후 localStorage에서 복원. 서버 렌더 결과와 mismatch 없도록
+  // 초기값은 [] 이고, mount 이후에만 pill이 나타남.
+  useEffect(() => {
+    setSavedPresets(loadSavedPresets());
+    hydratedRef.current = true;
+  }, []);
+
+  // 변경 시 persist. 최초 hydration 전 초기 [] 덮어쓰기 방지.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    try {
+      window.localStorage.setItem(
+        SAVED_PRESETS_KEY,
+        JSON.stringify(savedPresets),
+      );
+    } catch {
+      // 쿼터 초과 등은 조용히 무시 — 관리자 도구라 크리티컬 아님.
+    }
+  }, [savedPresets]);
 
   const primary = useMemo(
     () => symbols.find((s) => s.ticker === selectedTicker) ?? symbols[0],
@@ -134,9 +199,44 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
   );
 
   const range = useMemo(
-    () => resolveRange(preset, customStart, customEnd, primary?.closes ?? []),
-    [preset, customStart, customEnd, primary?.closes],
+    () =>
+      resolveRange(
+        preset,
+        customStart,
+        customEnd,
+        primary?.closes ?? [],
+        savedPresets,
+      ),
+    [preset, customStart, customEnd, primary?.closes, savedPresets],
   );
+
+  const canSave =
+    preset === "custom" &&
+    customStart.length > 0 &&
+    customEnd.length > 0 &&
+    saveName.trim().length > 0;
+
+  const handleSave = () => {
+    if (!canSave) return;
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const next: SavedPreset = {
+      id,
+      name: saveName.trim(),
+      start: customStart,
+      end: customEnd,
+    };
+    setSavedPresets((prev) => [...prev, next]);
+    setSaveName("");
+    setPreset(`saved:${id}`);
+  };
+
+  const handleDeleteSaved = (id: string) => {
+    setSavedPresets((prev) => prev.filter((p) => p.id !== id));
+    if (preset === `saved:${id}`) setPreset("all");
+  };
 
   const primaryPeriodCloses = useMemo(
     () => (primary ? sliceByDateRange(primary.closes, range.start, range.end) : []),
@@ -239,28 +339,93 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
               {p.label}
             </button>
           ))}
+          {savedPresets.map((sp) => {
+            const key: PresetKey = `saved:${sp.id}`;
+            const active = preset === key;
+            return (
+              <span
+                key={sp.id}
+                className={
+                  "group inline-flex items-center gap-1 rounded-full border pl-3 pr-1 py-0.5 text-xs transition " +
+                  (active
+                    ? "border-neutral-300 bg-neutral-100 text-neutral-900"
+                    : "border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
+                }
+              >
+                <button
+                  type="button"
+                  onClick={() => setPreset(key)}
+                  title={`${sp.start} ~ ${sp.end}`}
+                  className="focus:outline-none"
+                >
+                  {sp.name}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteSaved(sp.id)}
+                  aria-label={`${sp.name} 삭제`}
+                  className={
+                    "ml-0.5 rounded-full px-1.5 text-[11px] leading-4 transition " +
+                    (active
+                      ? "text-neutral-600 hover:bg-neutral-300 hover:text-neutral-900"
+                      : "text-neutral-500 hover:bg-neutral-800 hover:text-red-400")
+                  }
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })}
         </div>
 
         {preset === "custom" ? (
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="text-xs text-neutral-400">
-              시작
-              <input
-                type="date"
-                value={customStart}
-                onChange={(e) => setCustomStart(e.target.value)}
-                className="mt-1 block rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
-              />
-            </label>
-            <label className="text-xs text-neutral-400">
-              끝
-              <input
-                type="date"
-                value={customEnd}
-                onChange={(e) => setCustomEnd(e.target.value)}
-                className="mt-1 block rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
-              />
-            </label>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="text-xs text-neutral-400">
+                시작
+                <input
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="mt-1 block rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
+                />
+              </label>
+              <label className="text-xs text-neutral-400">
+                끝
+                <input
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="mt-1 block rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
+                />
+              </label>
+            </div>
+            <div className="flex flex-wrap items-end gap-3 border-t border-neutral-800 pt-3">
+              <label className="text-xs text-neutral-400">
+                프리셋으로 저장
+                <input
+                  type="text"
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  placeholder="이름 (예: 22년 상반기)"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && canSave) handleSave();
+                  }}
+                  className="mt-1 block w-48 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={!canSave}
+                className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-xs text-neutral-200 transition hover:border-neutral-500 hover:text-neutral-100 disabled:cursor-not-allowed disabled:border-neutral-800 disabled:text-neutral-600"
+              >
+                저장
+              </button>
+              <p className="text-[11px] text-neutral-500">
+                브라우저에 저장 · 다른 기기에는 동기화되지 않음
+              </p>
+            </div>
           </div>
         ) : null}
 

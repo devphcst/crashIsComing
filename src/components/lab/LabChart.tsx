@@ -20,8 +20,10 @@ import type { LabClose } from "./LabClient";
  * 데이터 병합: primary/compare closes를 date 키로 outer-join. 결과 tick 수는 두
  * 배열의 date 합집합 크기. compare가 없을 때는 primary만 사용.
  *
- * Y축 스케일: 두 종목의 가격 대역이 크게 다르면 하나의 축으론 형편없이 나옴 →
- * 두 종목 값을 각각의 첫 값 대비 비율로 정규화. 100 = 기준일. 툴팁에는 실제 가격도 표시.
+ * Y축 스케일:
+ *   - 단일 종목: 실제 종가($ / ₩) 그대로. 사용자한테 익숙한 절대값.
+ *   - 비교 모드: 두 종목의 가격 대역이 크게 다르면 하나의 축으로 함께 그리기 어려움
+ *     → 시작일 = 100 정규화. 툴팁엔 정규화값과 실제 가격 병기.
  */
 
 export type LabChartSeries = {
@@ -102,6 +104,14 @@ export function LabChart({
 
   const showCompare = !!compare;
 
+  // Y축 tick 포맷: 단일이면 실제 가격, 비교면 정규화 지수(반올림 정수).
+  // 축은 소수점 없이 통화 기호 + 반올림해서 폭 좁게 유지. 정확한 값은 툴팁에서.
+  const yTickFormatter = showCompare
+    ? (v: number) => `${Math.round(v)}`
+    : primary.exchange === "KRX"
+      ? (v: number) => `₩${Math.round(v).toLocaleString("en-US")}`
+      : (v: number) => `$${Math.round(v)}`;
+
   return (
     <div>
       <div className="h-72 w-full">
@@ -121,8 +131,8 @@ export function LabChart({
               tickLine={{ stroke: "#404040" }}
               axisLine={{ stroke: "#404040" }}
               domain={["auto", "auto"]}
-              tickFormatter={(v: number) => `${Math.round(v)}`}
-              width={44}
+              tickFormatter={yTickFormatter}
+              width={showCompare ? 44 : 64}
             />
             <Tooltip
               contentStyle={{
@@ -145,7 +155,9 @@ export function LabChart({
                         />
                         <span className="text-neutral-200">{primary.name}</span>
                         <span className="ml-auto text-neutral-100">
-                          {formatPrice(row.primaryPrice, primary.exchange)}
+                          {showCompare && row.primaryNorm !== undefined
+                            ? `${row.primaryNorm.toFixed(1)} · ${formatPrice(row.primaryPrice, primary.exchange)}`
+                            : formatPrice(row.primaryPrice, primary.exchange)}
                         </span>
                       </div>
                     ) : null}
@@ -157,7 +169,9 @@ export function LabChart({
                         />
                         <span className="text-neutral-200">{compare!.name}</span>
                         <span className="ml-auto text-neutral-100">
-                          {formatPrice(row.comparePrice, compare!.exchange)}
+                          {row.compareNorm !== undefined
+                            ? `${row.compareNorm.toFixed(1)} · ${formatPrice(row.comparePrice, compare!.exchange)}`
+                            : formatPrice(row.comparePrice, compare!.exchange)}
                         </span>
                       </div>
                     ) : null}
@@ -167,7 +181,7 @@ export function LabChart({
             />
             <Line
               type="monotone"
-              dataKey="primaryNorm"
+              dataKey={showCompare ? "primaryNorm" : "primaryPrice"}
               stroke="#e5e5e5"
               strokeWidth={1.5}
               dot={false}
@@ -206,7 +220,14 @@ export function LabChart({
             {compare!.name}
           </span>
         ) : null}
-        <span>Y축: 기준일=100 정규화</span>
+        <span>
+          Y축:{" "}
+          {showCompare
+            ? "기준일=100 정규화"
+            : primary.exchange === "KRX"
+              ? "종가 (₩)"
+              : "종가 ($)"}
+        </span>
       </div>
     </div>
   );

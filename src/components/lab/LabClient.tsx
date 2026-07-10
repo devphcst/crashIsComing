@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import type { Exchange } from "@/lib/symbols";
 import { formatPrice, formatSignedPct, formatShortDate } from "@/lib/format";
 import {
+  computeCompareMetrics,
   computePeriodStats,
   runFilter,
   sliceByDateRange,
@@ -146,6 +147,25 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
     [primaryPeriodCloses, primary?.minCrashDrawdownPct],
   );
 
+  // 비교 종목 통계 — 폭락 임계는 primary와 동일하게 적용해 라벨/의미 일치.
+  const compareStats = useMemo(
+    () =>
+      compare
+        ? computePeriodStats(comparePeriodCloses, {
+            minCrashDrawdownPct: primary?.minCrashDrawdownPct ?? 15,
+          })
+        : null,
+    [compare, comparePeriodCloses, primary?.minCrashDrawdownPct],
+  );
+
+  const compareMetrics = useMemo(
+    () =>
+      compare
+        ? computeCompareMetrics(primaryPeriodCloses, comparePeriodCloses)
+        : null,
+    [compare, primaryPeriodCloses, comparePeriodCloses],
+  );
+
   // 폭락 리스트 — 항상 전체 데이터 기준.
   const historicalCrashes = useMemo(() => {
     if (!primary) return [];
@@ -268,67 +288,190 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="기간 최고 종가"
+            primaryTicker={primary.ticker}
             value={stats.high ? formatPrice(stats.high.price, primary.exchange) : "—"}
             sub={stats.high?.date}
+            compareTicker={compare?.ticker}
+            compareValue={
+              compareStats
+                ? compareStats.high
+                  ? formatPrice(compareStats.high.price, compare!.exchange)
+                  : "—"
+                : undefined
+            }
           />
           <StatCard
             label="기간 최저 종가"
+            primaryTicker={primary.ticker}
             value={stats.low ? formatPrice(stats.low.price, primary.exchange) : "—"}
             sub={stats.low?.date}
+            compareTicker={compare?.ticker}
+            compareValue={
+              compareStats
+                ? compareStats.low
+                  ? formatPrice(compareStats.low.price, compare!.exchange)
+                  : "—"
+                : undefined
+            }
           />
           <StatCard
             label="기간 최대 낙폭"
+            primaryTicker={primary.ticker}
             value={
               stats.maxDrawdownPct !== 0
                 ? formatSignedPct(stats.maxDrawdownPct, 1)
                 : "—"
             }
+            compareTicker={compare?.ticker}
+            compareValue={
+              compareStats
+                ? compareStats.maxDrawdownPct !== 0
+                  ? formatSignedPct(compareStats.maxDrawdownPct, 1)
+                  : "—"
+                : undefined
+            }
           />
           <StatCard
             label="전고점 회복까지"
+            primaryTicker={primary.ticker}
             value={
               stats.recoveryMonths === null
                 ? "미회복"
                 : `${stats.recoveryMonths}개월`
             }
             sub={stats.troughDate ? `저점 ${stats.troughDate}` : undefined}
+            compareTicker={compare?.ticker}
+            compareValue={
+              compareStats
+                ? compareStats.recoveryMonths === null
+                  ? "미회복"
+                  : `${compareStats.recoveryMonths}개월`
+                : undefined
+            }
           />
           <StatCard
             label="기간 총 상승"
+            primaryTicker={primary.ticker}
             value={
               stats.totalReturnPct === null
                 ? "—"
                 : formatSignedPct(stats.totalReturnPct, 1)
             }
+            compareTicker={compare?.ticker}
+            compareValue={
+              compareStats
+                ? compareStats.totalReturnPct === null
+                  ? "—"
+                  : formatSignedPct(compareStats.totalReturnPct, 1)
+                : undefined
+            }
           />
           {stats.periodYears !== null && stats.periodYears >= 1 ? (
             <StatCard
               label="연평균 상승 (CAGR)"
+              primaryTicker={primary.ticker}
               value={
                 stats.cagrPct === null ? "—" : formatSignedPct(stats.cagrPct, 1)
+              }
+              compareTicker={compare?.ticker}
+              compareValue={
+                compareStats
+                  ? compareStats.cagrPct === null
+                    ? "—"
+                    : formatSignedPct(compareStats.cagrPct, 1)
+                  : undefined
               }
             />
           ) : (
             // 1년 미만 기간에선 CAGR 의미 없어 카드 내용 감춤. 슬롯은 유지해
             // 4×2 그리드 배치가 흔들리지 않도록 invisible + aria-hidden.
+            // compare 활성일 땐 2줄 높이도 예약해야 하므로 compareValue 전달.
             <div className="invisible" aria-hidden>
-              <StatCard label="연평균 상승 (CAGR)" value="—" />
+              <StatCard
+                label="연평균 상승 (CAGR)"
+                primaryTicker={primary.ticker}
+                value="—"
+                compareTicker={compare?.ticker}
+                compareValue={compare ? "—" : undefined}
+              />
             </div>
           )}
           <StatCard
             label="일간 변동성"
+            primaryTicker={primary.ticker}
             value={
               stats.dailyVolatilityPct === null
                 ? "—"
                 : `${stats.dailyVolatilityPct.toFixed(2)}%`
             }
+            compareTicker={compare?.ticker}
+            compareValue={
+              compareStats
+                ? compareStats.dailyVolatilityPct === null
+                  ? "—"
+                  : `${compareStats.dailyVolatilityPct.toFixed(2)}%`
+                : undefined
+            }
           />
           <StatCard
             label={`폭락 (≥${primary.minCrashDrawdownPct}%)`}
+            primaryTicker={primary.ticker}
             value={`${stats.crashCount}회`}
+            compareTicker={compare?.ticker}
+            compareValue={
+              compareStats ? `${compareStats.crashCount}회` : undefined
+            }
           />
         </div>
       </section>
+
+      {/* ---- 섹션 2b: 비교 지표 ---- */}
+      {compare && compareMetrics ? (
+        <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
+          <h2 className="text-sm font-medium text-neutral-200">비교 지표</h2>
+          <p className="text-[11px] text-neutral-500">
+            {primary.ticker} vs {compare.ticker} · 동일 기간 기준
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="수익률 격차"
+              value={
+                compareMetrics.returnGapPct === null
+                  ? "—"
+                  : `${formatSignedPct(compareMetrics.returnGapPct, 1)}p`
+              }
+              sub={`${primary.ticker} − ${compare.ticker}`}
+            />
+            <StatCard
+              label="변동성 배수"
+              value={
+                compareMetrics.volMultiple === null
+                  ? "—"
+                  : `${compareMetrics.volMultiple.toFixed(2)}배`
+              }
+              sub={`${primary.ticker} σ / ${compare.ticker} σ`}
+            />
+            <StatCard
+              label="낙폭 배수"
+              value={
+                compareMetrics.drawdownMultiple === null
+                  ? "—"
+                  : `${compareMetrics.drawdownMultiple.toFixed(2)}배`
+              }
+              sub={`|${primary.ticker}| / |${compare.ticker}|`}
+            />
+            <StatCard
+              label="상관계수"
+              value={
+                compareMetrics.correlation === null
+                  ? "—"
+                  : compareMetrics.correlation.toFixed(3)
+              }
+              sub="일간 log return · Pearson"
+            />
+          </div>
+        </section>
+      ) : null}
 
       {/* ---- 섹션 3: 데이터 탐색 ---- */}
       <FilterSection
@@ -377,19 +520,42 @@ function StatCard({
   label,
   value,
   sub,
+  primaryTicker,
+  compareTicker,
+  compareValue,
 }: {
   label: string;
   value: string;
   sub?: string;
+  /** compareValue와 함께 있어야 티커 prefix가 표시됨. */
+  primaryTicker?: string;
+  compareTicker?: string;
+  compareValue?: string;
 }) {
+  const showCompare = compareValue !== undefined;
   return (
     <div className="rounded-md border border-neutral-800 bg-neutral-950 px-3 py-3">
       <div className="text-[10px] uppercase tracking-wide text-neutral-500">
         {label}
       </div>
-      <div className="mt-1 text-base font-semibold text-neutral-100">
-        {value}
+      <div className="mt-1 flex items-baseline gap-2">
+        {showCompare && primaryTicker ? (
+          <span className="text-[10px] text-neutral-500">{primaryTicker}</span>
+        ) : null}
+        <span className="text-base font-semibold text-neutral-100">
+          {value}
+        </span>
       </div>
+      {showCompare ? (
+        <div className="mt-0.5 flex items-baseline gap-2">
+          {compareTicker ? (
+            <span className="text-[10px] text-neutral-500">{compareTicker}</span>
+          ) : null}
+          <span className="text-base font-semibold text-orange-400">
+            {compareValue}
+          </span>
+        </div>
+      ) : null}
       {sub ? <div className="mt-1 text-[11px] text-neutral-500">{sub}</div> : null}
     </div>
   );

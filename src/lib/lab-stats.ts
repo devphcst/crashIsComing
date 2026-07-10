@@ -229,6 +229,108 @@ export const computePeriodStats = (
   };
 };
 
+// ---- 비교 지표 (섹션 2b) ----
+
+export type CompareMetrics = {
+  /** primary.totalReturnPct - compare.totalReturnPct (%p). null이면 데이터 부족. */
+  returnGapPct: number | null;
+  /** primary σ / compare σ. compare σ가 0/null이면 null. */
+  volMultiple: number | null;
+  /** |primary maxDrawdown| / |compare maxDrawdown|. compare 낙폭 0/미정이면 null. */
+  drawdownMultiple: number | null;
+  /** 두 종목 일간 log return의 Pearson 상관계수. 겹치는 표본 < 2면 null. */
+  correlation: number | null;
+};
+
+/**
+ * date별 log return 시계열. date 순 오름차순 가정. 결과도 date 오름차순.
+ * 인접한 두 종가가 모두 양수여야 반환에 포함.
+ */
+const dailyLogReturnsByDate = (
+  closes: ReadonlyArray<Close>,
+): Map<string, number> => {
+  const out = new Map<string, number>();
+  for (let i = 1; i < closes.length; i++) {
+    const prev = closes[i - 1].price;
+    const cur = closes[i].price;
+    if (prev > 0 && cur > 0) {
+      out.set(closes[i].date, Math.log(cur / prev));
+    }
+  }
+  return out;
+};
+
+/**
+ * 두 종목 비교 지표 계산. 각 지표는 데이터 부족/의미 없음일 때 null.
+ * primary/compare 순서 = "primary가 compare 대비" 방향.
+ */
+export const computeCompareMetrics = (
+  primary: ReadonlyArray<Close>,
+  compare: ReadonlyArray<Close>,
+): CompareMetrics => {
+  if (primary.length < 2 || compare.length < 2) {
+    return {
+      returnGapPct: null,
+      volMultiple: null,
+      drawdownMultiple: null,
+      correlation: null,
+    };
+  }
+
+  const pStats = computePeriodStats(primary);
+  const cStats = computePeriodStats(compare);
+
+  const returnGapPct =
+    pStats.totalReturnPct !== null && cStats.totalReturnPct !== null
+      ? pStats.totalReturnPct - cStats.totalReturnPct
+      : null;
+
+  const volMultiple =
+    pStats.dailyVolatilityPct !== null &&
+    cStats.dailyVolatilityPct !== null &&
+    cStats.dailyVolatilityPct > 0
+      ? pStats.dailyVolatilityPct / cStats.dailyVolatilityPct
+      : null;
+
+  const drawdownMultiple =
+    pStats.maxDrawdownPct !== 0 && cStats.maxDrawdownPct !== 0
+      ? Math.abs(pStats.maxDrawdownPct) / Math.abs(cStats.maxDrawdownPct)
+      : null;
+
+  // 상관계수: date별 log return을 inner-join한 뒤 Pearson.
+  const pRets = dailyLogReturnsByDate(primary);
+  const cRets = dailyLogReturnsByDate(compare);
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (const [date, x] of pRets) {
+    const y = cRets.get(date);
+    if (y !== undefined) {
+      xs.push(x);
+      ys.push(y);
+    }
+  }
+  let correlation: number | null = null;
+  if (xs.length >= 2) {
+    const n = xs.length;
+    const mx = xs.reduce((s, v) => s + v, 0) / n;
+    const my = ys.reduce((s, v) => s + v, 0) / n;
+    let num = 0;
+    let dx2 = 0;
+    let dy2 = 0;
+    for (let i = 0; i < n; i++) {
+      const dx = xs[i] - mx;
+      const dy = ys[i] - my;
+      num += dx * dy;
+      dx2 += dx * dx;
+      dy2 += dy * dy;
+    }
+    const denom = Math.sqrt(dx2 * dy2);
+    if (denom > 0) correlation = num / denom;
+  }
+
+  return { returnGapPct, volMultiple, drawdownMultiple, correlation };
+};
+
 // ---- 데이터 탐색용 필터 (섹션 3) ----
 
 export type FilterKind = "daily_change" | "drawdown" | "price_range";

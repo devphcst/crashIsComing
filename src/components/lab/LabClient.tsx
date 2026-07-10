@@ -34,6 +34,8 @@ export type LabSymbolPayload = {
 
 type PeriodPreset =
   | "all"
+  | "ytd"
+  | "1y"
   | "5y"
   | "10y"
   | "dotcom"
@@ -54,6 +56,8 @@ type PresetSpec = {
 
 const PRESETS: PresetSpec[] = [
   { key: "all", label: "전체" },
+  { key: "ytd", label: "이번년도" },
+  { key: "1y", label: "1년", yearsBack: 1 },
   { key: "5y", label: "5년", yearsBack: 5 },
   { key: "10y", label: "10년", yearsBack: 10 },
   { key: "dotcom", label: "닷컴", start: "2000-03-01", end: "2002-10-31" },
@@ -96,6 +100,11 @@ const resolveRange = (
       start: customStart || undefined,
       end: customEnd || undefined,
     };
+  }
+  if (spec.key === "ytd") {
+    // 데이터 마지막 시점 기준 해당 연도 1월 1일부터. 실시간 오늘 대신 last를 쓰는 이유:
+    // KV 데이터가 며칠 지연되어도 카드 값이 안정적으로 재현됨.
+    return { start: `${last.slice(0, 4)}-01-01`, end: last };
   }
   if (spec.yearsBack !== undefined) {
     return { start: isoMinus(last, spec.yearsBack), end: last };

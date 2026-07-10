@@ -1,17 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceDot,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import type { Exchange } from "@/lib/symbols";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatSignedPct } from "@/lib/format";
 import type { LabClose } from "./LabClient";
 
 /**
@@ -24,6 +25,12 @@ import type { LabClose } from "./LabClient";
  *   - 단일 종목: 실제 종가($ / ₩) 그대로. 사용자한테 익숙한 절대값.
  *   - 비교 모드: 두 종목의 가격 대역이 크게 다르면 하나의 축으로 함께 그리기 어려움
  *     → 시작일 = 100 정규화. 툴팁엔 정규화값과 실제 가격 병기.
+ *
+ * 두 점 탭 비교 (primary만):
+ *   - 첫 탭 = start(빨강 마커), 둘째 탭 = end(흰 마커), 셋째 탭 = start 갱신.
+ *   - 시간순 자동 정렬 (미래→과거 탭도 처리).
+ *   - 두 점 사이 라인 구간 강조 — 양수 흰색, 음수 빨강, 나머지 기본 회색.
+ *   - RechartsBreakdown(사용자 페이지 G3)과 같은 gradient stroke 패턴 재사용.
  */
 
 export type LabChartSeries = {
@@ -84,6 +91,19 @@ const pickTicks = (rows: MergedRow[]): string[] => {
     .map((i) => rows[i].date);
 };
 
+/** lg 미만이면 모바일 — 점 탭 영역 확보 필요. */
+const useIsMobile = (): boolean => {
+  const [is, setIs] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    setIs(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIs(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return is;
+};
+
 export function LabChart({
   primary,
   compare,
@@ -93,6 +113,69 @@ export function LabChart({
 }) {
   const rows = useMemo(() => mergeSeries(primary, compare), [primary, compare]);
   const ticks = useMemo(() => pickTicks(rows), [rows]);
+  const isMobile = useIsMobile();
+  const dotRadius = isMobile ? 5 : 3;
+
+  // 두 점 탭 상태 — primary 종목 대상.
+  const [tappedStart, setTappedStart] = useState<LabClose | null>(null);
+  const [tappedEnd, setTappedEnd] = useState<LabClose | null>(null);
+
+  // 종목이 바뀌면 탭 리셋. primary.name(=ticker/displayName)만 의존해 매 렌더 리셋 방지.
+  useEffect(() => {
+    setTappedStart(null);
+    setTappedEnd(null);
+  }, [primary.name]);
+
+  const onTap = (date: unknown) => {
+    if (date === undefined || date === null) return;
+    const key = String(date);
+    const point = primary.closes.find((c) => c.date === key);
+    if (!point) return;
+    if (!tappedStart || (tappedStart && tappedEnd)) {
+      setTappedStart(point);
+      setTappedEnd(null);
+    } else {
+      setTappedEnd(point);
+    }
+  };
+
+  // 두 점 확정 시 시간순 정렬 + pct. 기간이 바뀌어 tap 날짜가 현재 closes에
+  // 없으면 null 반환 → 마커/결과 박스 자동 숨김.
+  const comparePoints = useMemo(() => {
+    if (!tappedStart || !tappedEnd) return null;
+    const s = primary.closes.find((c) => c.date === tappedStart.date);
+    const e = primary.closes.find((c) => c.date === tappedEnd.date);
+    if (!s || !e) return null;
+    const [a, b] = s.date <= e.date ? [s, e] : [e, s];
+    const pct = a.price > 0 ? ((b.price - a.price) / a.price) * 100 : 0;
+    return { start: a, end: b, pct };
+  }, [primary.closes, tappedStart, tappedEnd]);
+
+  const tapInProgress =
+    !!tappedStart &&
+    !tappedEnd &&
+    primary.closes.some((c) => c.date === tappedStart.date);
+
+  // 그라디언트 stroke — 두 점 사이 구간 강조. RechartsBreakdown과 같은 방식:
+  // 단일 Line + linearGradient에 sharp stop 두 개로 [회색][강조][회색] 3구간.
+  const gradientId = useId().replace(/:/g, "-");
+  const BASE_STROKE = "#888888";
+  const highlightColor = !comparePoints
+    ? BASE_STROKE
+    : comparePoints.pct < 0
+      ? "#f87171"
+      : "#e5e5e5";
+
+  const segmentPct = useMemo(() => {
+    if (!comparePoints || rows.length < 2) return null;
+    const startIdx = rows.findIndex((r) => r.date === comparePoints.start.date);
+    const endIdx = rows.findIndex((r) => r.date === comparePoints.end.date);
+    if (startIdx < 0 || endIdx < 0) return null;
+    const [lo, hi] =
+      startIdx <= endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+    const denom = rows.length - 1;
+    return { startPct: (lo / denom) * 100, endPct: (hi / denom) * 100 };
+  }, [rows, comparePoints]);
 
   if (rows.length < 2) {
     return (
@@ -112,11 +195,58 @@ export function LabChart({
       ? (v: number) => `₩${Math.round(v).toLocaleString("en-US")}`
       : (v: number) => `$${Math.round(v)}`;
 
+  // 마커의 Y 좌표는 현재 Y축 스케일에 맞춰야 함 — 비교 모드면 정규화값, 단일이면 실제.
+  const pBase = primary.closes[0]?.price ?? 0;
+  const markerY = (p: LabClose): number =>
+    showCompare && pBase > 0 ? (p.price / pBase) * 100 : p.price;
+
+  const startMarker = comparePoints?.start ?? (tapInProgress ? tappedStart : null);
+  const endMarker = comparePoints?.end ?? null;
+
   return (
     <div>
-      <div className="h-72 w-full">
+      {/* 브라우저 기본 focus outline 제거 — recharts SVG가 focus 받으면 파란 ring이
+          사이트 톤과 충돌. 사용자 페이지 G3 차트와 동일한 처리. */}
+      <div className="h-72 w-full outline-none [&_*:focus]:outline-none [&_*:focus-visible]:outline-none">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
+          <LineChart
+            data={rows}
+            margin={{ top: 8, right: 12, bottom: 4, left: 0 }}
+            onClick={(state) => onTap(state?.activeLabel)}
+          >
+            {/* X 방향 gradient를 stroke로. comparePoints 없으면 단색 회색,
+                있으면 [회색][강조][회색] 3구간을 같은 offset 두 stop으로 sharp 전환. */}
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+                {segmentPct ? (
+                  <>
+                    <stop offset="0%" stopColor={BASE_STROKE} />
+                    <stop
+                      offset={`${segmentPct.startPct}%`}
+                      stopColor={BASE_STROKE}
+                    />
+                    <stop
+                      offset={`${segmentPct.startPct}%`}
+                      stopColor={highlightColor}
+                    />
+                    <stop
+                      offset={`${segmentPct.endPct}%`}
+                      stopColor={highlightColor}
+                    />
+                    <stop
+                      offset={`${segmentPct.endPct}%`}
+                      stopColor={BASE_STROKE}
+                    />
+                    <stop offset="100%" stopColor={BASE_STROKE} />
+                  </>
+                ) : (
+                  <>
+                    <stop offset="0%" stopColor={BASE_STROKE} />
+                    <stop offset="100%" stopColor={BASE_STROKE} />
+                  </>
+                )}
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="2 4" stroke="#262626" />
             <XAxis
               dataKey="date"
@@ -182,11 +312,17 @@ export function LabChart({
             <Line
               type="monotone"
               dataKey={showCompare ? "primaryNorm" : "primaryPrice"}
-              stroke="#e5e5e5"
-              strokeWidth={1.5}
+              stroke={`url(#${gradientId})`}
+              strokeWidth={comparePoints ? 2 : 1.5}
               dot={false}
               isAnimationActive={false}
               connectNulls
+              activeDot={{
+                r: dotRadius,
+                fill: "#ffffff",
+                stroke: "#0a0a0a",
+                strokeWidth: 1.5,
+              }}
             />
             {showCompare ? (
               <Line
@@ -199,9 +335,60 @@ export function LabChart({
                 connectNulls
               />
             ) : null}
+            {startMarker ? (
+              <ReferenceDot
+                x={startMarker.date}
+                y={markerY(startMarker)}
+                r={dotRadius + 1}
+                fill="#f87171"
+                stroke="#0a0a0a"
+                strokeWidth={1.5}
+                ifOverflow="hidden"
+              />
+            ) : null}
+            {endMarker ? (
+              <ReferenceDot
+                x={endMarker.date}
+                y={markerY(endMarker)}
+                r={dotRadius + 1}
+                fill="#ffffff"
+                stroke="#0a0a0a"
+                strokeWidth={1.5}
+                ifOverflow="hidden"
+              />
+            ) : null}
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {/* 두 점 결과 박스 / 탭 안내 — 초기 상태에서는 렌더 안 함. */}
+      {comparePoints ? (
+        <div className="mt-3 rounded-md bg-neutral-900 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xs text-neutral-500">
+              {comparePoints.start.date} → {comparePoints.end.date}
+            </div>
+            <div
+              className={
+                "font-mono text-sm " +
+                (comparePoints.pct < 0
+                  ? "text-red-400"
+                  : "text-neutral-300")
+              }
+            >
+              {formatSignedPct(comparePoints.pct, 1)}
+            </div>
+          </div>
+          <div className="mt-1 text-[10px] text-neutral-600">
+            {formatPrice(comparePoints.start.price, primary.exchange)} →{" "}
+            {formatPrice(comparePoints.end.price, primary.exchange)}
+          </div>
+        </div>
+      ) : tapInProgress ? (
+        <div className="mt-3 rounded-md bg-neutral-900 px-3 py-2.5 text-xs text-neutral-500">
+          두 번째 점을 탭해 구간 변화율을 확인하세요. (세 번째 탭 = 시작점 이동)
+        </div>
+      ) : null}
 
       <div className="mt-2 flex flex-wrap items-center gap-4 text-[11px] text-neutral-500">
         <span className="flex items-center gap-1.5">

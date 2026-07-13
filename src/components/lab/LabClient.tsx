@@ -325,6 +325,9 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
         />
       </section>
 
+      {/* ---- 섹션 1b: DCA 시뮬레이터 ---- */}
+      <DcaSimulator symbols={symbols} />
+
       {/* ---- 섹션 2: 통계 요약 ---- */}
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
         <h2 className="text-sm font-medium text-neutral-200">통계 요약</h2>
@@ -558,9 +561,6 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
           </ul>
         )}
       </section>
-
-      {/* ---- 섹션 5: DCA 시뮬레이터 ---- */}
-      <DcaSimulator symbols={symbols} />
     </div>
   );
 }

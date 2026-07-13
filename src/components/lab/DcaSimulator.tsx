@@ -52,10 +52,22 @@ const WEEKDAY_LABEL: Record<1 | 2 | 3 | 4 | 5, string> = {
 };
 
 export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
-  // 기본값: 첫 종목의 데이터 범위 안, 최근 5년.
-  const dataFirst = symbols[0]?.closes[0]?.date ?? "";
+  // DCA 대상 종목만 노출 — FX(환율 페어)는 시뮬 자체가 의미 없어 pill에서 제외.
+  const dcaSymbols = useMemo(
+    () => symbols.filter((s) => s.exchange !== "FX"),
+    [symbols],
+  );
+  // USDKRW 심볼(hidden)에서 최신 종가를 자동 환율로 사용.
+  const usdkrw = useMemo(
+    () => symbols.find((s) => s.ticker === "usdkrw"),
+    [symbols],
+  );
+  const autoRate = usdkrw?.closes[usdkrw.closes.length - 1] ?? null;
+
+  // 기본값: 첫 DCA 대상 종목의 데이터 범위 안, 최근 5년.
+  const dataFirst = dcaSymbols[0]?.closes[0]?.date ?? "";
   const dataLast =
-    symbols[0]?.closes[symbols[0].closes.length - 1]?.date ?? "";
+    dcaSymbols[0]?.closes[dcaSymbols[0].closes.length - 1]?.date ?? "";
   const defaultStart = useMemo(() => {
     if (!dataLast) return "";
     const d = new Date(`${dataLast}T00:00:00Z`);
@@ -72,10 +84,12 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
   const [monthDay, setMonthDay] = useState<number>(15);
   const [amount, setAmount] = useState<number>(100);
   const [selectedTickers, setSelectedTickers] = useState<string[]>(
-    symbols[0] ? [symbols[0].ticker] : [],
+    dcaSymbols[0] ? [dcaSymbols[0].ticker] : [],
   );
-  // 오늘 환율 (원/$) — 참고용 입력. 시뮬 계산에는 영향 없음(달러 기준 유지).
-  const [krwRate, setKrwRate] = useState<string>("");
+  // 오늘 환율 (원/$). autoRate가 있으면 초기값으로 프리필. 사용자가 override 가능.
+  const [krwRate, setKrwRate] = useState<string>(
+    autoRate ? String(Math.round(autoRate.price * 100) / 100) : "",
+  );
 
   // 마지막 실행 결과. 인풋 바뀌어도 자동 갱신 안 함 — "실행" 버튼으로만.
   const [results, setResults] = useState<Record<string, DcaResult> | null>(
@@ -325,7 +339,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
           종목 (최대 {MAX_SELECT}개)
         </div>
         <div className="mt-1 flex flex-wrap gap-2">
-          {symbols.map((s) => {
+          {dcaSymbols.map((s) => {
             const active = selectedTickers.includes(s.ticker);
             const disabled = !active && selectedTickers.length >= MAX_SELECT;
             return (
@@ -350,19 +364,45 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
         </div>
       </div>
 
-      {/* 오늘 환율 — 참고용 (시뮬 계산엔 영향 없음). */}
-      <label className="block text-xs text-neutral-400">
-        오늘 환율 (원/$)
-        <input
-          type="number"
-          min={0}
-          step={0.1}
-          value={krwRate}
-          onChange={(e) => setKrwRate(e.target.value)}
-          placeholder="예: 1380"
-          className="mt-1 block w-40 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
-        />
-      </label>
+      {/* 오늘 환율 — USDKRW 최신 종가를 자동 프리필. 사용자가 편집 가능. */}
+      <div>
+        <label className="block text-xs text-neutral-400">
+          오늘 환율 (원/$)
+          <input
+            type="number"
+            min={0}
+            step={0.1}
+            value={krwRate}
+            onChange={(e) => setKrwRate(e.target.value)}
+            placeholder="예: 1380"
+            className="mt-1 block w-40 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+          />
+        </label>
+        {autoRate ? (
+          <div className="mt-1 flex items-center gap-2 text-[11px] text-neutral-500">
+            <span>
+              USDKRW 종가 {autoRate.date} 기준 (₩
+              {Math.round(autoRate.price * 100) / 100})
+            </span>
+            {krwRate !==
+            String(Math.round(autoRate.price * 100) / 100) ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setKrwRate(String(Math.round(autoRate.price * 100) / 100))
+                }
+                className="text-neutral-400 underline decoration-neutral-700 underline-offset-2 hover:text-neutral-200"
+              >
+                자동값 복원
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <p className="mt-1 text-[11px] text-neutral-500">
+            USDKRW 심볼 미등록 — admin에서 백필 후 자동 로드됨
+          </p>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <button

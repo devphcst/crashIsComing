@@ -92,6 +92,12 @@ describe("generateTargetDates", () => {
   it("returns empty when start > end", () => {
     expect(generateTargetDates("2024-06-01", "2024-01-01", { kind: "daily" })).toEqual([]);
   });
+
+  it("once returns just the start date", () => {
+    expect(
+      generateTargetDates("2024-05-01", "2024-12-31", { kind: "once" }),
+    ).toEqual(["2024-05-01"]);
+  });
 });
 
 describe("runDca", () => {
@@ -196,6 +202,23 @@ describe("runDca", () => {
     });
     // Only 1-2 trades in <2 days → yearsSpan tiny → CAGR null.
     expect(res.cagrPct).toBeNull();
+  });
+
+  it("lump-sum (once) invests full amount on first trading day and holds", () => {
+    // 100 → 200 linear rise over 60 trading days.
+    const closes = makeCloses("2024-01-01", 60, (i) => 100 + i);
+    const res = runDca(closes, {
+      start: "2024-01-01",
+      end: "2024-03-31",
+      frequency: { kind: "once" },
+      amountPerBuy: 1000,
+    });
+    expect(res.trades.length).toBe(1);
+    expect(res.totalInvested).toBeCloseTo(1000, 5);
+    // shares = 1000 / 100 = 10 → finalValue at last close = 10 * (100+59) = 1590.
+    expect(res.totalShares).toBeCloseTo(10, 5);
+    expect(res.finalValue).toBeCloseTo(1590, 5);
+    expect(res.profit).toBeCloseTo(590, 5);
   });
 
   it("timeline covers first buy through end inclusive", () => {

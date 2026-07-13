@@ -32,7 +32,8 @@ const TICKER_COLORS = [
   "#c084fc",
 ] as const;
 
-type FreqKind = Frequency["kind"];
+type FreqKind = Exclude<Frequency["kind"], "once">;
+type Strategy = "dca" | "lumpSum";
 
 const FREQ_LABEL: Record<FreqKind, string> = {
   daily: "매일 (거래일마다)",
@@ -62,6 +63,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
     return iso < dataFirst ? dataFirst : iso;
   }, [dataFirst, dataLast]);
 
+  const [strategy, setStrategy] = useState<Strategy>("dca");
   const [start, setStart] = useState(defaultStart);
   const [end, setEnd] = useState(dataLast);
   const [freqKind, setFreqKind] = useState<FreqKind>("monthly");
@@ -81,6 +83,8 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
   const [runStamp, setRunStamp] = useState<{
     tickers: string[];
     exchange: Record<string, "NYSE" | "KRX">;
+    /** 실행 당시 인풋 스냅샷 — 인풋 변경 여부 판정용. */
+    snapshot: string;
   } | null>(null);
   const [activeTab, setActiveTab] = useState<string>("");
 
@@ -92,24 +96,48 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
     });
   };
 
+  // 현재 인풋들을 stable string으로 직렬화. 거치식이면 주기/요일/일은 무의미하니 제외.
+  const currentSnapshot = JSON.stringify({
+    strategy,
+    start,
+    end,
+    amount,
+    tickers: [...selectedTickers].sort(),
+    freq:
+      strategy === "lumpSum"
+        ? null
+        : freqKind === "weekly"
+          ? { kind: "weekly", weekday }
+          : freqKind === "monthly"
+            ? { kind: "monthly", day: monthDay }
+            : { kind: freqKind },
+  });
+
+  const isDirty =
+    runStamp !== null && runStamp.snapshot !== currentSnapshot;
+
   const canRun =
     selectedTickers.length > 0 &&
     start.length > 0 &&
     end.length > 0 &&
     start <= end &&
     amount > 0 &&
-    (freqKind !== "monthly" || (monthDay >= 1 && monthDay <= 28));
+    (strategy === "lumpSum" ||
+      freqKind !== "monthly" ||
+      (monthDay >= 1 && monthDay <= 28));
 
   const handleRun = () => {
     if (!canRun) return;
     const freq: Frequency =
-      freqKind === "weekly"
-        ? { kind: "weekly", weekday }
-        : freqKind === "monthly"
-          ? { kind: "monthly", day: monthDay }
-          : freqKind === "quarterly"
-            ? { kind: "quarterly" }
-            : { kind: "daily" };
+      strategy === "lumpSum"
+        ? { kind: "once" }
+        : freqKind === "weekly"
+          ? { kind: "weekly", weekday }
+          : freqKind === "monthly"
+            ? { kind: "monthly", day: monthDay }
+            : freqKind === "quarterly"
+              ? { kind: "quarterly" }
+              : { kind: "daily" };
     const out: Record<string, DcaResult> = {};
     const ex: Record<string, "NYSE" | "KRX"> = {};
     for (const t of selectedTickers) {
@@ -124,7 +152,11 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
       ex[t] = s.exchange;
     }
     setResults(out);
-    setRunStamp({ tickers: [...selectedTickers], exchange: ex });
+    setRunStamp({
+      tickers: [...selectedTickers],
+      exchange: ex,
+      snapshot: currentSnapshot,
+    });
     setActiveTab(selectedTickers[0] ?? "");
   };
 
@@ -173,10 +205,34 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
   return (
     <section className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
       <div>
-        <h2 className="text-sm font-medium text-neutral-200">DCA 시뮬레이터</h2>
+        <h2 className="text-sm font-medium text-neutral-200">
+          투자 시뮬레이터
+        </h2>
         <p className="mt-1 text-[11px] text-neutral-500">
-          정기 매수 전략 검증 · 환율 무시 · 매수일 휴장 시 다음 거래일 이월
+          적립식/거치식 전략 검증 · 환율 무시 · 매수일 휴장 시 다음 거래일 이월
         </p>
+      </div>
+
+      {/* 전략 선택 */}
+      <div className="flex flex-wrap gap-2">
+        {(["dca", "lumpSum"] as Strategy[]).map((s) => {
+          const active = strategy === s;
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStrategy(s)}
+              className={
+                "rounded-full border px-3 py-1 text-xs transition " +
+                (active
+                  ? "border-neutral-300 bg-neutral-100 text-neutral-900"
+                  : "border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
+              }
+            >
+              {s === "dca" ? "적립식 (DCA)" : "거치식 (Lump-sum)"}
+            </button>
+          );
+        })}
       </div>
 
       {/* ---- 인풋 ---- */}
@@ -200,7 +256,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
           />
         </label>
         <label className="text-xs text-neutral-400">
-          매수 금액 ($)
+          {strategy === "lumpSum" ? "투자 금액 ($)" : "매수 금액 ($)"}
           <input
             type="number"
             min={1}
@@ -210,23 +266,25 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
             className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
           />
         </label>
-        <label className="text-xs text-neutral-400 sm:col-span-2 lg:col-span-1">
-          매수 주기
-          <select
-            value={freqKind}
-            onChange={(e) => setFreqKind(e.target.value as FreqKind)}
-            className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
-          >
-            {(["daily", "weekly", "monthly", "quarterly"] as FreqKind[]).map(
-              (k) => (
-                <option key={k} value={k}>
-                  {FREQ_LABEL[k]}
-                </option>
-              ),
-            )}
-          </select>
-        </label>
-        {freqKind === "weekly" ? (
+        {strategy === "dca" ? (
+          <label className="text-xs text-neutral-400 sm:col-span-2 lg:col-span-1">
+            매수 주기
+            <select
+              value={freqKind}
+              onChange={(e) => setFreqKind(e.target.value as FreqKind)}
+              className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+            >
+              {(["daily", "weekly", "monthly", "quarterly"] as FreqKind[]).map(
+                (k) => (
+                  <option key={k} value={k}>
+                    {FREQ_LABEL[k]}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+        ) : null}
+        {strategy === "dca" && freqKind === "weekly" ? (
           <label className="text-xs text-neutral-400">
             요일
             <select
@@ -244,7 +302,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
             </select>
           </label>
         ) : null}
-        {freqKind === "monthly" ? (
+        {strategy === "dca" && freqKind === "monthly" ? (
           <label className="text-xs text-neutral-400">
             매월 며칠
             <input
@@ -310,13 +368,22 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
           type="button"
           onClick={handleRun}
           disabled={!canRun}
-          className="rounded-md border border-neutral-700 bg-neutral-950 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-500 disabled:cursor-not-allowed disabled:border-neutral-800 disabled:text-neutral-600"
+          className={
+            "rounded-md border px-4 py-2 text-sm transition disabled:cursor-not-allowed disabled:border-neutral-800 disabled:text-neutral-600 " +
+            (isDirty
+              ? "border-orange-400 bg-neutral-950 text-orange-300 hover:border-orange-300"
+              : "border-neutral-700 bg-neutral-950 text-neutral-100 hover:border-neutral-500")
+          }
         >
-          실행
+          {isDirty ? "다시 실행" : "실행"}
         </button>
         {!canRun ? (
           <span className="text-[11px] text-neutral-500">
             종목·기간·금액 확인 필요
+          </span>
+        ) : isDirty ? (
+          <span className="text-[11px] text-orange-300">
+            인풋 변경됨 — 결과가 최신 아님
           </span>
         ) : null}
       </div>

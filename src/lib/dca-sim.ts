@@ -27,7 +27,9 @@ export type Frequency =
   /** day: 1~28. 매월 해당 일(휴장이면 다음 거래일로 이월). */
   | { kind: "monthly"; day: number }
   /** 매분기 첫 달(1/4/7/10) 1일 기준, 다음 거래일로 이월. */
-  | { kind: "quarterly" };
+  | { kind: "quarterly" }
+  /** 거치식 — 시작일 한 번만 매수. amountPerBuy = 투자 총액. */
+  | { kind: "once" };
 
 export type DcaInputs = {
   /** ISO YYYY-MM-DD, 포함. */
@@ -92,6 +94,11 @@ export const generateTargetDates = (
   const startD = parseIso(start);
   const endD = parseIso(end);
   const out: string[] = [];
+
+  if (freq.kind === "once") {
+    // 거치식 — 시작일 하나만. runDca가 다음 거래일로 이월.
+    return [start];
+  }
 
   if (freq.kind === "daily") {
     // 매일 (주말 포함) — 실제 매수일은 closes 매칭에서 결정.

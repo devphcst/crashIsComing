@@ -4,7 +4,7 @@ import { readMeta, readSymbolList, writeClose } from "@/lib/kv";
 import { fetchLatestCloseFromTwelveData } from "@/lib/ingest/twelvedata-fetch";
 import { recordFailure, recordSuccess } from "@/lib/ingest/status";
 import { notifySystemAlert } from "@/lib/ingest/notify";
-import { getExchange } from "@/lib/symbols";
+import { getExchange, getProviderSymbol } from "@/lib/symbols";
 
 /**
  * 메인 자동화 cron — 매일 22:00 UTC (07:00 KST) 실행.
@@ -73,12 +73,16 @@ export async function GET(req: Request) {
   for (const ticker of tickers) {
     const meta = await readMeta(ticker);
     // KRX는 자동 fetch 미지원(TwelveData Pro 미결제). 수동 입력 종목이라 cron skip.
+    // FX(환율 페어)는 무료 플랜에서도 지원 — NYSE와 동일하게 fetch.
     if (getExchange(meta) === "KRX") {
       results.push({ ticker, skipped: true, reason: "krx_manual" });
       continue;
     }
     try {
-      const close = await fetchLatestCloseFromTwelveData(ticker);
+      const close = await fetchLatestCloseFromTwelveData(
+        ticker,
+        getProviderSymbol(meta),
+      );
       await writeClose(ticker, close);
       await recordSuccess(ticker, close);
       anyWritten = true;

@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import type { Lang } from "@/lib/i18n";
+import type { Exchange } from "@/lib/symbols";
 import { formatPrice, formatShortDate, formatSignedPct } from "@/lib/format";
 
 /**
@@ -34,7 +35,7 @@ type Point = { date: string; price: number };
 
 export type RechartsBreakdownProps = {
   closes: ReadonlyArray<Point>;
-  exchange: "NYSE" | "KRX";
+  exchange: Exchange;
   lang: Lang;
   /** i18n.chart 전체 — empty / compareButtons / compareRange / comparePriceLine / tapHint. */
   dict: ChartDict;

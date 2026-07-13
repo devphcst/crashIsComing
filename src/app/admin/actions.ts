@@ -51,6 +51,7 @@ import {
   mergeWithExisting,
   parseInvestingCsv,
 } from "@/lib/csv-import";
+import { fetchTimeSeriesFromTwelveData } from "@/lib/ingest/twelvedata-fetch";
 
 export type ActionState = {
   ok: boolean;
@@ -87,6 +88,7 @@ const META_ERROR_MESSAGES: Record<MetaValidationError, string> = {
 /** 폼 'exchange' 값을 정규화 — undefined/빈문자/기타는 NYSE로 처리. */
 const parseExchange = (v: FormDataEntryValue | null): Exchange => {
   if (v === "KRX") return "KRX";
+  if (v === "FX") return "FX";
   return "NYSE";
 };
 
@@ -715,3 +717,54 @@ export async function importCsvAction(
   };
 }
 
+/**
+ * USDKRW(원-달러 환율) 심볼 등록 + 과거 시계열 백필.
+ * 원-클릭: 없으면 심볼/메타 생성, 있으면 재사용. 그 뒤 TwelveData time_series로
+ * 최대 5000 거래일(약 19년) fetch 후 writeManyCloses로 병합.
+ *
+ * FX 페어라 exchange="FX", hidden=true, providerSymbol="USD/KRW".
+ * 자동 cron은 다음 스케줄부터 최신 종가 append.
+ */
+export async function seedUsdkrwAction(): Promise<ActionState> {
+  if (!checkAuth()) return unauthorized();
+
+  const ticker = "usdkrw";
+  const apiSymbol = "USD/KRW";
+
+  try {
+    // 1) 심볼 등록 (없으면).
+    const list = await readSymbolList();
+    if (!list.includes(ticker)) {
+      const meta: SymbolMeta = {
+        ticker,
+        displayName: "USD/KRW 환율",
+        orangeThreshold: -10,
+        redThreshold: -30,
+        exchange: "FX",
+        hidden: true,
+        providerSymbol: apiSymbol,
+      };
+      const err = validateMeta(meta);
+      if (err) return { ok: false, message: META_ERROR_MESSAGES[err] };
+      await writeMeta(ticker, meta);
+      await writeSymbolList([...list, ticker]);
+    }
+
+    // 2) 시계열 백필.
+    const closes = await fetchTimeSeriesFromTwelveData(apiSymbol, 5000);
+    if (closes.length === 0) {
+      return { ok: false, message: "TwelveData가 종가를 반환하지 않았습니다." };
+    }
+    await writeManyCloses(ticker, closes);
+
+    revalidateSymbolPaths(ticker);
+    return {
+      ok: true,
+      message: `USDKRW ${closes.length.toLocaleString()}건 저장 (${closes[0].date} ~ ${closes[closes.length - 1].date}).`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("seedUsdkrwAction failed:", msg);
+    return { ok: false, message: `실패: ${msg}` };
+  }
+}

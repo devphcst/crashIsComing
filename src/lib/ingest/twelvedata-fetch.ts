@@ -58,8 +58,15 @@ export const parseLatestCloseFromTwelveData = (
   };
 };
 
+/**
+ * TwelveData 최신 종가 fetch.
+ * @param ticker KV 키(내부 식별자) — 로그·에러 메시지용
+ * @param apiSymbol TwelveData API에 보낼 심볼. 미지정이면 ticker.toUpperCase().
+ *                  FX 페어처럼 슬래시가 들어가는 경우 명시 (예: "USD/KRW").
+ */
 export const fetchLatestCloseFromTwelveData = async (
   ticker: string,
+  apiSymbol?: string,
 ): Promise<Close> => {
   const apiKey = process.env.TWELVE_DATA_API_KEY;
   if (!apiKey) {
@@ -67,7 +74,7 @@ export const fetchLatestCloseFromTwelveData = async (
     throw new Error("TWELVE_DATA_API_KEY missing");
   }
   const url = new URL(ENDPOINT);
-  url.searchParams.set("symbol", ticker.toUpperCase());
+  url.searchParams.set("symbol", apiSymbol ?? ticker.toUpperCase());
   url.searchParams.set("interval", "1day");
   url.searchParams.set("outputsize", "1");
   url.searchParams.set("adjust", "splits");
@@ -82,4 +89,59 @@ export const fetchLatestCloseFromTwelveData = async (
   }
   const json = await res.json();
   return parseLatestCloseFromTwelveData(json);
+};
+
+/**
+ * TwelveData 시계열(과거 종가) fetch — 백필용.
+ * outputsize 최대 5000 (무료 플랜). 5000일 ≈ 19년치 일봉.
+ * FX 페어는 adjust 파라미터 무의미해서 스플릿 보정 없이 요청.
+ */
+export const fetchTimeSeriesFromTwelveData = async (
+  apiSymbol: string,
+  outputsize = 5000,
+): Promise<Close[]> => {
+  const apiKey = process.env.TWELVE_DATA_API_KEY;
+  if (!apiKey) throw new Error("TWELVE_DATA_API_KEY missing");
+  const url = new URL(ENDPOINT);
+  url.searchParams.set("symbol", apiSymbol);
+  url.searchParams.set("interval", "1day");
+  url.searchParams.set("outputsize", String(outputsize));
+  url.searchParams.set("apikey", apiKey);
+
+  const res = await fetch(url.toString(), {
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`twelvedata http ${res.status} ${res.statusText}`);
+  }
+  const json = await res.json();
+  if (!json || typeof json !== "object") {
+    throw new Error("twelvedata: invalid response shape");
+  }
+  const r = json as {
+    status?: string;
+    code?: number;
+    message?: string;
+    values?: Array<{ datetime?: string; close?: string }>;
+  };
+  if (r.status === "error") {
+    throw new Error(`twelvedata error ${r.code}: ${r.message}`);
+  }
+  if (!Array.isArray(r.values) || r.values.length === 0) {
+    throw new Error("twelvedata: empty values");
+  }
+  const closes: Close[] = [];
+  for (const v of r.values) {
+    if (!v.datetime || v.close == null) continue;
+    const priceNum = Number(v.close);
+    if (!Number.isFinite(priceNum) || priceNum <= 0) continue;
+    closes.push({
+      date: v.datetime.slice(0, 10),
+      price: Number(priceNum.toFixed(4)),
+    });
+  }
+  // TwelveData는 최신→과거 순으로 반환. 오름차순 정렬 후 반환.
+  closes.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  return closes;
 };

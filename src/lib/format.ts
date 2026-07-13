@@ -16,15 +16,16 @@ export const formatSignedPct = (n: number, digits = 1): string => {
 };
 
 /**
- * 통화 포맷. exchange === "KRX" 면 ₩ + 천 단위 콤마 + 정수,
- * 그 외(기본 NYSE) 는 $ + 소수 2자리.
+ * 통화 포맷.
+ *   - "KRX", "FX" (USD/KRW 같은 원화 표시 페어) → ₩ + 천단위 콤마 + 정수
+ *   - 그 외(기본 NYSE) → $ + 소수 2자리
  */
 export const formatPrice = (
   n: number,
-  exchange?: "NYSE" | "KRX",
+  exchange?: "NYSE" | "KRX" | "FX",
 ): string => {
   if (!isFinite(n)) return "—";
-  if (exchange === "KRX") {
+  if (exchange === "KRX" || exchange === "FX") {
     return `₩${Math.round(n).toLocaleString("en-US")}`;
   }
   return `$${n.toFixed(2)}`;

@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import type { Lang } from "@/lib/i18n";
+import type { Exchange } from "@/lib/symbols";
 import { formatPrice, formatShortDate, formatSignedPct } from "@/lib/format";
 
 /**
@@ -80,7 +81,7 @@ const formatYearMonth = (iso: string, lang: Lang): string => {
 
 export type HistoryChartProps = {
   closes: ReadonlyArray<Point>;
-  exchange: "NYSE" | "KRX";
+  exchange: Exchange;
   lang: Lang;
   rangeButtons: {
     oneYear: string;

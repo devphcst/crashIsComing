@@ -1,6 +1,6 @@
 export const DEFAULT_SYMBOL = "tqqq";
 
-export type Exchange = "NYSE" | "KRX";
+export type Exchange = "NYSE" | "KRX" | "FX";
 
 export type SymbolMeta = {
   ticker: string;
@@ -9,8 +9,17 @@ export type SymbolMeta = {
   orangeThreshold: number;
   /** 음수 % (예: -30). 이 값 이하부터 빨간색. */
   redThreshold: number;
-  /** 거래소. undefined ≡ "NYSE" — 기존 종목 호환을 위해 옵셔널. KRX는 자동 fetch 미지원(수동 입력). */
+  /**
+   * 거래소. undefined ≡ "NYSE" — 기존 종목 호환을 위해 옵셔널.
+   * KRX는 자동 fetch 미지원(수동 입력).
+   * FX는 환율(예: USD/KRW) — TwelveData forex pair. providerSymbol로 실제 API 심볼 지정.
+   */
   exchange?: Exchange;
+  /**
+   * TwelveData API에 보낼 심볼(예: "USD/KRW"). 지정 없으면 ticker.toUpperCase() 사용.
+   * FX 페어처럼 슬래시가 들어가는 경우, 티커 규칙(a-z0-9_-)과 API 심볼이 달라 필요.
+   */
+  providerSymbol?: string;
   /**
    * 사용자에게 숨김. undefined ≡ false (기존 종목 호환).
    * true면 메인 페이지 종목 탭에서 빠지고 `/{ticker}` 직접 접근도 404.
@@ -65,7 +74,12 @@ export const validateMeta = (meta: SymbolMeta): MetaValidationError | null => {
   if (!(meta.redThreshold < 0)) return "red_must_be_negative";
   if (!(meta.orangeThreshold > meta.redThreshold))
     return "orange_must_be_above_red";
-  if (meta.exchange !== undefined && meta.exchange !== "NYSE" && meta.exchange !== "KRX") {
+  if (
+    meta.exchange !== undefined &&
+    meta.exchange !== "NYSE" &&
+    meta.exchange !== "KRX" &&
+    meta.exchange !== "FX"
+  ) {
     return "exchange_invalid";
   }
   if (meta.similarRangePpBp !== undefined) {
@@ -102,6 +116,15 @@ export const getExchange = (meta: SymbolMeta): Exchange =>
 
 /** SymbolMeta의 hidden을 안전하게 읽기. undefined ≡ false. */
 export const isHidden = (meta: SymbolMeta): boolean => meta.hidden === true;
+
+/**
+ * TwelveData 등 provider에 보낼 API 심볼.
+ * `providerSymbol`이 있으면 그것, 없으면 ticker 대문자.
+ */
+export const getProviderSymbol = (meta: SymbolMeta): string =>
+  meta.providerSymbol && meta.providerSymbol.length > 0
+    ? meta.providerSymbol
+    : meta.ticker.toUpperCase();
 
 /** SymbolMeta의 similarRangePpBp를 안전하게 읽기. undefined ≡ DEFAULT_SIMILAR_RANGE_PPBP. */
 export const getSimilarRangePpBp = (meta: SymbolMeta): number =>

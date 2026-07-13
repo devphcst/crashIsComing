@@ -28,7 +28,7 @@ import { AllInWarningSection } from "./AllInWarningSection";
 import { ProductAdSidebar, ProductAdBanner } from "./ProductAd";
 import { MainSymbolTabs } from "./MainSymbolTabs";
 import { MobileMenu } from "./MobileMenu";
-import type { SymbolMeta } from "@/lib/symbols";
+import type { Exchange, SymbolMeta } from "@/lib/symbols";
 import {
   SIDEBAR_WIDTH,
   SIDEBAR_GAP,
@@ -47,7 +47,7 @@ export type HeroData =
   | {
       ready: true;
       /** 거래소. 통화 포맷·시장 상태 띠·KST 변환 분기에 사용. */
-      exchange: "NYSE" | "KRX";
+      exchange: Exchange;
       current: { date: string; price: number };
       ath: { date: string; price: number; drawdownPct: number };
       oneYear: { date: string; price: number; drawdownPct: number };
@@ -521,7 +521,7 @@ function PeriodItem({
   onToggle: () => void;
   dict: ReturnType<typeof getDict>;
   lang: Lang;
-  exchange: "NYSE" | "KRX";
+  exchange: Exchange;
   /** 4개 항목 공유 스케일 — 정규화된 막대 길이 계산용. */
   maxAbsPct: number;
 }) {

@@ -17,6 +17,7 @@ import { SeedHighsForm } from "@/components/admin/SeedHighsForm";
 import { SplitAdjustmentForm } from "@/components/admin/SplitAdjustmentForm";
 import { RecentClosesTable } from "@/components/admin/RecentClosesTable";
 import { SettingsForm } from "@/components/admin/SettingsForm";
+import { SeedUsdkrwButton } from "@/components/admin/SeedUsdkrwButton";
 import { IngestStatusCard } from "@/components/admin/IngestStatusCard";
 import { SymbolTabs } from "@/components/admin/SymbolTabs";
 import { AddSymbolForm } from "@/components/admin/AddSymbolForm";
@@ -218,6 +219,15 @@ export default async function AdminPage({
           <SymbolReorderList metas={metas} />
         </section>
       ) : null}
+
+      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
+        <h2 className="text-sm font-medium text-neutral-200">외부 데이터</h2>
+        <p className="text-xs text-neutral-500">
+          USD/KRW 환율 심볼 등록 및 TwelveData 과거 시계열 백필 (최대 5000
+          거래일). Lab 전용 hidden 심볼.
+        </p>
+        <SeedUsdkrwButton />
+      </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
         <h2 className="text-sm font-medium text-neutral-200">{t.siteSettings}</h2>

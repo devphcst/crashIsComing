@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatPrice, formatSignedPct } from "@/lib/format";
+import type { Exchange } from "@/lib/symbols";
 import { runDca, type DcaResult, type Frequency } from "@/lib/dca-sim";
 import type { LabSymbolPayload } from "./LabClient";
 
@@ -82,7 +83,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
   );
   const [runStamp, setRunStamp] = useState<{
     tickers: string[];
-    exchange: Record<string, "NYSE" | "KRX">;
+    exchange: Record<string, Exchange>;
     /** 실행 당시 인풋 스냅샷 — 인풋 변경 여부 판정용. */
     snapshot: string;
   } | null>(null);
@@ -139,7 +140,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
               ? { kind: "quarterly" }
               : { kind: "daily" };
     const out: Record<string, DcaResult> = {};
-    const ex: Record<string, "NYSE" | "KRX"> = {};
+    const ex: Record<string, Exchange> = {};
     for (const t of selectedTickers) {
       const s = symbols.find((sym) => sym.ticker === t);
       if (!s) continue;

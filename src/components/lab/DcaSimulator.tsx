@@ -71,6 +71,8 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
   const [selectedTickers, setSelectedTickers] = useState<string[]>(
     symbols[0] ? [symbols[0].ticker] : [],
   );
+  // 오늘 환율 (원/$) — 참고용 입력. 시뮬 계산에는 영향 없음(달러 기준 유지).
+  const [krwRate, setKrwRate] = useState<string>("");
 
   // 마지막 실행 결과. 인풋 바뀌어도 자동 갱신 안 함 — "실행" 버튼으로만.
   const [results, setResults] = useState<Record<string, DcaResult> | null>(
@@ -288,6 +290,20 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
           })}
         </div>
       </div>
+
+      {/* 오늘 환율 — 참고용 (시뮬 계산엔 영향 없음). */}
+      <label className="block text-xs text-neutral-400">
+        오늘 환율 (원/$)
+        <input
+          type="number"
+          min={0}
+          step={0.1}
+          value={krwRate}
+          onChange={(e) => setKrwRate(e.target.value)}
+          placeholder="예: 1380"
+          className="mt-1 block w-40 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+        />
+      </label>
 
       <div className="flex flex-wrap items-center gap-3">
         <button

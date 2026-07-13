@@ -323,7 +323,18 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
 
       {/* ---- 결과 ---- */}
       {results && runStamp && runStamp.tickers.length > 0 ? (
-        <>
+        (() => {
+          // 원화 환산 헬퍼 — 유효한 rate 있고 NYSE 종목일 때만. 부호 유지.
+          const rateNum = Number(krwRate);
+          const validRate =
+            krwRate !== "" && Number.isFinite(rateNum) && rateNum > 0;
+          const toKrwSub = (usd: number, t: string): string | undefined => {
+            if (!validRate || runStamp.exchange[t] !== "NYSE") return undefined;
+            const sign = usd < 0 ? "−" : "";
+            return `≈ ${sign}₩${Math.round(Math.abs(usd) * rateNum).toLocaleString("en-US")}`;
+          };
+          return (
+            <>
           <div className="border-t border-neutral-800 pt-4">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <ResultCard
@@ -333,6 +344,9 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                   results[t]
                     ? formatPrice(results[t].totalInvested, runStamp.exchange[t])
                     : "—"
+                }
+                subRender={(t) =>
+                  results[t] ? toKrwSub(results[t].totalInvested, t) : undefined
                 }
               />
               <ResultCard
@@ -350,6 +364,9 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                     ? formatPrice(results[t].finalValue, runStamp.exchange[t])
                     : "—"
                 }
+                subRender={(t) =>
+                  results[t] ? toKrwSub(results[t].finalValue, t) : undefined
+                }
               />
               <ResultCard
                 label="수익금"
@@ -364,6 +381,9 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                 }
                 colorFn={(t) =>
                   results[t] && results[t].profit < 0 ? "text-red-400" : ""
+                }
+                subRender={(t) =>
+                  results[t] ? toKrwSub(results[t].profit, t) : undefined
                 }
               />
               <ResultCard
@@ -570,6 +590,8 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
             </div>
           ) : null}
         </>
+          );
+        })()
       ) : (
         <p className="text-[11px] text-neutral-500">
           인풋을 지정한 뒤 "실행"을 누르면 결과가 여기에 표시됩니다.
@@ -584,31 +606,43 @@ function ResultCard({
   tickers,
   render,
   colorFn,
+  subRender,
 }: {
   label: string;
   tickers: string[];
   render: (t: string) => string;
   colorFn?: (t: string) => string;
+  /** 값 아래에 붙는 보조 표기 (예: 원화 환산). undefined면 렌더 안 함. */
+  subRender?: (t: string) => string | undefined;
 }) {
   return (
     <div className="rounded-md border border-neutral-800 bg-neutral-950 px-3 py-3">
       <div className="text-[10px] uppercase tracking-wide text-neutral-500">
         {label}
       </div>
-      <div className="mt-1 space-y-0.5">
-        {tickers.map((t, i) => (
-          <div key={t} className="flex items-baseline gap-2">
-            <span className="text-[10px] text-neutral-500">{t}</span>
-            <span
-              className={
-                "ml-auto text-sm font-semibold " +
-                (colorFn?.(t) || (i === 0 ? "text-neutral-100" : "text-neutral-300"))
-              }
-            >
-              {render(t)}
-            </span>
-          </div>
-        ))}
+      <div className="mt-1 space-y-1">
+        {tickers.map((t, i) => {
+          const sub = subRender?.(t);
+          return (
+            <div key={t} className="flex flex-col items-end">
+              <div className="flex w-full items-baseline gap-2">
+                <span className="text-[10px] text-neutral-500">{t}</span>
+                <span
+                  className={
+                    "ml-auto text-sm font-semibold " +
+                    (colorFn?.(t) ||
+                      (i === 0 ? "text-neutral-100" : "text-neutral-300"))
+                  }
+                >
+                  {render(t)}
+                </span>
+              </div>
+              {sub ? (
+                <span className="text-[10px] text-neutral-500">{sub}</span>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

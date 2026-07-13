@@ -87,6 +87,18 @@ const LabChart = dynamic(() => import("./LabChart").then((m) => m.LabChart), {
   ),
 });
 
+const DcaSimulator = dynamic(
+  () => import("./DcaSimulator").then((m) => m.DcaSimulator),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-32 items-center justify-center text-xs text-neutral-500">
+        시뮬레이터 로딩…
+      </div>
+    ),
+  },
+);
+
 const isoMinusYears = (isoLatest: string, yearsBack: number): string => {
   const d = new Date(`${isoLatest}T00:00:00Z`);
   d.setUTCFullYear(d.getUTCFullYear() - yearsBack);
@@ -546,6 +558,9 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
           </ul>
         )}
       </section>
+
+      {/* ---- 섹션 5: DCA 시뮬레이터 ---- */}
+      <DcaSimulator symbols={symbols} />
     </div>
   );
 }

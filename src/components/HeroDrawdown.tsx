@@ -519,7 +519,8 @@ type BreakdownKey = "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek";
 /**
  * "이 낙폭 도달" 통계 블록 — 프로그레스 바 시각화.
  *   - total=0 (역대 최대 갱신): 대체 문구만.
- *   - total>0: 제목("−X% 도달 N번") + 4px 바 (회복 흰색 / 더 하락 빨강, 각 비율) + 좌우 라벨.
+ *   - total>0: 제목 문장 + 4px 바 (회복 흰색 / 더 하락 빨강, 각 비율).
+ * 좌우 라벨은 없음 — 투표 UI 오해 방지. 색 비율 자체가 스토리를 전달.
  * 폭 최대 300px 가운데 정렬.
  */
 function AtDrawdownBlock({
@@ -557,7 +558,7 @@ function AtDrawdownBlock({
         {suffix}
       </div>
       <div
-        className="mb-[10px] flex h-1 w-full overflow-hidden rounded-sm bg-neutral-900"
+        className="flex h-1 w-full overflow-hidden rounded-sm bg-neutral-900"
         role="presentation"
         aria-hidden
       >
@@ -573,10 +574,6 @@ function AtDrawdownBlock({
             style={{ width: `${fellPct}%` }}
           />
         ) : null}
-      </div>
-      <div className="flex items-center justify-between text-[10px] text-neutral-600">
-        <span>{`${dict.atDrawdownStats.recovered(stats.recoveredHere)} (${recoveredPct}%)`}</span>
-        <span>{`${dict.atDrawdownStats.fellFurther(stats.fellFurther)} (${fellPct}%)`}</span>
       </div>
     </div>
   );

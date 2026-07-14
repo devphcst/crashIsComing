@@ -101,17 +101,15 @@ export type Dict = {
   breakdownToggle: { expand: string; collapse: string };
   /**
    * "이 낙폭 도달" 통계 블록 — 큰 숫자 아래 프로그레스 바 시각화.
-   *   - reached: 제목 조각 → 제목 내 "N번" 강조를 위해 prefix/count 분리 반환
-   *   - recovered/fellFurther: 프로그레스 바 아래 라벨. 카운트만 받아 라벨 문자열 반환.
-   *   - newMax: total=0(역대 최대 갱신) 대체 문구 — 프로그레스 바 대신 이 텍스트만 표시.
+   *   - reached: 제목 문장 → 내 "N번" 강조를 위해 prefix/count/suffix 3조각 반환.
+   *   - newMax: total=0(역대 최대 갱신) 대체 문구 — 프로그레스 바 대신 이 텍스트만.
+   *   프로그레스 바 아래 라벨은 없음 (투표 UI 오해 방지) — 색 비율 자체가 스토리.
    */
   atDrawdownStats: {
     reached: (
       absPct: string,
       n: number,
     ) => { prefix: string; count: string; suffix: string };
-    recovered: (n: number) => string;
-    fellFurther: (n: number) => string;
     newMax: string;
   };
   /** 보조 수치 항목 데이터 부족(closes 미달) 시 값 자리에 표시. */
@@ -442,8 +440,6 @@ const ko: Dict = {
       count: `${n}번`,
       suffix: ' 왔어요',
     }),
-    recovered: (n) => `회복 ${n}번`,
-    fellFurther: (n) => `더 하락 ${n}번`,
     newMax: '역대 최대 갱신',
   },
   breakdownEmpty: '데이터 누적 중',
@@ -803,8 +799,6 @@ const en: Dict = {
       count: `${n} ${n === 1 ? 'time' : 'times'}`,
       suffix: ' so far',
     }),
-    recovered: (n) => `Recovered ${n}`,
-    fellFurther: (n) => `Fell further ${n}`,
     newMax: 'New all-time drawdown',
   },
   breakdownEmpty: 'Building up data',

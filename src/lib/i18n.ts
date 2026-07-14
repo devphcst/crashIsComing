@@ -106,7 +106,10 @@ export type Dict = {
    *   - newMax: total=0(역대 최대 갱신) 대체 문구 — 프로그레스 바 대신 이 텍스트만 표시.
    */
   atDrawdownStats: {
-    reached: (absPct: string, n: number) => { prefix: string; count: string };
+    reached: (
+      absPct: string,
+      n: number,
+    ) => { prefix: string; count: string; suffix: string };
     recovered: (n: number) => string;
     fellFurther: (n: number) => string;
     newMax: string;
@@ -434,7 +437,11 @@ const ko: Dict = {
     '아래는 각 시점의 종가 대비 변화율입니다\n거래일 기준이라 주말·휴장일에는 업데이트되지 않습니다',
   breakdownToggle: { expand: '시점별 변화율 보기', collapse: '접기' },
   atDrawdownStats: {
-    reached: (absPct, n) => ({ prefix: `−${absPct}% 도달 `, count: `${n}번` }),
+    reached: (absPct, n) => ({
+      prefix: `지금껏 전고점 대비 −${absPct}%는 `,
+      count: `${n}번`,
+      suffix: ' 왔어요',
+    }),
     recovered: (n) => `회복 ${n}번`,
     fellFurther: (n) => `더 하락 ${n}번`,
     newMax: '역대 최대 갱신',
@@ -792,8 +799,9 @@ const en: Dict = {
   breakdownToggle: { expand: 'Show period changes', collapse: 'Hide' },
   atDrawdownStats: {
     reached: (absPct, n) => ({
-      prefix: `Reached −${absPct}% `,
+      prefix: `So far, hit −${absPct}% from ATH `,
       count: `${n} ${n === 1 ? 'time' : 'times'}`,
+      suffix: '',
     }),
     recovered: (n) => `Recovered ${n}`,
     fellFurther: (n) => `Fell further ${n}`,

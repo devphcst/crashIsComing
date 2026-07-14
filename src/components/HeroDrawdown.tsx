@@ -541,7 +541,7 @@ function AtDrawdownBlock({
     );
   }
 
-  const { prefix, count } = dict.atDrawdownStats.reached(
+  const { prefix, count, suffix } = dict.atDrawdownStats.reached(
     absPct.toFixed(1),
     stats.total,
   );
@@ -554,6 +554,7 @@ function AtDrawdownBlock({
       <div className="mb-[14px] text-center text-[11px] font-medium text-neutral-500">
         {prefix}
         <span className="text-neutral-300">{count}</span>
+        {suffix}
       </div>
       <div
         className="mb-[10px] flex h-1 w-full overflow-hidden rounded-sm bg-neutral-900"

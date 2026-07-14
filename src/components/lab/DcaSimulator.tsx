@@ -51,6 +51,37 @@ const WEEKDAY_LABEL: Record<1 | 2 | 3 | 4 | 5, string> = {
   5: "금",
 };
 
+/** 시작일 + N (일/월/년) → 종료일 ISO. */
+const shiftIso = (
+  iso: string,
+  unit: "day" | "month" | "year",
+  n: number,
+): string => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (unit === "day") d.setUTCDate(d.getUTCDate() + n);
+  else if (unit === "month") d.setUTCMonth(d.getUTCMonth() + n);
+  else d.setUTCFullYear(d.getUTCFullYear() + n);
+  return d.toISOString().slice(0, 10);
+};
+
+type DurationPreset = {
+  label: string;
+  unit: "day" | "month" | "year";
+  n: number;
+};
+
+const DURATION_PRESETS: DurationPreset[] = [
+  { label: "1주", unit: "day", n: 7 },
+  { label: "1개월", unit: "month", n: 1 },
+  { label: "3개월", unit: "month", n: 3 },
+  { label: "6개월", unit: "month", n: 6 },
+  { label: "1년", unit: "year", n: 1 },
+  { label: "2년", unit: "year", n: 2 },
+  { label: "3년", unit: "year", n: 3 },
+  { label: "5년", unit: "year", n: 5 },
+  { label: "10년", unit: "year", n: 10 },
+];
+
 export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
   // DCA 대상 종목만 노출 — FX(환율 페어)는 시뮬 자체가 의미 없어 pill에서 제외.
   const dcaSymbols = useMemo(
@@ -81,8 +112,12 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
   const [end, setEnd] = useState(dataLast);
   const [freqKind, setFreqKind] = useState<FreqKind>("monthly");
   const [weekday, setWeekday] = useState<1 | 2 | 3 | 4 | 5>(1);
-  const [monthDay, setMonthDay] = useState<number>(15);
-  const [amount, setAmount] = useState<number>(100);
+  // monthDay / amount 는 raw string 으로 관리 — 사용자가 지우고 다시 입력할 때
+  // Number("")=0 로 강제되어 "0"이 안 없어지는 이슈를 피함.
+  const [monthDay, setMonthDay] = useState<string>("15");
+  const [amount, setAmount] = useState<string>("100");
+  const monthDayNum = Number(monthDay);
+  const amountNum = Number(amount);
   const [selectedTickers, setSelectedTickers] = useState<string[]>(
     dcaSymbols[0] ? [dcaSymbols[0].ticker] : [],
   );
@@ -116,7 +151,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
     strategy,
     start,
     end,
-    amount,
+    amount: amountNum,
     tickers: [...selectedTickers].sort(),
     freq:
       strategy === "lumpSum"
@@ -124,7 +159,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
         : freqKind === "weekly"
           ? { kind: "weekly", weekday }
           : freqKind === "monthly"
-            ? { kind: "monthly", day: monthDay }
+            ? { kind: "monthly", day: monthDayNum }
             : { kind: freqKind },
   });
 
@@ -136,10 +171,13 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
     start.length > 0 &&
     end.length > 0 &&
     start <= end &&
-    amount > 0 &&
+    Number.isFinite(amountNum) &&
+    amountNum > 0 &&
     (strategy === "lumpSum" ||
       freqKind !== "monthly" ||
-      (monthDay >= 1 && monthDay <= 28));
+      (Number.isFinite(monthDayNum) &&
+        monthDayNum >= 1 &&
+        monthDayNum <= 28));
 
   const handleRun = () => {
     if (!canRun) return;
@@ -149,7 +187,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
         : freqKind === "weekly"
           ? { kind: "weekly", weekday }
           : freqKind === "monthly"
-            ? { kind: "monthly", day: monthDay }
+            ? { kind: "monthly", day: monthDayNum }
             : freqKind === "quarterly"
               ? { kind: "quarterly" }
               : { kind: "daily" };
@@ -162,7 +200,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
         start,
         end,
         frequency: freq,
-        amountPerBuy: amount,
+        amountPerBuy: amountNum,
       });
       ex[t] = s.exchange;
     }
@@ -277,7 +315,8 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
             min={1}
             step={1}
             value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
+            onChange={(e) => setAmount(e.target.value)}
+            onFocus={(e) => e.currentTarget.select()}
             className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
           />
         </label>
@@ -326,12 +365,46 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
               max={28}
               step={1}
               value={monthDay}
-              onChange={(e) => setMonthDay(Number(e.target.value))}
+              onChange={(e) => setMonthDay(e.target.value)}
+              onFocus={(e) => e.currentTarget.select()}
               className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
             />
           </label>
         ) : null}
       </div>
+
+      {/* 기간 프리셋 — 시작일 + N으로 종료일 세팅. 데이터 끝을 넘으면 dataLast로 클립. */}
+      {start ? (
+        <div>
+          <div className="text-xs text-neutral-400">
+            기간 프리셋{" "}
+            <span className="text-neutral-600">(시작일 + N → 종료일)</span>
+          </div>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {DURATION_PRESETS.map((p) => {
+              const target = shiftIso(start, p.unit, p.n);
+              const clipped =
+                dataLast && target > dataLast ? dataLast : target;
+              const active = end === clipped;
+              return (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => setEnd(clipped)}
+                  className={
+                    "rounded-full border px-3 py-1 text-xs transition " +
+                    (active
+                      ? "border-neutral-300 bg-neutral-100 text-neutral-900"
+                      : "border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
+                  }
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {/* 종목 다중 선택 */}
       <div>

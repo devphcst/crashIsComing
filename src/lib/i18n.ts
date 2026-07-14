@@ -100,15 +100,14 @@ export type Dict = {
   /** 보조 수치 영역 펼침/접힘 토글 버튼 라벨. */
   breakdownToggle: { expand: string; collapse: string };
   /**
-   * "역대 이 낙폭 도달" 통계 블록 — 큰 숫자와 시점별 pill 사이. 3줄 구성:
-   *   - reached: 총 도달 횟수
-   *   - recoveredHere: 이 지점 회복한 횟수
-   *   - fellFurther: 더 하락한 횟수
-   *   - newMax: N=0 일 때 대체 문구 (역대 최대 갱신)
+   * "이 낙폭 도달" 통계 블록 — 큰 숫자 아래 프로그레스 바 시각화.
+   *   - reached: 제목 조각 → 제목 내 "N번" 강조를 위해 prefix/count 분리 반환
+   *   - recovered/fellFurther: 프로그레스 바 아래 라벨. 카운트만 받아 라벨 문자열 반환.
+   *   - newMax: total=0(역대 최대 갱신) 대체 문구 — 프로그레스 바 대신 이 텍스트만 표시.
    */
   atDrawdownStats: {
-    reached: (absPct: string, n: number) => string;
-    recoveredHere: (n: number) => string;
+    reached: (absPct: string, n: number) => { prefix: string; count: string };
+    recovered: (n: number) => string;
     fellFurther: (n: number) => string;
     newMax: string;
   };
@@ -435,9 +434,9 @@ const ko: Dict = {
     '아래는 각 시점의 종가 대비 변화율입니다\n거래일 기준이라 주말·휴장일에는 업데이트되지 않습니다',
   breakdownToggle: { expand: '시점별 변화율 보기', collapse: '접기' },
   atDrawdownStats: {
-    reached: (absPct, n) => `역대 −${absPct}% 도달 ${n}번`,
-    recoveredHere: (n) => `이 지점 회복: ${n}번`,
-    fellFurther: (n) => `더 하락: ${n}번`,
+    reached: (absPct, n) => ({ prefix: `−${absPct}% 도달 `, count: `${n}번` }),
+    recovered: (n) => `회복 ${n}번`,
+    fellFurther: (n) => `더 하락 ${n}번`,
     newMax: '역대 최대 갱신',
   },
   breakdownEmpty: '데이터 누적 중',
@@ -792,10 +791,12 @@ const en: Dict = {
     'Each value compares the current close to the close on that date\nValues only update on trading days — no changes on weekends or U.S. market holidays',
   breakdownToggle: { expand: 'Show period changes', collapse: 'Hide' },
   atDrawdownStats: {
-    reached: (absPct, n) =>
-      `Reached −${absPct}% ${n} ${n === 1 ? 'time' : 'times'}`,
-    recoveredHere: (n) => `Recovered here: ${n}`,
-    fellFurther: (n) => `Fell further: ${n}`,
+    reached: (absPct, n) => ({
+      prefix: `Reached −${absPct}% `,
+      count: `${n} ${n === 1 ? 'time' : 'times'}`,
+    }),
+    recovered: (n) => `Recovered ${n}`,
+    fellFurther: (n) => `Fell further ${n}`,
     newMax: 'New all-time drawdown',
   },
   breakdownEmpty: 'Building up data',

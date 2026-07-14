@@ -375,36 +375,15 @@ function HeroNumbers({
         {formatPct(data.ath.drawdownPct, 1)}
       </span>
 
-      {/* "역대 이 낙폭 도달 N번" 통계 — 서버에서 계산된 atDdStats가 있을 때만 렌더.
-          부모가 flex-col gap-3(12px)이므로 여기 mt-3 추가 → 큰 숫자와 24px 여백.
-          N=0(역대 최대 갱신)이면 첫 줄만. */}
+      {/* "이 낙폭 도달 N번" 통계 — 서버에서 계산된 atDdStats가 있을 때만 렌더.
+          부모가 flex-col gap-3(12px)이므로 여기 mt-4 추가 → 큰 숫자와 총 28px 여백.
+          total=0(역대 최대 갱신)은 프로그레스 바 대신 대체 문구만. */}
       {data.atDdStats ? (
-        <div className="mt-3 flex flex-col items-center gap-1 text-center">
-          {data.atDdStats.total === 0 ? (
-            <span className="text-xs font-medium text-neutral-300">
-              {dict.atDrawdownStats.newMax}
-            </span>
-          ) : (
-            <>
-              <span className="text-xs font-medium text-neutral-300">
-                {dict.atDrawdownStats.reached(
-                  Math.abs(data.ath.drawdownPct).toFixed(1),
-                  data.atDdStats.total,
-                )}
-              </span>
-              <span className="text-[11px] text-neutral-500">
-                {dict.atDrawdownStats.recoveredHere(
-                  data.atDdStats.recoveredHere,
-                )}
-              </span>
-              <span className="text-[11px] text-neutral-500">
-                {dict.atDrawdownStats.fellFurther(
-                  data.atDdStats.fellFurther,
-                )}
-              </span>
-            </>
-          )}
-        </div>
+        <AtDrawdownBlock
+          absPct={Math.abs(data.ath.drawdownPct)}
+          stats={data.atDdStats}
+          dict={dict}
+        />
       ) : null}
 
       {/* 시점별 변화율 — 기본 접힘. pill 버튼으로 토글.
@@ -417,7 +396,7 @@ function HeroNumbers({
             onClick={() => setBreakdownOpen((o) => !o)}
             aria-expanded={breakdownOpen}
             aria-controls="breakdown-panel"
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-500 transition-colors hover:border-neutral-700 hover:text-neutral-400"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-500 transition-colors hover:border-neutral-700 hover:text-neutral-400"
           >
             <span>
               {breakdownOpen
@@ -536,6 +515,71 @@ function HeroNumbers({
 }
 
 type BreakdownKey = "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek";
+
+/**
+ * "이 낙폭 도달" 통계 블록 — 프로그레스 바 시각화.
+ *   - total=0 (역대 최대 갱신): 대체 문구만.
+ *   - total>0: 제목("−X% 도달 N번") + 4px 바 (회복 흰색 / 더 하락 빨강, 각 비율) + 좌우 라벨.
+ * 폭 최대 300px 가운데 정렬.
+ */
+function AtDrawdownBlock({
+  absPct,
+  stats,
+  dict,
+}: {
+  absPct: number;
+  stats: { total: number; recoveredHere: number; fellFurther: number };
+  dict: ReturnType<typeof getDict>;
+}) {
+  if (stats.total === 0) {
+    return (
+      <div className="mt-4 w-full text-center">
+        <span className="text-[11px] font-medium text-neutral-300">
+          {dict.atDrawdownStats.newMax}
+        </span>
+      </div>
+    );
+  }
+
+  const { prefix, count } = dict.atDrawdownStats.reached(
+    absPct.toFixed(1),
+    stats.total,
+  );
+  // 회복/더 하락 비율 — 정수 %로 반올림. 라벨과 바가 같은 반올림 값을 공유해 시각적 일치.
+  const recoveredPct = Math.round((stats.recoveredHere / stats.total) * 100);
+  const fellPct = 100 - recoveredPct;
+
+  return (
+    <div className="mx-auto mt-4 w-full max-w-[300px]">
+      <div className="mb-[14px] text-center text-[11px] font-medium text-neutral-500">
+        {prefix}
+        <span className="text-neutral-300">{count}</span>
+      </div>
+      <div
+        className="mb-[10px] flex h-1 w-full overflow-hidden rounded-sm bg-neutral-900"
+        role="presentation"
+        aria-hidden
+      >
+        {recoveredPct > 0 ? (
+          <div
+            className="h-full bg-neutral-200"
+            style={{ width: `${recoveredPct}%` }}
+          />
+        ) : null}
+        {fellPct > 0 ? (
+          <div
+            className="h-full bg-red-400"
+            style={{ width: `${fellPct}%` }}
+          />
+        ) : null}
+      </div>
+      <div className="flex items-center justify-between text-[10px] text-neutral-600">
+        <span>{`${dict.atDrawdownStats.recovered(stats.recoveredHere)} (${recoveredPct}%)`}</span>
+        <span>{`${dict.atDrawdownStats.fellFurther(stats.fellFurther)} (${fellPct}%)`}</span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * 기간별 폭락 단일 항목 — 세로 배치 한 줄. 라벨(좌) ↔ 값(우) flex justify-between.

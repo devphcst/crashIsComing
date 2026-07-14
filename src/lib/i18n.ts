@@ -99,6 +99,19 @@ export type Dict = {
   breakdownHint: string;
   /** 보조 수치 영역 펼침/접힘 토글 버튼 라벨. */
   breakdownToggle: { expand: string; collapse: string };
+  /**
+   * "역대 이 낙폭 도달" 통계 블록 — 큰 숫자와 시점별 pill 사이. 3줄 구성:
+   *   - reached: 총 도달 횟수
+   *   - recoveredHere: 이 지점 회복한 횟수
+   *   - fellFurther: 더 하락한 횟수
+   *   - newMax: N=0 일 때 대체 문구 (역대 최대 갱신)
+   */
+  atDrawdownStats: {
+    reached: (absPct: string, n: number) => string;
+    recoveredHere: (n: number) => string;
+    fellFurther: (n: number) => string;
+    newMax: string;
+  };
   /** 보조 수치 항목 데이터 부족(closes 미달) 시 값 자리에 표시. */
   breakdownEmpty: string;
   /** 보조 수치 항목 hover/탭 시 노출되는 툴팁 본문. */
@@ -421,6 +434,12 @@ const ko: Dict = {
   breakdownHint:
     '아래는 각 시점의 종가 대비 변화율입니다\n거래일 기준이라 주말·휴장일에는 업데이트되지 않습니다',
   breakdownToggle: { expand: '시점별 변화율 보기', collapse: '접기' },
+  atDrawdownStats: {
+    reached: (absPct, n) => `역대 −${absPct}% 도달 ${n}번`,
+    recoveredHere: (n) => `이 지점 회복: ${n}번`,
+    fellFurther: (n) => `더 하락: ${n}번`,
+    newMax: '역대 최대 갱신',
+  },
   breakdownEmpty: '데이터 누적 중',
   breakdownTooltip: ({ dateLabel, priceLabel, pct }) => {
     const abs = Math.abs(pct).toFixed(1);
@@ -772,6 +791,13 @@ const en: Dict = {
   breakdownHint:
     'Each value compares the current close to the close on that date\nValues only update on trading days — no changes on weekends or U.S. market holidays',
   breakdownToggle: { expand: 'Show period changes', collapse: 'Hide' },
+  atDrawdownStats: {
+    reached: (absPct, n) =>
+      `Reached −${absPct}% ${n} ${n === 1 ? 'time' : 'times'}`,
+    recoveredHere: (n) => `Recovered here: ${n}`,
+    fellFurther: (n) => `Fell further: ${n}`,
+    newMax: 'New all-time drawdown',
+  },
   breakdownEmpty: 'Building up data',
   breakdownTooltip: ({ dateLabel, priceLabel, pct }) => {
     const abs = Math.abs(pct).toFixed(1);

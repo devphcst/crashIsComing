@@ -75,6 +75,15 @@ export type HeroData =
        * 가장 오래된 종가 날짜 — 진입 링크 문구에 "N년 역사" 계산용. closes[0].date.
        */
       firstCloseDate: string;
+      /**
+       * "역대 이 낙폭에 도달 N번" 통계. 데이터 부족(<500) 또는 전고점 근처(<1%)면 null.
+       * 큰 숫자 아래 블록에 사용. computeAtDrawdownStats 결과.
+       */
+      atDdStats: {
+        total: number;
+        recoveredHere: number;
+        fellFurther: number;
+      } | null;
     }
   | { ready: false };
 
@@ -365,6 +374,39 @@ function HeroNumbers({
       >
         {formatPct(data.ath.drawdownPct, 1)}
       </span>
+
+      {/* "역대 이 낙폭 도달 N번" 통계 — 서버에서 계산된 atDdStats가 있을 때만 렌더.
+          부모가 flex-col gap-3(12px)이므로 여기 mt-3 추가 → 큰 숫자와 24px 여백.
+          N=0(역대 최대 갱신)이면 첫 줄만. */}
+      {data.atDdStats ? (
+        <div className="mt-3 flex flex-col items-center gap-1 text-center">
+          {data.atDdStats.total === 0 ? (
+            <span className="text-xs font-medium text-neutral-300">
+              {dict.atDrawdownStats.newMax}
+            </span>
+          ) : (
+            <>
+              <span className="text-xs font-medium text-neutral-300">
+                {dict.atDrawdownStats.reached(
+                  Math.abs(data.ath.drawdownPct).toFixed(1),
+                  data.atDdStats.total,
+                )}
+              </span>
+              <span className="text-[11px] text-neutral-500">
+                {dict.atDrawdownStats.recoveredHere(
+                  data.atDdStats.recoveredHere,
+                )}
+              </span>
+              <span className="text-[11px] text-neutral-500">
+                {dict.atDrawdownStats.fellFurther(
+                  data.atDdStats.fellFurther,
+                )}
+              </span>
+            </>
+          )}
+        </div>
+      ) : null}
+
       {/* 시점별 변화율 — 기본 접힘. pill 버튼으로 토글.
           표시 항목 0개면(불가능 케이스) pill 자체 숨김.
           펼침 애니메이션: grid-template-rows 0fr→1fr (200ms ease-out). */}

@@ -16,6 +16,7 @@ import {
 } from "./kv";
 import { getProvider } from "./providers";
 import { getExchange, isHidden, type SymbolMeta } from "./symbols";
+import { computeAtDrawdownStats } from "./at-drawdown";
 import type { HeroData } from "@/components/HeroDrawdown";
 
 export type VisitorInfo = {
@@ -76,6 +77,12 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
 
     const athDrawdownPct = calcDrawdown(latest.price, ath.price);
 
+    // "역대 이 낙폭 도달 N번" 통계. 데이터 부족이나 전고점 근처면 null.
+    const atDdStats = computeAtDrawdownStats(
+      closes,
+      Math.abs(athDrawdownPct),
+    );
+
     return {
       ready: true,
       exchange,
@@ -99,6 +106,7 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
       recentCloses,
       totalClosesCount: closes.length,
       firstCloseDate: closes.length ? closes[0].date : latest.date,
+      atDdStats,
     };
   } catch (err) {
     console.error(`loadHeroData(${ticker}) failed:`, err);

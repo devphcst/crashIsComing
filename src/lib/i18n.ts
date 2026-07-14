@@ -799,9 +799,9 @@ const en: Dict = {
   breakdownToggle: { expand: 'Show period changes', collapse: 'Hide' },
   atDrawdownStats: {
     reached: (absPct, n) => ({
-      prefix: `So far, hit −${absPct}% from ATH `,
+      prefix: `We've been down −${absPct}% `,
       count: `${n} ${n === 1 ? 'time' : 'times'}`,
-      suffix: '',
+      suffix: ' so far',
     }),
     recovered: (n) => `Recovered ${n}`,
     fellFurther: (n) => `Fell further ${n}`,

@@ -108,8 +108,14 @@ export function PwaGuide() {
           <span>하단 공유 버튼을 눌러주세요</span>
         </div>
 
-        <div className="mb-5 flex items-center gap-3 text-[13px] text-neutral-300">
+        <div className="mb-3 flex items-center gap-3 text-[13px] text-neutral-300">
           <span className="w-10 shrink-0 text-neutral-500">2단계</span>
+          <MoreIcon />
+          <span>"더보기(…)"를 눌러주세요</span>
+        </div>
+
+        <div className="mb-5 flex items-center gap-3 text-[13px] text-neutral-300">
+          <span className="w-10 shrink-0 text-neutral-500">3단계</span>
           <PlusIcon />
           <span>"홈 화면에 추가"를 선택하세요</span>
         </div>
@@ -144,6 +150,29 @@ function ShareIcon() {
       <path d="M12 3v13" />
       <path d="M8 7l4-4 4 4" />
       <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+    </svg>
+  );
+}
+
+/** iOS 공유 시트의 "더보기 (…)" 아이콘 — 원 안 점 3개. */
+function MoreIcon() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#ccc"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="shrink-0"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="8" cy="12" r="0.6" fill="#ccc" />
+      <circle cx="12" cy="12" r="0.6" fill="#ccc" />
+      <circle cx="16" cy="12" r="0.6" fill="#ccc" />
     </svg>
   );
 }

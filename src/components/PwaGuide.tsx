@@ -5,14 +5,21 @@ import { useEffect, useState } from "react";
 /**
  * iOS Safari 사용자를 위한 "홈 화면에 추가" 안내 배너.
  *
- * 조건: iOS Safari + non-standalone + 아직 닫지 않은 사용자.
+ * 자동 노출 조건: iOS Safari + non-standalone + 아직 닫지 않은 사용자.
  *  - Android/Chrome은 브라우저가 자동으로 "앱 설치" 배너를 노출하므로 안내 불필요.
- *  - 데스크톱·standalone 상태·이전에 닫은 사용자에게는 표시하지 않음.
+ *  - 데스크톱·standalone 상태·이전에 닫은 사용자에게는 자동 표시하지 않음.
  * 진입 3초 후 하단에서 슬라이드 업. X 또는 "확인" 클릭 시 localStorage에 기록해 재노출 방지.
+ *
+ * 강제 표시: window에 `PWA_GUIDE_OPEN_EVENT` 이벤트를 dispatch하면 localStorage 무시하고 열림.
+ *  - 햄버거 메뉴 "앱처럼 쓰기" 항목이 이 경로로 재노출을 수동 트리거.
+ *  - 강제 표시 상태에서 X를 눌러도 localStorage에 저장하지 않음 (자동 흐름 상태 보존).
  */
+export const PWA_GUIDE_OPEN_EVENT = "pwa-guide-open";
 const DISMISS_KEY = "pwa-guide-dismissed";
 const APPEAR_DELAY_MS = 3000;
 const EXIT_ANIM_MS = 300;
+
+type Mode = "auto" | "forced";
 
 function isIosSafari(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -33,7 +40,7 @@ function isStandalone(): boolean {
 }
 
 export function PwaGuide() {
-  const [mounted, setMounted] = useState(false);
+  const [mode, setMode] = useState<Mode | null>(null);
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
@@ -44,22 +51,41 @@ export function PwaGuide() {
     } catch {
       // Safari private mode 등에서 localStorage 접근 실패 — 배너는 정상 노출.
     }
-    setMounted(true);
+    setMode("auto");
     const t = window.setTimeout(() => setVisible(true), APPEAR_DELAY_MS);
     return () => window.clearTimeout(t);
   }, []);
 
+  // 햄버거 메뉴 "앱처럼 쓰기"에서 dispatch하는 강제 오픈 이벤트 수신.
+  useEffect(() => {
+    const open = () => {
+      setLeaving(false);
+      setMode("forced");
+      // 강제 표시는 지연 없이 즉시 슬라이드 업.
+      requestAnimationFrame(() => setVisible(true));
+    };
+    window.addEventListener(PWA_GUIDE_OPEN_EVENT, open);
+    return () => window.removeEventListener(PWA_GUIDE_OPEN_EVENT, open);
+  }, []);
+
   const dismiss = () => {
-    try {
-      localStorage.setItem(DISMISS_KEY, "1");
-    } catch {
-      // 무시 — UI만이라도 즉시 닫는다.
+    // 자동 표시 흐름에서 닫은 경우에만 localStorage 저장 — 강제 표시는 상태 오염 X.
+    if (mode === "auto") {
+      try {
+        localStorage.setItem(DISMISS_KEY, "1");
+      } catch {
+        // 무시 — UI만이라도 즉시 닫는다.
+      }
     }
     setLeaving(true);
-    window.setTimeout(() => setMounted(false), EXIT_ANIM_MS);
+    window.setTimeout(() => {
+      setMode(null);
+      setVisible(false);
+      setLeaving(false);
+    }, EXIT_ANIM_MS);
   };
 
-  if (!mounted) return null;
+  if (mode === null) return null;
 
   const translated = !visible || leaving;
 

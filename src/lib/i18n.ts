@@ -155,6 +155,7 @@ export type Dict = {
     history: string;
     allInWarning: string;
     ad: string;
+    installApp: string;
     langSection: string;
     closeAria: string;
     openAria: string;
@@ -479,6 +480,7 @@ const ko: Dict = {
     history: '역사적 폭락',
     allInWarning: '올인 경고',
     ad: '광고',
+    installApp: '앱처럼 쓰기',
     langSection: '언어',
     closeAria: '메뉴 닫기',
     openAria: '메뉴 열기',
@@ -838,6 +840,7 @@ const en: Dict = {
     history: 'Historical crashes',
     allInWarning: 'All-in warning',
     ad: 'Advertising',
+    installApp: 'Install as app',
     langSection: 'Language',
     closeAria: 'Close menu',
     openAria: 'Open menu',

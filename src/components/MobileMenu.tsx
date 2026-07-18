@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { LangToggle } from "./LangToggle";
+import { PWA_GUIDE_OPEN_EVENT } from "./PwaGuide";
 import type { Lang, Dict } from "@/lib/i18n";
 
 type MenuKey = "about" | "history" | "allInWarning" | "ad";
@@ -30,6 +31,28 @@ export function MobileMenu({
   anchorBase?: string;
 }) {
   const [open, setOpen] = useState(false);
+  // "앱처럼 쓰기" 항목 노출 여부. 조건:
+  //  1) iOS Safari (안내 UI 내용이 iOS 공유시트 흐름 전용)
+  //  2) non-standalone (이미 홈 화면 앱 상태면 불필요)
+  const [showInstallApp, setShowInstallApp] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ua = navigator.userAgent;
+    const isIos = /iPhone|iPad|iPod/.test(ua);
+    const isSafari =
+      /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+    const standalone =
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+        true;
+    setShowInstallApp(isIos && isSafari && !standalone);
+  }, []);
+
+  const handleInstallApp = () => {
+    setOpen(false);
+    window.dispatchEvent(new Event(PWA_GUIDE_OPEN_EVENT));
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -143,6 +166,17 @@ export function MobileMenu({
                 </li>
               );
             })}
+            {showInstallApp && (
+              <li>
+                <button
+                  type="button"
+                  onClick={handleInstallApp}
+                  className="block w-full py-3 text-left text-base text-neutral-200 hover:text-white"
+                >
+                  {dict.menu.installApp}
+                </button>
+              </li>
+            )}
           </ul>
         </nav>
 

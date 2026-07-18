@@ -124,8 +124,8 @@ export function PwaGuide() {
           </svg>
         </button>
 
-        <div className="mb-4 pr-8 text-[15px] font-semibold text-neutral-100">
-          📱 홈 화면에 추가하면 앱처럼 사용할 수 있어요
+        <div className="mb-4 pr-8 text-[13px] font-medium text-neutral-100">
+          홈 화면에 추가하면 앱처럼 사용할 수 있어요
         </div>
 
         <div className="mb-3 flex items-center gap-3 text-[13px] text-neutral-300">

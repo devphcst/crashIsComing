@@ -2,7 +2,12 @@ import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
 import { readMeta } from "@/lib/kv";
-import { loadHeroData, loadVisibleMetas, loadVisitorInfo } from "@/lib/page-data";
+import {
+  loadFearGreed,
+  loadHeroData,
+  loadVisibleMetas,
+  loadVisitorInfo,
+} from "@/lib/page-data";
 import { buildJsonLd, buildSymbolMetadata } from "@/lib/seo-builder";
 import { DEFAULT_SYMBOL } from "@/lib/symbols";
 import type { Lang } from "@/lib/i18n";
@@ -28,11 +33,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page() {
   const lang = readLangFromCookie();
-  const [data, visitor, metas, meta] = await Promise.all([
+  const [data, visitor, metas, meta, fearGreed] = await Promise.all([
     loadHeroData(DEFAULT_SYMBOL),
     loadVisitorInfo(),
     loadVisibleMetas(),
     readMeta(DEFAULT_SYMBOL),
+    loadFearGreed(),
   ]);
   return (
     <>
@@ -47,6 +53,7 @@ export default async function Page() {
         visitor={visitor}
         tabs={metas}
         current={DEFAULT_SYMBOL}
+        fearGreed={fearGreed}
       />
     </>
   );

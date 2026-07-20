@@ -130,6 +130,14 @@ export type DevStoreV2 = {
   };
   /** watchdog cron 알림 디둡 (시스템 전역). */
   watchdog?: { lastNotifyAt: string };
+  /** CNN Fear & Greed 지수 스냅샷 (시스템 전역, 종목 무관). */
+  fearGreed?: {
+    score: number;
+    rating: string;
+    updatedAt: string;
+    yearMin: number;
+    yearMax: number;
+  };
   migratedV1: true;
 };
 

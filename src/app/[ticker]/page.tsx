@@ -3,7 +3,12 @@ import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
 import { readMeta, readSymbolList } from "@/lib/kv";
-import { loadHeroData, loadVisibleMetas, loadVisitorInfo } from "@/lib/page-data";
+import {
+  loadFearGreed,
+  loadHeroData,
+  loadVisibleMetas,
+  loadVisitorInfo,
+} from "@/lib/page-data";
 import { buildJsonLd, buildSymbolMetadata } from "@/lib/seo-builder";
 import { DEFAULT_SYMBOL, isHidden } from "@/lib/symbols";
 import type { Lang } from "@/lib/i18n";
@@ -56,11 +61,12 @@ export default async function TickerPage({
   if (normalize(params.ticker) === DEFAULT_SYMBOL) permanentRedirect("/");
   const ticker = await resolveOr404(params.ticker);
   const lang = readLangFromCookie();
-  const [data, visitor, metas, meta] = await Promise.all([
+  const [data, visitor, metas, meta, fearGreed] = await Promise.all([
     loadHeroData(ticker),
     loadVisitorInfo(),
     loadVisibleMetas(),
     readMeta(ticker),
+    loadFearGreed(),
   ]);
   return (
     <>
@@ -75,6 +81,7 @@ export default async function TickerPage({
         visitor={visitor}
         tabs={metas}
         current={ticker}
+        fearGreed={fearGreed}
       />
     </>
   );

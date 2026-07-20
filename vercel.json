@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/twelvedata", "schedule": "0 22 * * *" },
+    { "path": "/api/cron/fear-greed", "schedule": "30 22 * * *" },
     { "path": "/api/cron/watchdog", "schedule": "0 3 * * *" }
   ]
 }

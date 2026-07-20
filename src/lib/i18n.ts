@@ -112,6 +112,23 @@ export type Dict = {
     ) => { prefix: string; count: string; suffix: string };
     newMax: string;
   };
+  /**
+   * CNN Fear & Greed 지수 블록.
+   *   - title: 라벨 접두 ("공포탐욕지수" / "Fear & Greed")
+   *   - rating: 5단계 라벨 매핑
+   *   - range: 부제 ("지난 1년 범위 4 ~ 78" / "1-yr range 4 – 78")
+   */
+  fearGreed: {
+    title: string;
+    rating: {
+      "extreme fear": string;
+      fear: string;
+      neutral: string;
+      greed: string;
+      "extreme greed": string;
+    };
+    range: (min: number, max: number) => string;
+  };
   /** 보조 수치 항목 데이터 부족(closes 미달) 시 값 자리에 표시. */
   breakdownEmpty: string;
   /** 보조 수치 항목 hover/탭 시 노출되는 툴팁 본문. */
@@ -442,6 +459,17 @@ const ko: Dict = {
       suffix: ' 왔어요',
     }),
     newMax: '역대 최대 갱신',
+  },
+  fearGreed: {
+    title: '공포탐욕지수',
+    rating: {
+      'extreme fear': '극단적 공포',
+      fear: '공포',
+      neutral: '중립',
+      greed: '탐욕',
+      'extreme greed': '극단적 탐욕',
+    },
+    range: (min, max) => `지난 1년 범위 ${min} ~ ${max}`,
   },
   breakdownEmpty: '데이터 누적 중',
   breakdownTooltip: ({ dateLabel, priceLabel, pct }) => {
@@ -802,6 +830,17 @@ const en: Dict = {
       suffix: ' so far',
     }),
     newMax: 'New all-time drawdown',
+  },
+  fearGreed: {
+    title: 'Fear & Greed',
+    rating: {
+      'extreme fear': 'Extreme Fear',
+      fear: 'Fear',
+      neutral: 'Neutral',
+      greed: 'Greed',
+      'extreme greed': 'Extreme Greed',
+    },
+    range: (min, max) => `1-yr range ${min} – ${max}`,
   },
   breakdownEmpty: 'Building up data',
   breakdownTooltip: ({ dateLabel, priceLabel, pct }) => {

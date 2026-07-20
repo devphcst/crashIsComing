@@ -14,6 +14,8 @@ import {
   readSymbolList,
   readVisitorCounts,
 } from "./kv";
+import { readFearGreed } from "./fear-greed";
+import type { FearGreedSnapshot } from "./ingest/cnn-fear-greed";
 import { getProvider } from "./providers";
 import { getExchange, isHidden, type SymbolMeta } from "./symbols";
 import { computeAtDrawdownStats } from "./at-drawdown";
@@ -140,6 +142,25 @@ const _loadVisitorInfo = async (): Promise<VisitorInfo> => {
 export const loadHeroData = unstable_cache(_loadHeroData, ["hero-data"], {
   revalidate: CACHE_TTL_SECONDS,
   tags: [CACHE_TAG],
+});
+
+/**
+ * CNN Fear & Greed 지수 조회.
+ * 별도 태그(`fear-greed`) — cron 성공 시 즉시 무효화, 종목 데이터와 캐시 수명 독립.
+ * 값 없으면 null → UI 블록 미표시.
+ */
+const _loadFearGreed = async (): Promise<FearGreedSnapshot | null> => {
+  try {
+    return await readFearGreed();
+  } catch (err) {
+    console.error("loadFearGreed failed:", err);
+    return null;
+  }
+};
+
+export const loadFearGreed = unstable_cache(_loadFearGreed, ["fear-greed"], {
+  revalidate: CACHE_TTL_SECONDS,
+  tags: ["fear-greed"],
 });
 
 export const loadAllMetas = unstable_cache(_loadAllMetas, ["all-metas"], {

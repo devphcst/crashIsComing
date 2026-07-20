@@ -29,6 +29,7 @@ import { ProductAdSidebar, ProductAdBanner } from "./ProductAd";
 import { MainSymbolTabs } from "./MainSymbolTabs";
 import { MobileMenu } from "./MobileMenu";
 import type { Exchange, SymbolMeta } from "@/lib/symbols";
+import type { FearGreedSnapshot, FearGreedRating } from "@/lib/ingest/cnn-fear-greed";
 import {
   SIDEBAR_WIDTH,
   SIDEBAR_GAP,
@@ -111,11 +112,14 @@ export function HeroDrawdown({
   visitor,
   tabs,
   current,
+  fearGreed,
 }: {
   data: HeroData;
   visitor: VisitorInfo;
   tabs: SymbolMeta[];
   current: string;
+  /** CNN Fear & Greed 지수 — 서버에서 로드된 시스템 전역 값. null이면 UI 블록 미표시. */
+  fearGreed: FearGreedSnapshot | null;
 }) {
   const [lang, setLang] = useState<Lang>("ko");
   const [hydrated, setHydrated] = useState(false);
@@ -216,6 +220,7 @@ export function HeroDrawdown({
                     today: visitorState.today,
                     total: visitorState.total,
                   }}
+                  fearGreed={fearGreed}
                 />
                 <Facts data={data} dict={d} lang={lang} />
                 {data.exchange === "KRX" ? (
@@ -278,6 +283,7 @@ function HeroNumbers({
   tickerLabel,
   currentDisplayName,
   visitor,
+  fearGreed,
 }: {
   data: Extract<HeroData, { ready: true }>;
   dict: ReturnType<typeof getDict>;
@@ -285,6 +291,7 @@ function HeroNumbers({
   tickerLabel: string;
   currentDisplayName: string;
   visitor: VisitorInfo;
+  fearGreed: FearGreedSnapshot | null;
 }) {
   const level = levelFor(data.ath.drawdownPct, data.thresholds);
   // 보조 수치 툴팁 단일 active 슬롯. 한 항목 열리면 나머지 자동 닫힘.
@@ -385,6 +392,10 @@ function HeroNumbers({
           dict={dict}
         />
       ) : null}
+
+      {/* CNN Fear & Greed 지수 — KV에 저장된 값이 있을 때만.
+          위 도달 통계와 아래 시점별 변화율 pill 사이 시각적 분리를 위해 상단 border. */}
+      {fearGreed ? <FearGreedBlock snapshot={fearGreed} dict={dict} /> : null}
 
       {/* 시점별 변화율 — 기본 접힘. pill 버튼으로 토글.
           표시 항목 0개면(불가능 케이스) pill 자체 숨김.
@@ -577,6 +588,58 @@ function AtDrawdownBlock({
       </div>
     </div>
   );
+}
+
+/**
+ * CNN Fear & Greed 지수 블록 — 도달 통계 아래, 시점별 pill 위.
+ * 상단 얇은 border로 위쪽 통계 블록과 시각적 분리.
+ * 등급 색상: extreme fear(빨) / fear(주황) / neutral(회색) / greed(초록) / extreme greed(에메랄드).
+ */
+function FearGreedBlock({
+  snapshot,
+  dict,
+}: {
+  snapshot: FearGreedSnapshot;
+  dict: ReturnType<typeof getDict>;
+}) {
+  const rating = snapshot.rating as FearGreedRating;
+  const label = dict.fearGreed.rating[rating];
+  const colorClass = fearGreedColorClass(rating);
+  // score는 정수로 반올림 — CNN 원본이 소수점 포함할 수 있어 UI 노이즈 방지.
+  const score = Math.round(snapshot.score);
+  const min = Math.round(snapshot.yearMin);
+  const max = Math.round(snapshot.yearMax);
+
+  return (
+    <div className="mx-auto mt-6 w-full max-w-[300px] border-t border-neutral-900 pt-5 text-center">
+      <div className="flex items-center justify-center">
+        <span className="text-[11px] text-neutral-500">{dict.fearGreed.title}</span>
+        <span className="ml-2 text-[14px] font-medium text-neutral-100">
+          {score}
+        </span>
+        <span className="mx-[6px] text-[11px] text-neutral-600">·</span>
+        <span className={`text-[11px] ${colorClass}`}>{label}</span>
+      </div>
+      <div className="mt-1 text-[10px] text-neutral-600">
+        {dict.fearGreed.range(min, max)}
+      </div>
+    </div>
+  );
+}
+
+function fearGreedColorClass(rating: FearGreedRating): string {
+  switch (rating) {
+    case "extreme fear":
+      return "text-red-400";
+    case "fear":
+      return "text-orange-400";
+    case "neutral":
+      return "text-neutral-400";
+    case "greed":
+      return "text-green-400";
+    case "extreme greed":
+      return "text-emerald-400";
+  }
 }
 
 /**

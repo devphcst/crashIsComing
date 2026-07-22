@@ -10,8 +10,20 @@ const linkRel = 'noopener noreferrer sponsored';
 const STORE_HOME_URL = 'https://smartstore.naver.com/checkmedi17';
 
 // 첫 nudge까지 지연(ms) + 이후 반복 간격(ms).
-const PILL_FIRST_NUDGE_MS = 2000;
+const PILL_FIRST_NUDGE_MS = 5000;
 const PILL_NUDGE_INTERVAL_MS = 17000;
+
+// 한 nudge = 좌로 튕기며 살짝 커짐 → 원위치. 이걸 3번 반복 = "툭툭툭".
+// 각 비트 사이 간격이 짧아야 "툭툭" 리듬. 총 지속 ~1s.
+const PILL_NUDGE_BEATS: Array<{ x: number; scale: number }> = [
+  { x: -10, scale: 1.15 },
+  { x: 0, scale: 1 },
+  { x: -10, scale: 1.15 },
+  { x: 0, scale: 1 },
+  { x: -10, scale: 1.15 },
+  { x: 0, scale: 1 },
+];
+const PILL_NUDGE_BEAT_MS = 180;
 
 function AdImage({
   alt,
@@ -149,36 +161,58 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
   const [open, setOpen] = useState(false);
   const [rendered, setRendered] = useState(false); // 모달 DOM 마운트
   const [entered, setEntered] = useState(false); // 모달 애니메이션 인/아웃
-  const [bounce, setBounce] = useState(0);
+  const [nudge, setNudge] = useState<{ x: number; scale: number }>({
+    x: 0,
+    scale: 1,
+  });
   const pillRef = useRef<HTMLButtonElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
-  // Nudge 스케줄 — 첫 렌더 후 2s에 1회, 이후 17s 간격 반복.
-  // 모달 열린 동안엔 취소, 닫히면 재시작(첫 딜레이부터).
+  // Nudge 스케줄 — 첫 렌더 후 5s에 "툭툭툭"(3회), 이후 17s 간격 반복.
+  // 각 nudge는 좌로 튕기며 살짝 커진다. 모달 열린 동안엔 취소, 닫히면 재시작.
   useEffect(() => {
     if (open) return;
     let cancelled = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    const nudgeDurationMs = PILL_NUDGE_BEATS.length * PILL_NUDGE_BEAT_MS;
 
-    const bounceOnce = (nextDelay: number) => {
-      if (cancelled) return;
-      setBounce(-8);
+    const playNudge = (onDone: () => void) => {
+      PILL_NUDGE_BEATS.forEach((beat, i) => {
+        timers.push(
+          setTimeout(() => {
+            if (cancelled) return;
+            setNudge(beat);
+          }, i * PILL_NUDGE_BEAT_MS),
+        );
+      });
       timers.push(
         setTimeout(() => {
           if (cancelled) return;
-          setBounce(0);
-          timers.push(setTimeout(() => bounceOnce(nextDelay), nextDelay));
-        }, 300),
+          onDone();
+        }, nudgeDurationMs),
+      );
+    };
+
+    const scheduleNext = () => {
+      timers.push(
+        setTimeout(() => {
+          if (cancelled) return;
+          playNudge(scheduleNext);
+        }, PILL_NUDGE_INTERVAL_MS),
       );
     };
 
     timers.push(
-      setTimeout(() => bounceOnce(PILL_NUDGE_INTERVAL_MS), PILL_FIRST_NUDGE_MS),
+      setTimeout(() => {
+        if (cancelled) return;
+        playNudge(scheduleNext);
+      }, PILL_FIRST_NUDGE_MS),
     );
 
     return () => {
       cancelled = true;
       timers.forEach(clearTimeout);
+      setNudge({ x: 0, scale: 1 });
     };
   }, [open]);
 
@@ -238,9 +272,8 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
           WebkitTapHighlightColor: 'transparent',
-          transform: `translateX(${bounce}px)`,
-          transition:
-            'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease-out',
+          transform: `translateX(${nudge.x}px) scale(${nudge.scale})`,
+          transition: `transform ${PILL_NUDGE_BEAT_MS}ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease-out`,
           opacity: open ? 0 : 1,
           pointerEvents: open ? 'none' : 'auto',
         }}

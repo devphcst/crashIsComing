@@ -176,6 +176,36 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
     };
   }, []);
 
+  // 주기적 nudge — 45~90s 랜덤 간격, 모달 안 열렸을 때만.
+  useEffect(() => {
+    if (open) return;
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    const scheduleNext = () => {
+      const delay = 45000 + Math.random() * 45000;
+      timers.push(
+        setTimeout(() => {
+          if (cancelled) return;
+          setBounce(-8);
+          timers.push(
+            setTimeout(() => {
+              if (cancelled) return;
+              setBounce(0);
+              timers.push(setTimeout(scheduleNext, 500));
+            }, 300),
+          );
+        }, delay),
+      );
+    };
+    scheduleNext();
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+    };
+  }, [open]);
+
   // open ↔ rendered/entered 동기화 (마운트 후 rAF에서 entered=true, 닫힘 후 300ms에 언마운트).
   useEffect(() => {
     if (open) {

@@ -25,7 +25,11 @@ import { LastUpdated } from "./LastUpdated";
 import { Disclaimer } from "./Disclaimer";
 import { AboutSection } from "./AboutSection";
 import { AllInWarningSection } from "./AllInWarningSection";
-import { ProductAdSidebar, ProductAdBanner } from "./ProductAd";
+import {
+  ProductAdSidebar,
+  ProductAdBanner,
+  ProductAdBookmark,
+} from "./ProductAd";
 import { MainSymbolTabs } from "./MainSymbolTabs";
 import { MobileMenu } from "./MobileMenu";
 import type { Exchange, SymbolMeta } from "@/lib/symbols";
@@ -272,6 +276,9 @@ export function HeroDrawdown({
         <Disclaimer text={d.disclaimer} />
         {/* visitor 카운터는 모바일·데스크톱 둘 다 hero 안 인라인 텍스트로 통일됨 — 푸터엔 없음. */}
       </footer>
+
+      {/* 모바일(< md) 우측 세로 책갈피 광고 — fixed 위치라 렌더 위치는 자유. */}
+      <ProductAdBookmark lang={lang} />
     </main>
   );
 }

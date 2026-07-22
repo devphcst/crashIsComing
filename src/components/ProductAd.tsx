@@ -23,7 +23,7 @@ const PILL_NUDGE_BEATS: Array<{ x: number; scale: number }> = [
   { x: -10, scale: 1.15 },
   { x: 0, scale: 1 },
 ];
-const PILL_NUDGE_BEAT_MS = 180;
+const PILL_NUDGE_BEAT_MS = 280;
 
 function AdImage({
   alt,
@@ -261,7 +261,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
         onClick={() => setOpen(true)}
         className='fixed z-40 flex cursor-pointer items-center justify-start shadow-md outline-none focus:outline-none md:hidden'
         style={{
-          top: '75%',
+          top: '50%',
           right: -20,
           width: 48,
           height: 48,
@@ -273,7 +273,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
           WebkitBackdropFilter: 'blur(8px)',
           WebkitTapHighlightColor: 'transparent',
           transform: `translateX(${nudge.x}px) scale(${nudge.scale})`,
-          transition: `transform ${PILL_NUDGE_BEAT_MS}ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease-out`,
+          transition: `transform ${PILL_NUDGE_BEAT_MS}ms ease-in-out, opacity 200ms ease-out`,
           opacity: open ? 0 : 1,
           pointerEvents: open ? 'none' : 'auto',
         }}

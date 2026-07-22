@@ -219,18 +219,19 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
         aria-label={t.productName}
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        className='fixed z-40 flex cursor-pointer items-center justify-start shadow-md md:hidden'
+        className='fixed z-40 flex cursor-pointer items-center justify-start shadow-md outline-none focus:outline-none md:hidden'
         style={{
           top: '75%',
           right: -20,
           width: 48,
           height: 48,
           paddingLeft: 6,
-          borderRadius: '50%',
+          borderRadius: 12,
           background: 'rgba(23, 23, 23, 0.75)',
           border: '0.5px solid rgba(255, 255, 255, 0.15)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
+          WebkitTapHighlightColor: 'transparent',
           transform: `translateX(${bounce}px)`,
           transition:
             'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease-out',
@@ -310,7 +311,8 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
                   type='button'
                   aria-label='닫기'
                   onClick={() => setOpen(false)}
-                  className='-mr-1 -mt-1 flex h-6 w-6 items-center justify-center text-neutral-400 hover:text-neutral-100'
+                  className='-mr-1 -mt-1 flex h-6 w-6 items-center justify-center text-neutral-400 outline-none hover:text-neutral-100 focus:outline-none'
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
                 >
                   <svg
                     width='16'

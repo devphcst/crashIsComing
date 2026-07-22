@@ -9,8 +9,9 @@ const linkRel = 'noopener noreferrer sponsored';
 // 스마트스토어 특정 상품 URL은 모바일에서 로그인 팝업 유발 → 모바일 CTA는 스토어홈으로.
 const STORE_HOME_URL = 'https://smartstore.naver.com/checkmedi17';
 
-// 세션당 1회만 첫 방문 튕김 재생.
-const PILL_BOUNCE_KEY = 'ad-pill-shown';
+// 첫 nudge까지 지연(ms) + 이후 반복 간격(ms).
+const PILL_FIRST_NUDGE_MS = 2000;
+const PILL_NUDGE_INTERVAL_MS = 17000;
 
 function AdImage({
   alt,
@@ -152,53 +153,28 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
   const pillRef = useRef<HTMLButtonElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
-  // 첫 세션 튕김: 2s 후 -8px → 300ms 뒤 복귀. sessionStorage로 세션당 1회.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      if (sessionStorage.getItem(PILL_BOUNCE_KEY) === '1') return;
-    } catch {
-      // storage 접근 실패해도 튕김은 시도 (프라이빗 모드 등)
-    }
-    const t1 = setTimeout(() => setBounce(-8), 2000);
-    const t2 = setTimeout(() => setBounce(0), 2300);
-    const t3 = setTimeout(() => {
-      try {
-        sessionStorage.setItem(PILL_BOUNCE_KEY, '1');
-      } catch {
-        /* ignore */
-      }
-    }, 2600);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
-  }, []);
-
-  // 주기적 nudge — 45~90s 랜덤 간격, 모달 안 열렸을 때만.
+  // Nudge 스케줄 — 첫 렌더 후 2s에 1회, 이후 17s 간격 반복.
+  // 모달 열린 동안엔 취소, 닫히면 재시작(첫 딜레이부터).
   useEffect(() => {
     if (open) return;
     let cancelled = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
 
-    const scheduleNext = () => {
-      const delay = 45000 + Math.random() * 45000;
+    const bounceOnce = (nextDelay: number) => {
+      if (cancelled) return;
+      setBounce(-8);
       timers.push(
         setTimeout(() => {
           if (cancelled) return;
-          setBounce(-8);
-          timers.push(
-            setTimeout(() => {
-              if (cancelled) return;
-              setBounce(0);
-              timers.push(setTimeout(scheduleNext, 500));
-            }, 300),
-          );
-        }, delay),
+          setBounce(0);
+          timers.push(setTimeout(() => bounceOnce(nextDelay), nextDelay));
+        }, 300),
       );
     };
-    scheduleNext();
+
+    timers.push(
+      setTimeout(() => bounceOnce(PILL_NUDGE_INTERVAL_MS), PILL_FIRST_NUDGE_MS),
+    );
 
     return () => {
       cancelled = true;

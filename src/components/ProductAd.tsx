@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Lang } from '@/lib/i18n';
 import { SIDEBAR_AD } from '@/constants/ads';
 
 const linkRel = 'noopener noreferrer sponsored';
 
-// 스마트스토어 특정 상품 URL은 모바일에서 로그인 팝업 유발 → 책갈피는 스토어홈으로.
+// 스마트스토어 특정 상품 URL은 모바일에서 로그인 팝업 유발 → 모바일 CTA는 스토어홈으로.
 const STORE_HOME_URL = 'https://smartstore.naver.com/checkmedi17';
+
+// 세션당 1회만 첫 방문 튕김 재생.
+const PILL_BOUNCE_KEY = 'ad-pill-shown';
 
 function AdImage({
   alt,
@@ -129,65 +132,259 @@ export function ProductAdBanner({ lang }: { lang: Lang }) {
 }
 
 /**
- * 모바일(< md) 우측 세로 책갈피 광고.
+ * 모바일(< md) 광고 컨트롤 — pill + 확장 카드 모달.
  *
- * - fixed / right:0 / vertical-center — 스크롤과 무관하게 고정
- * - 2초 후 attention 모션 (좌로 슬라이드 → 살짝 정지 → 복귀), 그 뒤 정적
- * - 클릭 시 스마트스토어 홈 새 탭 오픈 (특정 상품 URL의 로그인 이슈 회피)
+ * 상태 흐름:
+ *   1. 기본: 우측 반투명 알약(48×48)이 top:75% / right:-20px에 반쪽 잘려 노출
+ *   2. 첫 세션에 한해 로드 후 2s에 -8px 튕김 (sessionStorage 기억)
+ *   3. pill 클릭 → 오버레이 + 확장 카드 슬라이드 인, body scroll lock
+ *   4. X / 오버레이 클릭 / ESC → 카드 슬라이드 아웃 + pill 페이드 인
+ *   5. CTA 클릭 → 스토어홈 새 탭 (특정 상품 URL의 로그인 이슈 회피). 카드는 유지.
+ *
+ * PC(md 이상)에서는 `md:hidden`으로 완전히 렌더 제외.
  */
-export function ProductAdBookmark({ lang }: { lang: Lang }) {
+export function ProductAdMobile({ lang }: { lang: Lang }) {
   const t = SIDEBAR_AD.mobile[lang];
-  const [offset, setOffset] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [rendered, setRendered] = useState(false); // 모달 DOM 마운트
+  const [entered, setEntered] = useState(false); // 모달 애니메이션 인/아웃
+  const [bounce, setBounce] = useState(0);
+  const pillRef = useRef<HTMLButtonElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
 
+  // 첫 세션 튕김: 2s 후 -8px → 300ms 뒤 복귀. sessionStorage로 세션당 1회.
   useEffect(() => {
-    // 페이지 로드 후 2s 대기 → -12px 슬라이드(300ms) → 100ms 정지 → 복귀(300ms).
-    const startTimer = setTimeout(() => setOffset(-12), 2000);
-    const backTimer = setTimeout(() => setOffset(0), 2000 + 300 + 100);
+    if (typeof window === 'undefined') return;
+    try {
+      if (sessionStorage.getItem(PILL_BOUNCE_KEY) === '1') return;
+    } catch {
+      // storage 접근 실패해도 튕김은 시도 (프라이빗 모드 등)
+    }
+    const t1 = setTimeout(() => setBounce(-8), 2000);
+    const t2 = setTimeout(() => setBounce(0), 2300);
+    const t3 = setTimeout(() => {
+      try {
+        sessionStorage.setItem(PILL_BOUNCE_KEY, '1');
+      } catch {
+        /* ignore */
+      }
+    }, 2600);
     return () => {
-      clearTimeout(startTimer);
-      clearTimeout(backTimer);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
     };
   }, []);
 
+  // open ↔ rendered/entered 동기화 (마운트 후 rAF에서 entered=true, 닫힘 후 300ms에 언마운트).
+  useEffect(() => {
+    if (open) {
+      setRendered(true);
+      const raf = requestAnimationFrame(() => setEntered(true));
+      return () => cancelAnimationFrame(raf);
+    }
+    setEntered(false);
+    const timer = setTimeout(() => setRendered(false), 300);
+    return () => clearTimeout(timer);
+  }, [open]);
+
+  // ESC 닫기 + body scroll lock + 포커스 이동.
+  useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    // 오픈 애니메이션이 시작될 무렵 close 버튼에 포커스.
+    const focusTimer = setTimeout(() => closeRef.current?.focus(), 50);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener('keydown', onKey);
+      clearTimeout(focusTimer);
+      // 닫힐 때 pill로 포커스 복귀 (키보드 사용자).
+      pillRef.current?.focus();
+    };
+  }, [open]);
+
+  const titleId = 'product-ad-mobile-title';
+
   return (
-    <a
-      href={STORE_HOME_URL}
-      target='_blank'
-      rel={linkRel}
-      aria-label={t.productName}
-      className='fixed right-0 top-1/2 z-40 flex cursor-pointer flex-col items-center bg-neutral-900 shadow-lg md:hidden'
-      style={{
-        width: 36,
-        padding: '14px 8px 8px 8px',
-        border: '0.5px solid #333',
-        borderRight: 'none',
-        borderRadius: '8px 0 0 8px',
-        transform: `translate(${offset}px, -50%)`,
-        transition:
-          offset === 0
-            ? 'transform 300ms ease-in'
-            : 'transform 300ms ease-out',
-      }}
-    >
-      <span
-        className='text-neutral-300'
+    <>
+      {/* 우측 반투명 알약 (반쪽 잘림) — 항상 마운트, open일 때 페이드 아웃 */}
+      <button
+        ref={pillRef}
+        type='button'
+        aria-label={t.productName}
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        className='fixed z-40 flex cursor-pointer items-center justify-start shadow-md md:hidden'
         style={{
-          writingMode: 'vertical-rl',
-          textOrientation: 'mixed',
-          fontSize: 11,
-          fontWeight: 400,
-          lineHeight: 1.5,
-          letterSpacing: '0.02em',
+          top: '75%',
+          right: -20,
+          width: 48,
+          height: 48,
+          paddingLeft: 6,
+          borderRadius: '50%',
+          background: 'rgba(23, 23, 23, 0.75)',
+          border: '0.5px solid rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          transform: `translateX(${bounce}px)`,
+          transition:
+            'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease-out',
+          opacity: open ? 0 : 1,
+          pointerEvents: open ? 'none' : 'auto',
         }}
       >
-        폭락이 와도 피부는 관리해야지
-      </span>
-      <span
-        className='mt-2 text-neutral-600'
-        style={{ fontSize: 8, letterSpacing: '0.05em' }}
-      >
-        AD
-      </span>
-    </a>
+        <span style={{ fontSize: 24, lineHeight: 1 }} aria-hidden='true'>
+          💊
+        </span>
+        <span
+          aria-hidden='true'
+          style={{
+            position: 'absolute',
+            bottom: 5,
+            left: 7,
+            fontSize: 8,
+            color: '#525252',
+            letterSpacing: '0.05em',
+            pointerEvents: 'none',
+          }}
+        >
+          AD
+        </span>
+      </button>
+
+      {/* 오버레이 + 확장 카드 — open 시에만 마운트, entered로 인/아웃 애니메이션 */}
+      {rendered ? (
+        <>
+          <div
+            aria-hidden='true'
+            onClick={() => setOpen(false)}
+            className='fixed inset-0 z-40 md:hidden'
+            style={{
+              background: 'rgba(0, 0, 0, 0.6)',
+              opacity: entered ? 1 : 0,
+              transition: 'opacity 300ms ease-out',
+            }}
+          />
+          <div
+            className='pointer-events-none fixed inset-0 z-50 flex items-center justify-center px-4 md:hidden'
+          >
+            <div
+              role='dialog'
+              aria-modal='true'
+              aria-labelledby={titleId}
+              className='pointer-events-auto w-full'
+              style={{
+                background: '#0f0f0f',
+                border: '0.5px solid #333',
+                borderRadius: 16,
+                padding: '24px 20px',
+                maxHeight: '85vh',
+                overflowY: 'auto',
+                boxShadow:
+                  '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                transform: entered
+                  ? 'translateX(0)'
+                  : 'translateX(120%)',
+                opacity: entered ? 1 : 0,
+                transition:
+                  entered
+                    ? 'transform 300ms ease-out, opacity 300ms ease-out'
+                    : 'transform 300ms ease-in, opacity 300ms ease-in',
+              }}
+            >
+              {/* 상단: 라벨 + X 버튼 */}
+              <div className='flex items-start justify-between gap-3'>
+                <div
+                  style={{ fontSize: 11, color: '#737373' }}
+                  className='uppercase tracking-wider'
+                >
+                  {t.label}
+                </div>
+                <button
+                  ref={closeRef}
+                  type='button'
+                  aria-label='닫기'
+                  onClick={() => setOpen(false)}
+                  className='-mr-1 -mt-1 flex h-6 w-6 items-center justify-center text-neutral-400 hover:text-neutral-100'
+                >
+                  <svg
+                    width='16'
+                    height='16'
+                    viewBox='0 0 16 16'
+                    fill='none'
+                    aria-hidden='true'
+                  >
+                    <path
+                      d='M4 4L12 12M12 4L4 12'
+                      stroke='currentColor'
+                      strokeWidth='1.5'
+                      strokeLinecap='round'
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* 제목 */}
+              <p
+                id={titleId}
+                className='mt-2'
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: '#e5e5e5',
+                  lineHeight: 1.4,
+                }}
+              >
+                {t.body}
+              </p>
+
+              {/* 브랜드 */}
+              <p
+                className='mt-1'
+                style={{ fontSize: 13, color: '#d4d4d4' }}
+              >
+                {t.productName}
+              </p>
+
+              {/* 상품 이미지 (가운데) */}
+              <div className='mx-auto mt-4 w-40'>
+                <AdImage
+                  alt={t.productName}
+                  fallbackLabel={t.imageFallback}
+                />
+              </div>
+
+              {/* 특징 3줄 */}
+              <p
+                className='mt-4 whitespace-pre-line'
+                style={{
+                  fontSize: 12,
+                  color: '#a3a3a3',
+                  lineHeight: 1.6,
+                }}
+              >
+                {t.description}
+              </p>
+
+              {/* CTA */}
+              <a
+                href={STORE_HOME_URL}
+                target='_blank'
+                rel={linkRel}
+                className='mt-5 block w-full rounded-md bg-neutral-100 text-center text-sm font-medium text-neutral-900 transition-colors hover:bg-white'
+                style={{ padding: '12px' }}
+              >
+                {t.cta}
+              </a>
+            </div>
+          </div>
+        </>
+      ) : null}
+    </>
   );
 }

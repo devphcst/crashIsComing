@@ -28,7 +28,7 @@ import { AllInWarningSection } from "./AllInWarningSection";
 import {
   ProductAdSidebar,
   ProductAdBanner,
-  ProductAdBookmark,
+  ProductAdMobile,
 } from "./ProductAd";
 import { MainSymbolTabs } from "./MainSymbolTabs";
 import { MobileMenu } from "./MobileMenu";
@@ -277,8 +277,8 @@ export function HeroDrawdown({
         {/* visitor 카운터는 모바일·데스크톱 둘 다 hero 안 인라인 텍스트로 통일됨 — 푸터엔 없음. */}
       </footer>
 
-      {/* 모바일(< md) 우측 세로 책갈피 광고 — fixed 위치라 렌더 위치는 자유. */}
-      <ProductAdBookmark lang={lang} />
+      {/* 모바일(< md) pill + 확장 카드 광고 — fixed 위치라 렌더 위치는 자유. */}
+      <ProductAdMobile lang={lang} />
     </main>
   );
 }

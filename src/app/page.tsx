@@ -26,7 +26,7 @@ const readLangFromCookie = (): Lang => {
 // 계속 사용해 종목별 낙폭 숫자를 표시하지만, 루트는 사이트 브랜딩 이미지 하나로
 // 통일해 마케팅 일관성 유지.
 const ROOT_OG_IMAGE = "/og-default.png";
-const ROOT_OG_ALT = "폭락은 온다";
+const ROOT_OG_ALT = "폭락장은 온다";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [meta, hero] = await Promise.all([

@@ -1,11 +1,25 @@
 import type { Lang } from "@/lib/i18n";
 
 /**
- * 사이트 절대 URL. Vercel은 VERCEL_URL 환경변수를 자동 주입한다.
- * 커스텀 도메인 연결 시 NEXT_PUBLIC_SITE_URL 환경변수에 그 도메인을 적어두면 최우선.
+ * 사이트 절대 URL.
+ *
+ * 우선순위 (Meta/카톡 등 SNS 크롤러가 접근 가능한 안정 도메인을 최우선):
+ *   1. NEXT_PUBLIC_SITE_URL      — 커스텀 도메인 명시. 최우선.
+ *   2. VERCEL_PROJECT_PRODUCTION_URL — Vercel의 프로덕션 alias(`crash-is-coming.vercel.app`).
+ *                                     preview deploy에서도 같은 값이라 항상 안정.
+ *   3. VERCEL_URL                — deploy별 임시 도메인(`crash-is-coming-XYZ...vercel.app`).
+ *                                     Deployment Protection에 걸려 크롤러가 인증 페이지(HTML)를
+ *                                     받아 "손상된 이미지" 에러 → 마지막 폴백.
+ *   4. localhost                 — 로컬 개발.
+ *
+ * og:image가 임시 도메인이면 Facebook/Meta 크롤러가 인증 페이지를 PNG로 파싱하려다
+ * 실패하는 실제 사례 있음 (스레드에 프리뷰 안 뜸). 프로덕션 alias 우선이 정답.
  */
 export const SITE_URL: string = (() => {
   if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3000";
 })();

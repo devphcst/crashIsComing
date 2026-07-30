@@ -11,8 +11,8 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "폭락은 온다",
-    short_name: "폭락은 온다",
+    name: "폭락장은 온다",
+    short_name: "폭락장은 온다",
     description: "미국 ETF 실시간 폭락 모니터",
     start_url: "/",
     scope: "/",

@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   // PWA: iOS 홈 화면 앱 표기 + 정적 아이콘 세트. Android/Chrome은 manifest.ts만으로 충분.
   appleWebApp: {
     capable: true,
-    title: "폭락은 온다",
+    title: "폭락장은 온다",
     statusBarStyle: "black-translucent",
   },
   icons: {

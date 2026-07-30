@@ -38,18 +38,29 @@ const formatDrawdownForTitle = (
   return `${rounded.toFixed(1)}%`;
 };
 
+/**
+ * KST(UTC+9) 오늘 날짜 YYYY-MM-DD — OG URL의 `v=` 스탬프에 사용.
+ *
+ * 왜 "최신 close 날짜"가 아니라 "KST 오늘"인가:
+ *   - 최신 close 날짜(hero.current.date)는 새 종가가 KV에 쓰이기 전엔 안 바뀜.
+ *     휴장일 여러 개 이어지면 SNS URL도 여러 날 그대로 → 크롤러가 새 URL을 인식
+ *     못 해 자기 캐시를 계속 씀.
+ *   - KST 자정마다 자동으로 새 v로 롤오버되면, SNS/CDN이 이전 캐시 TTL 지난 뒤
+ *     새 URL을 발견해 재fetch할 확률이 매일 높아진다.
+ *   - 이미지 내용은 KV에서 매 요청 fresh read (unstable_cache 미사용) → v가 오늘로
+ *     바뀌어 새 URL이 되면 CDN 미스 → origin이 최신 KV로 렌더 → 최신 이미지.
+ */
+const todayKstDate = (): string => {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
+};
+
 export const buildSymbolMetadata = (
   lang: Lang,
   meta: SymbolMeta,
   /** 옵셔널 — 현재 ATH 대비 낙폭. 전달 시 title 앞에 "[-25.0%]" prefix로 박힘. */
   drawdownPct?: number | null,
-  /**
-   * 옵셔널 — 최신 종가 날짜(YYYY-MM-DD).
-   * OG URL 뒤에 `&v={date}`로 버전 스탬프를 붙여 SNS(카톡/X/FB) 외부 캐시를 무효화한다.
-   * 종가가 갱신되면 URL이 바뀌므로 크롤러가 재요청하고, 자체 CDN도 URL 단위 캐시라
-   * 자연스레 함께 무효화된다. null/undefined면 "seed" 스탬프로 초기 렌더 유지.
-   */
-  latestCloseDate?: string | null,
 ): Metadata => {
   const t = SEO_TEXT[lang];
   const name = meta.displayName;
@@ -62,8 +73,8 @@ export const buildSymbolMetadata = (
   const url = `${SITE_URL}${path}`;
   // 동적 OG — 종목별 낙폭 숫자가 박힌 썸네일. lang을 함께 전달해 ko/en 텍스트 분기.
   // metadataBase(layout.tsx)가 절대 URL로 변환.
-  const ogVersion = latestCloseDate ?? "seed";
-  const ogImageUrl = `/api/og?ticker=${meta.ticker}&lang=${lang}&v=${ogVersion}`;
+  // v=오늘 KST — 자정마다 새 URL, SNS 재크롤 확률↑ (자세한 이유는 todayKstDate).
+  const ogImageUrl = `/api/og?ticker=${meta.ticker}&lang=${lang}&v=${todayKstDate()}`;
   return {
     // absolute로 layout.tsx의 "%s | TQQQ" 템플릿이 덧붙지 않게 함
     // (title 자체가 이미 종목 + 브랜드 의미를 모두 담고 있음)

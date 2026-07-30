@@ -34,13 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
     loadHeroData(DEFAULT_SYMBOL),
   ]);
   const drawdownPct = hero.ready ? hero.ath.drawdownPct : undefined;
-  const latestCloseDate = hero.ready ? hero.current.date : undefined;
-  const base = buildSymbolMetadata(
-    readLangFromCookie(),
-    meta,
-    drawdownPct,
-    latestCloseDate,
-  );
+  const base = buildSymbolMetadata(readLangFromCookie(), meta, drawdownPct);
   // title/description/URL/twitter card 등은 base 유지, 이미지만 정적으로 override.
   return {
     ...base,

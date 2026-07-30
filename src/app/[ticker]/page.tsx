@@ -50,7 +50,13 @@ export async function generateMetadata({
   ]);
   // hero.ready=false면 시드/종가 부족 — drawdownPct undefined로 title 낙폭 prefix 생략.
   const drawdownPct = hero.ready ? hero.ath.drawdownPct : undefined;
-  return buildSymbolMetadata(readLangFromCookie(), meta, drawdownPct);
+  const latestCloseDate = hero.ready ? hero.current.date : undefined;
+  return buildSymbolMetadata(
+    readLangFromCookie(),
+    meta,
+    drawdownPct,
+    latestCloseDate,
+  );
 }
 
 export default async function TickerPage({

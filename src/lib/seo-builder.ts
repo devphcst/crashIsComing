@@ -43,6 +43,13 @@ export const buildSymbolMetadata = (
   meta: SymbolMeta,
   /** 옵셔널 — 현재 ATH 대비 낙폭. 전달 시 title 앞에 "[-25.0%]" prefix로 박힘. */
   drawdownPct?: number | null,
+  /**
+   * 옵셔널 — 최신 종가 날짜(YYYY-MM-DD).
+   * OG URL 뒤에 `&v={date}`로 버전 스탬프를 붙여 SNS(카톡/X/FB) 외부 캐시를 무효화한다.
+   * 종가가 갱신되면 URL이 바뀌므로 크롤러가 재요청하고, 자체 CDN도 URL 단위 캐시라
+   * 자연스레 함께 무효화된다. null/undefined면 "seed" 스탬프로 초기 렌더 유지.
+   */
+  latestCloseDate?: string | null,
 ): Metadata => {
   const t = SEO_TEXT[lang];
   const name = meta.displayName;
@@ -55,7 +62,8 @@ export const buildSymbolMetadata = (
   const url = `${SITE_URL}${path}`;
   // 동적 OG — 종목별 낙폭 숫자가 박힌 썸네일. lang을 함께 전달해 ko/en 텍스트 분기.
   // metadataBase(layout.tsx)가 절대 URL로 변환.
-  const ogImageUrl = `/api/og?ticker=${meta.ticker}&lang=${lang}`;
+  const ogVersion = latestCloseDate ?? "seed";
+  const ogImageUrl = `/api/og?ticker=${meta.ticker}&lang=${lang}&v=${ogVersion}`;
   return {
     // absolute로 layout.tsx의 "%s | TQQQ" 템플릿이 덧붙지 않게 함
     // (title 자체가 이미 종목 + 브랜드 의미를 모두 담고 있음)

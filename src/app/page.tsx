@@ -28,7 +28,13 @@ export async function generateMetadata(): Promise<Metadata> {
     loadHeroData(DEFAULT_SYMBOL),
   ]);
   const drawdownPct = hero.ready ? hero.ath.drawdownPct : undefined;
-  return buildSymbolMetadata(readLangFromCookie(), meta, drawdownPct);
+  const latestCloseDate = hero.ready ? hero.current.date : undefined;
+  return buildSymbolMetadata(
+    readLangFromCookie(),
+    meta,
+    drawdownPct,
+    latestCloseDate,
+  );
 }
 
 export default async function Page() {

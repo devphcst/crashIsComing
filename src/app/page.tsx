@@ -22,6 +22,12 @@ const readLangFromCookie = (): Lang => {
   return v === "en" ? "en" : "ko";
 };
 
+// 루트 페이지 공유용 정적 대표 이미지. 종목 페이지(/tqqq 등)는 동적 /api/og를
+// 계속 사용해 종목별 낙폭 숫자를 표시하지만, 루트는 사이트 브랜딩 이미지 하나로
+// 통일해 마케팅 일관성 유지.
+const ROOT_OG_IMAGE = "/og-default.png";
+const ROOT_OG_ALT = "폭락은 온다";
+
 export async function generateMetadata(): Promise<Metadata> {
   const [meta, hero] = await Promise.all([
     readMeta(DEFAULT_SYMBOL),
@@ -29,12 +35,31 @@ export async function generateMetadata(): Promise<Metadata> {
   ]);
   const drawdownPct = hero.ready ? hero.ath.drawdownPct : undefined;
   const latestCloseDate = hero.ready ? hero.current.date : undefined;
-  return buildSymbolMetadata(
+  const base = buildSymbolMetadata(
     readLangFromCookie(),
     meta,
     drawdownPct,
     latestCloseDate,
   );
+  // title/description/URL/twitter card 등은 base 유지, 이미지만 정적으로 override.
+  return {
+    ...base,
+    openGraph: {
+      ...base.openGraph,
+      images: [
+        {
+          url: ROOT_OG_IMAGE,
+          width: 1200,
+          height: 630,
+          alt: ROOT_OG_ALT,
+        },
+      ],
+    },
+    twitter: {
+      ...base.twitter,
+      images: [ROOT_OG_IMAGE],
+    },
+  };
 }
 
 export default async function Page() {

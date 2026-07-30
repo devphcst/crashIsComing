@@ -156,7 +156,7 @@ export async function GET(req: Request) {
     const pctColor = colorForPct(pct);
     const asOfText = fmtAsOf(latestDate, lang);
 
-    return new ImageResponse(
+    const image = new ImageResponse(
       (
         <div
           style={{
@@ -253,13 +253,22 @@ export async function GET(req: Request) {
             weight: 700,
           },
         ],
-        headers: {
-          // 종가는 하루 1회 갱신 → 1h CDN 캐시 + 6h SWR. SNS 자체 캐시는 별도.
-          "Cache-Control":
-            "public, max-age=0, s-maxage=3600, stale-while-revalidate=21600",
-        },
       },
     );
+
+    // ImageResponse의 `headers` 옵션은 기본값을 append만 해서 아래처럼 두 개가 겹친다:
+    //   `public, immutable, no-transform, max-age=31536000, <내가 준 값>`
+    // 크롤러가 앞쪽 max-age=31536000(1년)을 읽으면 사실상 영구 캐시 → 새 종가가
+    // 들어와도 오래 stale. `.headers.set()`으로 확실히 replace.
+    //
+    // 종가는 하루 1회 갱신 → 1h CDN 캐시 + 6h SWR. URL 자체가 종가 날짜별로
+    // 다르므로(v={date}) 이 값은 실질적으로 "새 v가 등장하기 전까지의 서빙 최적화".
+    image.headers.set(
+      "Cache-Control",
+      "public, max-age=0, s-maxage=3600, stale-while-revalidate=21600",
+    );
+
+    return image;
   } catch (err) {
     console.error("[/api/og] failed:", err);
     return new Response("og generation failed", { status: 500 });

@@ -23,48 +23,28 @@ export type Dict = {
   /** 'YYYY-MM-DD' → 짧은 요일 ('월'/'Mon'). 단순 함수, 폼 라벨에 사용. */
   weekdayShort: (dateISO: string) => string;
   /**
-   * 시장 상태 띠 좌측 라벨. 분기:
-   *   - normal: 평일 정상 ("다음 업데이트")
-   *   - weekend: 주말만 ("6월 21일~22일 주말 휴장") — dateRange는 dateRangeShort 결과
-   *   - holiday: 공휴일만 ("6월 19일 (금) Juneteenth 휴장")
-   *   - holidayWithWeekend: 공휴일 + 주말 ("6월 19일 (금) Juneteenth 휴장 + 주말")
+   * 히트맵 블록 상단 휴장 표시 (첫 줄).
+   *   - weekend: 주말 (평일이라도 latestClose 이후 다음 개장까지 주말 낀 경우)
+   *   - holiday: 미국 공휴일 (holidayWithWeekend 포함)
+   * 평일 정상은 첫 줄 없이 nextUpdateLine만 렌더.
    */
-  marketStatusLabel: {
-    normal: string;
-    weekend: (dateRange: string) => string;
-    holiday: (date: string, weekday: string, englishName: string) => string;
-    holidayWithWeekend: (
-      date: string,
-      weekday: string,
-      englishName: string,
-    ) => string;
+  closure: {
+    weekend: string;
+    holiday: string;
   };
   /**
-   * 시장 상태 띠 우측 다음 업데이트 시각 — parts 배열.
-   * 날짜+요일 부분만 value emphasis (text-white 강조 대상).
-   * 미국 종목: ET 16:00 close → KST 변환된 새벽 시각 (DST에 따라 오전 5/6시) 안내.
+   * 히트맵 블록 상단 업데이트 안내 (둘째 줄).
+   *   미국 종목: ET 16:00 close → KST 변환된 새벽 시각 (DST에 따라 오전 5/6시).
    */
-  marketNextUpdate: (
-    kstDateLabel: string,
-    weekday: string,
-  ) => Array<{ text: string; emphasis?: 'value' }>;
-  /** KRX 종목용 다음 업데이트 시각 — 한국시간 15:30 마감 기준. */
-  marketNextUpdateKrx: (
-    kstDateLabel: string,
-    weekday: string,
-  ) => Array<{ text: string; emphasis?: 'value' }>;
+  nextUpdateLine: (kstDateLabel: string, weekday: string) => string;
+  /** KRX 종목용 업데이트 안내 — 한국시간 15:30 마감 기준. */
+  nextUpdateLineKrx: (kstDateLabel: string, weekday: string) => string;
   /** KRX 종목 푸터 — "{date} 한국 시장 종가" (자동/수동 구분 없이 사실만). */
   asOfKrx: (krDateFormatted: string) => string;
   /** KRX 종목 푸터 보조 — "(오후 3:30 마감)" 같은 마감 시각 표기. */
   asOfKrxSuffix: string;
   /** KRX 종목 푸터 — 자동 표현 없이 마감 시각 안내. */
   updateScheduleKrx: string;
-  /**
-   * 두 ISO 날짜의 짧은 범위 표기.
-   *   - 같은 달: '6월 21일~22일' / 'Jun 21–22'
-   *   - 다른 달: '5월 31일~6월 1일' / 'May 31–Jun 1'
-   */
-  dateRangeShort: (startISO: string, endISO: string) => string;
   notReady: string;
   notReadyHint: string;
   disclaimer: string;
@@ -89,8 +69,6 @@ export type Dict = {
   };
   /** 보조 수치 줄 위에 노출되는 한 줄 안내문 — 사용자 이해 도움. */
   breakdownHint: string;
-  /** 보조 수치 영역 펼침/접힘 토글 버튼 라벨. */
-  breakdownToggle: { expand: string; collapse: string };
   /**
    * "이 낙폭 도달" 통계 블록 — 큰 숫자 아래 프로그레스 바 시각화.
    *   - reached: 제목 문장 → 내 "N번" 강조를 위해 prefix/count/suffix 3조각 반환.
@@ -350,36 +328,17 @@ const ko: Dict = {
     const d = new Date(`${dateISO}T00:00:00Z`);
     return ['일', '월', '화', '수', '목', '금', '토'][d.getUTCDay()];
   },
-  marketStatusLabel: {
-    normal: '다음 업데이트',
-    weekend: (dateRange) => `${dateRange} 주말 휴장`,
-    holiday: (date, weekday, name) => `${date} (${weekday}) ${name} 휴장`,
-    holidayWithWeekend: (date, weekday, name) =>
-      `${date} (${weekday}) ${name} 휴장 + 주말`,
+  closure: {
+    weekend: '주말 휴장 중',
+    holiday: '미국 시장 휴장 중',
   },
-  marketNextUpdate: (kstDateLabel, weekday) => [
-    { text: '한국 ' },
-    { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
-    { text: ' 오전 7시' },
-  ],
-  marketNextUpdateKrx: (kstDateLabel, weekday) => [
-    { text: '한국 ' },
-    { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
-    { text: ' 오후 3시 30분' },
-  ],
+  nextUpdateLine: (kstDateLabel, weekday) =>
+    `한국 ${kstDateLabel}(${weekday}) 오전 7시 미국장 마감 후 업데이트`,
+  nextUpdateLineKrx: (kstDateLabel, weekday) =>
+    `한국 ${kstDateLabel}(${weekday}) 오후 3:30 한국장 마감 후 업데이트`,
   asOfKrx: (krDate) => `${krDate} 한국 시장 종가`,
   asOfKrxSuffix: '(오후 3:30 마감)',
   updateScheduleKrx: '한국 시장 마감(오후 3:30) 기준.',
-  dateRangeShort: (startISO, endISO) => {
-    const s = new Date(`${startISO}T00:00:00Z`);
-    const e = new Date(`${endISO}T00:00:00Z`);
-    const sm = s.getUTCMonth() + 1;
-    const sd = s.getUTCDate();
-    const em = e.getUTCMonth() + 1;
-    const ed = e.getUTCDate();
-    if (sm === em) return `${sm}월 ${sd}일~${ed}일`;
-    return `${sm}월 ${sd}일~${em}월 ${ed}일`;
-  },
   notReady: '데이터를 준비 중입니다',
   notReadyHint:
     '관리자가 초기 ATH와 52주 고점 시드를 입력하면 화면에 수치가 표시됩니다.',
@@ -411,7 +370,6 @@ const ko: Dict = {
   },
   breakdownHint:
     '아래는 각 시점의 종가 대비 변화율입니다\n거래일 기준이라 주말·휴장일에는 업데이트되지 않습니다',
-  breakdownToggle: { expand: '시점별 변화율 보기', collapse: '접기' },
   atDrawdownStats: {
     reached: (absPct, n) => ({
       prefix: `지금껏 전고점 대비 −${absPct}%는 `,
@@ -679,51 +637,17 @@ const en: Dict = {
     if (Number.isNaN(d.getTime())) return '';
     return d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
   },
-  marketStatusLabel: {
-    normal: 'Next update',
-    weekend: (dateRange) => `Weekend closed (${dateRange})`,
-    holiday: (date, weekday, name) =>
-      `US holiday: ${name} (${date}, ${weekday})`,
-    holidayWithWeekend: (date, weekday, name) =>
-      `${name} (${date}, ${weekday}) + weekend closure`,
+  closure: {
+    weekend: 'Weekend closed',
+    holiday: 'US market closed',
   },
-  marketNextUpdate: (kstDateLabel, weekday) => [
-    { text: 'KST ' },
-    { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
-    { text: ' dawn' },
-  ],
-  marketNextUpdateKrx: (kstDateLabel, weekday) => [
-    { text: 'KST ' },
-    { text: `${kstDateLabel} (${weekday})`, emphasis: 'value' },
-    { text: ' 15:30' },
-  ],
+  nextUpdateLine: (kstDateLabel, weekday) =>
+    `Updates after US market close (${kstDateLabel} (${weekday}) KST 7am)`,
+  nextUpdateLineKrx: (kstDateLabel, weekday) =>
+    `Updates after Korea market close (${kstDateLabel} (${weekday}) KST 15:30)`,
   asOfKrx: (krDate) => `Korea market close on ${krDate}`,
   asOfKrxSuffix: '(15:30 KST close)',
   updateScheduleKrx: 'Korea market close (15:30 KST) basis.',
-  dateRangeShort: (startISO, endISO) => {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    const s = new Date(`${startISO}T00:00:00Z`);
-    const e = new Date(`${endISO}T00:00:00Z`);
-    const sm = months[s.getUTCMonth()];
-    const sd = s.getUTCDate();
-    const em = months[e.getUTCMonth()];
-    const ed = e.getUTCDate();
-    if (sm === em) return `${sm} ${sd}–${ed}`;
-    return `${sm} ${sd}–${em} ${ed}`;
-  },
   notReady: 'Data not ready yet',
   notReadyHint:
     'Once the admin seeds the initial ATH and 52-week high, numbers will appear here.',
@@ -752,7 +676,6 @@ const en: Dict = {
   },
   breakdownHint:
     'Each value compares the current close to the close on that date\nValues only update on trading days — no changes on weekends or U.S. market holidays',
-  breakdownToggle: { expand: 'Show period changes', collapse: 'Hide' },
   atDrawdownStats: {
     reached: (absPct, n) => ({
       prefix: `We've been down −${absPct}% `,

@@ -217,7 +217,6 @@ export function HeroDrawdown({
                   }}
                   fearGreed={fearGreed}
                 />
-                <Facts data={data} dict={d} lang={lang} />
                 {data.exchange === "KRX" ? (
                   // KRX 종목 캡션 — 자동 표현 빼고 마감 시각 사실만.
                   <LastUpdated
@@ -292,8 +291,6 @@ function HeroNumbers({
   fearGreed: FearGreedSnapshot | null;
 }) {
   const level = levelFor(data.ath.drawdownPct, data.thresholds);
-  // 보조 수치 영역 펼침/접힘 — 기본 접힘. ticker 변경 시 페이지 재렌더로 자동 초기화.
-  const [breakdownOpen, setBreakdownOpen] = useState(false);
   // 항목 4개 항상 유지 — null이어도 "데이터 누적 중" placeholder로 표시
   // (사용자가 항목이 사라진 게 아니라 곧 채워질 거란 걸 알 수 있게).
   // "최근 1년"은 252거래일 lookback. 52주 고점 셀(상단)과는 별개의 데이터 — closes 부족하면 null.
@@ -342,88 +339,52 @@ function HeroNumbers({
           위 도달 통계와 아래 시점별 변화율 pill 사이 시각적 분리를 위해 상단 border. */}
       {fearGreed ? <FearGreedBlock snapshot={fearGreed} dict={dict} /> : null}
 
-      {/* 시점별 변화율 — 기본 접힘. pill 버튼으로 토글. 4셀 2×2 히트맵 그리드. */}
-      <button
-        type="button"
-        onClick={() => setBreakdownOpen((o) => !o)}
-        aria-expanded={breakdownOpen}
-        aria-controls="breakdown-panel"
-        className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-500 transition-colors hover:border-neutral-700 hover:text-neutral-400"
-      >
-        <span>
-          {breakdownOpen
-            ? dict.breakdownToggle.collapse
-            : dict.breakdownToggle.expand}
-        </span>
-        <svg
-          viewBox="0 0 12 12"
-          aria-hidden
-          className={`h-3 w-3 transition-transform duration-200 ${
-            breakdownOpen ? "rotate-180" : ""
-          }`}
+      {/* 시점별 변화율 통합 블록 — 항상 표시.
+          순서: 시장 상태 문구 → 안내 문구 → "최근 종가 $X" → 히트맵 4셀 → 참고가 2열. */}
+      <div className="mx-auto mt-2 w-full max-w-[300px]">
+        <MarketStatusBanner data={data} dict={dict} lang={lang} />
+
+        <p className="mt-4 whitespace-pre-line text-center text-xs leading-relaxed text-neutral-600">
+          {dict.breakdownHint}
+        </p>
+
+        <div className="mb-2 mt-6 text-center text-[12px] text-neutral-500">
+          {dict.current}{" "}
+          <span className="font-medium text-white">
+            {formatPrice(data.current.price, data.exchange)}
+          </span>
+        </div>
+        <div
+          className="grid grid-cols-2 gap-1.5"
+          role="list"
+          aria-label={dict.chart.sectionPeriod.title}
         >
-          <path
-            d="M3 4.5l3 3 3-3"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          {heatCells.map((cell) => (
+            <HeatCell
+              key={cell.label}
+              label={cell.label}
+              point={cell.point}
+              emptyLabel={dict.breakdownEmpty}
+            />
+          ))}
+        </div>
+
+        {/* 참고가 통합 — 4셀 바로 아래, 얇은 구분선 + 2열(ATH / 52주 고점).
+            각 열: 라벨(10px) → 값(13px) → 짧은 날짜(9px). */}
+        <div
+          className="mt-4 grid grid-cols-2 gap-1 border-t border-[#222] pt-[14px]"
+          role="list"
+        >
+          <RefCell
+            label={dict.ath}
+            value={formatPrice(data.ath.price, data.exchange)}
+            date={formatShortDate(data.ath.date, lang)}
           />
-        </svg>
-      </button>
-      <div
-        id="breakdown-panel"
-        className={`grid w-full transition-[grid-template-rows] duration-200 ease-out ${
-          breakdownOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-        aria-hidden={!breakdownOpen}
-      >
-        <div className="overflow-hidden">
-          <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-neutral-600">
-            {dict.breakdownHint}
-          </p>
-
-          <div className="mx-auto mt-6 w-full max-w-[300px]">
-            <div className="mb-2 text-center text-[12px] text-neutral-500">
-              {dict.current}{" "}
-              <span className="font-medium text-white">
-                {formatPrice(data.current.price, data.exchange)}
-              </span>
-            </div>
-            <div
-              className="grid grid-cols-2 gap-1.5"
-              role="list"
-              aria-label={dict.chart.sectionPeriod.title}
-            >
-              {heatCells.map((cell) => (
-                <HeatCell
-                  key={cell.label}
-                  label={cell.label}
-                  point={cell.point}
-                  emptyLabel={dict.breakdownEmpty}
-                />
-              ))}
-            </div>
-
-            {/* 참고가 통합 — 4셀 바로 아래, 얇은 구분선 + 2열(ATH / 52주 고점).
-                각 열: 라벨(10px) → 값(13px) → 짧은 날짜(9px). */}
-            <div
-              className="mt-4 grid grid-cols-2 gap-1 border-t border-[#222] pt-[14px]"
-              role="list"
-            >
-              <RefCell
-                label={dict.ath}
-                value={formatPrice(data.ath.price, data.exchange)}
-                date={formatShortDate(data.ath.date, lang)}
-              />
-              <RefCell
-                label={dict.oneYearHigh}
-                value={formatPrice(data.oneYear.price, data.exchange)}
-                date={formatShortDate(data.oneYear.date, lang)}
-              />
-            </div>
-          </div>
+          <RefCell
+            label={dict.oneYearHigh}
+            value={formatPrice(data.oneYear.price, data.exchange)}
+            date={formatShortDate(data.oneYear.date, lang)}
+          />
         </div>
       </div>
       {/* 모바일·데스크톱 공통 인라인 방문자 텍스트 — 보조 수치 바로 아래 작게.
@@ -670,25 +631,15 @@ function fearGreedColorClass(rating: FearGreedRating): string {
   }
 }
 
-function Facts({
-  data,
-  dict,
-  lang,
-}: {
-  data: Extract<HeroData, { ready: true }>;
-  dict: ReturnType<typeof getDict>;
-  lang: Lang;
-}) {
-  return (
-    <div className="flex w-full max-w-3xl flex-col gap-3">
-      <MarketStatusBanner data={data} dict={dict} lang={lang} />
-    </div>
-  );
-}
-
 const kstMomentToISO = (m: { year: number; month: number; day: number }): string =>
   `${m.year}-${String(m.month).padStart(2, "0")}-${String(m.day).padStart(2, "0")}`;
 
+/**
+ * 히트맵 블록 최상단 안내 — 배지 없이 텍스트 2줄.
+ *   1줄(휴장 시에만): "● 주말 휴장 중" 또는 "● 미국 시장 휴장 중" (orange-400)
+ *   2줄(항상): "한국 [날짜](요일) 오전 7시 미국장 마감 후 업데이트" (neutral-600)
+ * 평일 정상은 1줄 없이 2줄만.
+ */
 function MarketStatusBanner({
   data,
   dict,
@@ -705,57 +656,23 @@ function MarketStatusBanner({
     data.exchange === "KRX"
       ? ms.nextTradingDay
       : kstMomentToISO(usCloseInKst(ms.nextTradingDay));
-  const nextParts = (
-    data.exchange === "KRX" ? dict.marketNextUpdateKrx : dict.marketNextUpdate
+  const nextUpdateText = (
+    data.exchange === "KRX" ? dict.nextUpdateLineKrx : dict.nextUpdateLine
   )(formatShortDate(nextKstISO, lang), dict.weekdayShort(nextKstISO));
 
-  let statusText: string;
-  switch (ms.kind) {
-    case "normal":
-      statusText = dict.marketStatusLabel.normal;
-      break;
-    case "weekend":
-      statusText = dict.marketStatusLabel.weekend(
-        dict.dateRangeShort(ms.weekendStart, ms.weekendEnd),
-      );
-      break;
-    case "holiday": {
-      const dateLabel = formatShortDate(ms.holidayDate, lang);
-      const weekday = dict.weekdayShort(ms.holidayDate);
-      statusText = ms.hasWeekend
-        ? dict.marketStatusLabel.holidayWithWeekend(
-            dateLabel,
-            weekday,
-            ms.holidayName,
-          )
-        : dict.marketStatusLabel.holiday(dateLabel, weekday, ms.holidayName);
-      break;
-    }
-  }
-
-  const closed = ms.kind !== "normal";
-  // 평일: mobile/desktop 모두 한 줄(justify-between). 휴장: mobile 두 줄(flex-col), desktop 한 줄.
-  const layoutCls = closed
-    ? "flex flex-col gap-1 lg:flex-row lg:items-center lg:justify-between lg:gap-4"
-    : "flex flex-row items-center justify-between gap-3";
+  const closureText =
+    ms.kind === "weekend"
+      ? dict.closure.weekend
+      : ms.kind === "holiday"
+        ? dict.closure.holiday
+        : null;
 
   return (
-    <div
-      className={`w-full rounded-lg bg-neutral-900 px-3 py-2.5 text-xs lg:px-4 lg:py-3 ${layoutCls}`}
-    >
-      <span className={closed ? "text-neutral-300" : "text-neutral-400"}>
-        {statusText}
-      </span>
-      <span className="text-neutral-500">
-        {nextParts.map((p, i) => (
-          <span
-            key={i}
-            className={p.emphasis === "value" ? "text-white" : ""}
-          >
-            {p.text}
-          </span>
-        ))}
-      </span>
+    <div className="flex w-full flex-col items-center gap-1 text-[10px] leading-snug">
+      {closureText ? (
+        <span className="text-orange-400">● {closureText}</span>
+      ) : null}
+      <span className="text-neutral-600">{nextUpdateText}</span>
     </div>
   );
 }

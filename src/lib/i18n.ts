@@ -148,8 +148,6 @@ export type Dict = {
   };
   /** /[ticker]/history 페이지 전용 문구 — 미니멀 라벨만. */
   historyPage: {
-    /** 요약 페이지 진입 링크 문구. 실제 데이터 범위(연 단위)에 따라 동적. */
-    entryLink: (years: number) => string;
     /** 페이지 상·하단 뒤로 가기. */
     back: string;
     /** 페이지 제목 서브라인. */
@@ -421,7 +419,6 @@ const ko: Dict = {
     },
   },
   historyPage: {
-    entryLink: (years) => `이 종목의 ${years}년 역사 →`,
     back: '← 요약으로',
     title: (years) => `${years}년 역사`,
     subtitle: (rangeLabel) => rangeLabel,
@@ -704,7 +701,6 @@ const en: Dict = {
     },
   },
   historyPage: {
-    entryLink: (years) => `${years}-year history of this ticker →`,
     back: '← Back to summary',
     title: (years) => `${years}-year history`,
     subtitle: (rangeLabel) => rangeLabel,

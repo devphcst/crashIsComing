@@ -7,7 +7,8 @@ import { OG_IMAGE_ALT } from "@/constants/seo";
  * Edge runtime + nodejs 모두 가능하지만 ImageResponse는 edge가 가볍다.
  */
 export const runtime = "edge";
-export const alt = OG_IMAGE_ALT;
+// 정적 폴백 OG 이미지 (텍스트가 영어 위주). alt도 영문 브랜드로.
+export const alt = OG_IMAGE_ALT.en;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -71,7 +72,7 @@ export default async function OgImage() {
             letterSpacing: 2,
           }}
         >
-          Crash Is Coming · Drawdown Monitor
+          Crash Is Coming
         </div>
       </div>
     ),

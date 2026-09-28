@@ -47,7 +47,7 @@ export const SEO_TEXT: Record<Lang, SeoText> = {
     titleFor: (n) => `${n} 드로다운 모니터 — 전고점 대비 현재 하락률`,
     descriptionFor: (n) =>
       `${n}이(가) 전고점에서 얼마나 빠졌는지 큰 숫자 하나로. 매일 종가 기준으로 추적합니다.`,
-    brand: "TQQQ Drawdown Monitor",
+    brand: "폭락장은 온다",
     keywords: [
       "TQQQ",
       "드로다운",
@@ -61,7 +61,7 @@ export const SEO_TEXT: Record<Lang, SeoText> = {
     titleFor: (n) => `${n} Drawdown Monitor — How Far From the Peak`,
     descriptionFor: (n) =>
       `How far has ${n} fallen from its all-time high? A single big number, updated daily at close.`,
-    brand: "TQQQ Drawdown Monitor",
+    brand: "Crash Is Coming",
     keywords: [
       "TQQQ",
       "drawdown",
@@ -89,6 +89,9 @@ export const DEFAULT_SYMBOL_DESCRIPTION: Record<Lang, string> = {
   en: "How far has TQQQ fallen from its all-time high? A single big number tracking the Nasdaq 3x leveraged ETF crash, updated daily at close.",
 };
 
-export const OG_IMAGE_ALT = "TQQQ Drawdown Monitor";
+export const OG_IMAGE_ALT: Record<Lang, string> = {
+  ko: "폭락장은 온다",
+  en: "Crash Is Coming",
+};
 
 export const LANG_COOKIE = "tqqq.lang";

@@ -301,8 +301,9 @@ function HeroNumbers({
       {fearGreed ? <FearGreedBlock snapshot={fearGreed} dict={dict} /> : null}
 
       {/* 시점별 변화율 통합 블록 — 항상 표시.
-          순서: 시장 상태 문구 → "최근 종가 $X" → 히트맵 4셀 → 참고가 (통합 or 2열). */}
-      <div className="mx-auto mt-2 w-full max-w-[300px] px-4 py-6">
+          순서: 시장 상태 문구 → "최근 종가 $X" → 히트맵 4셀 → 참고가 (통합 or 2열).
+          위 FearGreedBlock(감정 지표)과 성격이 달라 mt-8로 시각 분리. */}
+      <div className="mx-auto mt-8 w-full max-w-[300px] px-4 py-6">
         <MarketStatusBanner data={data} dict={dict} lang={lang} />
 
         <div className="mb-3 mt-6 text-center text-[12px] text-neutral-500">

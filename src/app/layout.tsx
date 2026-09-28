@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   },
   description: ko.descriptionFor(DEFAULT_DISPLAY_NAME),
   keywords: ko.keywords,
-  applicationName: "TQQQ Drawdown Monitor",
+  applicationName: "폭락장은 온다",
   robots: {
     index: true,
     follow: true,

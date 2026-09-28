@@ -94,7 +94,7 @@ export const buildSymbolMetadata = (
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: OG_IMAGE_ALT,
+          alt: OG_IMAGE_ALT[lang],
         },
       ],
     },

@@ -1,7 +1,6 @@
 export type Lang = 'ko' | 'en';
 
 export type Dict = {
-  pageTitle: string;
   brand: string;
   athDrawdown: string;
   oneYearDrawdown: string;
@@ -289,7 +288,6 @@ export type Dict = {
 };
 
 const ko: Dict = {
-  pageTitle: 'TQQQ 드로다운 모니터',
   brand: '폭락장은 온다',
   athDrawdown: '전고점(ATH) 대비',
   oneYearDrawdown: '최근 52주 고점 대비',
@@ -569,7 +567,6 @@ const ko: Dict = {
 };
 
 const en: Dict = {
-  pageTitle: 'TQQQ Drawdown Monitor',
   brand: 'Crash Is Coming',
   athDrawdown: 'vs. all-time high',
   oneYearDrawdown: 'vs. 52-week high',

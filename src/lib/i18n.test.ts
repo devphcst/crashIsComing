@@ -21,16 +21,3 @@ describe("weekdayShort (timezone safety)", () => {
   });
 });
 
-describe("currentCloseSimple", () => {
-  it("Korean variant ends with 종가", () => {
-    expect(
-      dictionaries.ko.currentCloseSimple("2026년 6월 23일", "화"),
-    ).toBe("2026년 6월 23일 (화) 종가");
-  });
-
-  it("English variant ends with close", () => {
-    expect(
-      dictionaries.en.currentCloseSimple("Jun 23, 2026", "Tue"),
-    ).toBe("Jun 23, 2026 (Tue) close");
-  });
-});

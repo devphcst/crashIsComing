@@ -22,14 +22,6 @@ export type Dict = {
   closeKst: (month: number, day: number, hour: number) => string;
   /** 'YYYY-MM-DD' → 짧은 요일 ('월'/'Mon'). 단순 함수, 폼 라벨에 사용. */
   weekdayShort: (dateISO: string) => string;
-  /** 최근 종가 카드 KST 줄 — "한국 6월 19일 (금) 새벽 마감". 굵게 강조 의도된 본 줄. */
-  currentCloseKst: (kstDateLabel: string, weekday: string) => string;
-  /** 최근 종가 카드 US 줄 — "미국 6월 18일 (목) 종가". 보조. */
-  currentCloseUs: (usDateLabel: string, weekday: string) => string;
-  /** 한국 종목 등 KST↔ET 변환이 무의미한 종목 카드용 단일 라인. "2026년 6월 23일 (월) 종가". */
-  currentCloseSimple: (dateLabel: string, weekday: string) => string;
-  /** 가격 카드 날짜 + 요일 표기 — ATH/52주 카드용 "2026년 4월 23일 (목)". */
-  dateWithWeekday: (dateLabel: string, weekday: string) => string;
   /**
    * 시장 상태 띠 좌측 라벨. 분기:
    *   - normal: 평일 정상 ("다음 업데이트")
@@ -131,11 +123,10 @@ export type Dict = {
   };
   /** 보조 수치 항목 데이터 부족(closes 미달) 시 값 자리에 표시. */
   breakdownEmpty: string;
-  /** 히트맵 상단 서브라벨 — "최근 종가($X) 기준 변화". */
+  /** 히트맵 aria-label 등에 쓰는 섹션 제목. */
   chart: {
     sectionPeriod: {
       title: string;
-      subtitle: (latestPriceLabel: string) => string;
     };
   };
   menu: {
@@ -347,8 +338,8 @@ const ko: Dict = {
   athDrawdown: '전고점(ATH) 대비',
   oneYearDrawdown: '최근 52주 고점 대비',
   current: '최근 종가',
-  ath: '전고점 (종가기준)',
-  oneYearHigh: '52주 고점 (종가기준)',
+  ath: '전고점',
+  oneYearHigh: '52주 고점',
   asOfUs: (usDate) => `${usDate} 미국 시장 종가`,
   asOfKst: (kstLine) => `(${kstLine})`,
   updateSchedule: '거래일 기준 · 매일 미국 시장 마감 후 자동 업데이트됩니다.',
@@ -359,13 +350,6 @@ const ko: Dict = {
     const d = new Date(`${dateISO}T00:00:00Z`);
     return ['일', '월', '화', '수', '목', '금', '토'][d.getUTCDay()];
   },
-  currentCloseKst: (kstDateLabel, weekday) =>
-    `한국 ${kstDateLabel} (${weekday})`,
-  currentCloseUs: (usDateLabel, weekday) =>
-    `미국 ${usDateLabel} (${weekday}) 종가`,
-  currentCloseSimple: (dateLabel, weekday) =>
-    `${dateLabel} (${weekday}) 종가`,
-  dateWithWeekday: (dateLabel, weekday) => `${dateLabel} (${weekday})`,
   marketStatusLabel: {
     normal: '다음 업데이트',
     weekend: (dateRange) => `${dateRange} 주말 휴장`,
@@ -451,7 +435,6 @@ const ko: Dict = {
   chart: {
     sectionPeriod: {
       title: '시점별 변화율',
-      subtitle: (latestPrice) => `최근 종가(${latestPrice}) 기준 변화`,
     },
   },
   menu: {
@@ -696,13 +679,6 @@ const en: Dict = {
     if (Number.isNaN(d.getTime())) return '';
     return d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
   },
-  currentCloseKst: (kstDateLabel, weekday) =>
-    `KST ${kstDateLabel} (${weekday})`,
-  currentCloseUs: (usDateLabel, weekday) =>
-    `US ${usDateLabel} (${weekday}) market close`,
-  currentCloseSimple: (dateLabel, weekday) =>
-    `${dateLabel} (${weekday}) close`,
-  dateWithWeekday: (dateLabel, weekday) => `${dateLabel} (${weekday})`,
   marketStatusLabel: {
     normal: 'Next update',
     weekend: (dateRange) => `Weekend closed (${dateRange})`,
@@ -800,7 +776,6 @@ const en: Dict = {
   chart: {
     sectionPeriod: {
       title: 'Period change',
-      subtitle: (latestPrice) => `vs. latest close (${latestPrice})`,
     },
   },
   menu: {

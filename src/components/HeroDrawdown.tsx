@@ -385,10 +385,11 @@ function HeroNumbers({
           </p>
 
           <div className="mx-auto mt-6 w-full max-w-[300px]">
-            <div className="mb-2 text-center text-xs text-neutral-500">
-              {dict.chart.sectionPeriod.subtitle(
-                formatPrice(data.current.price, data.exchange),
-              )}
+            <div className="mb-2 text-center text-[12px] text-neutral-500">
+              {dict.current}{" "}
+              <span className="font-medium text-white">
+                {formatPrice(data.current.price, data.exchange)}
+              </span>
             </div>
             <div
               className="grid grid-cols-2 gap-1.5"
@@ -403,6 +404,24 @@ function HeroNumbers({
                   emptyLabel={dict.breakdownEmpty}
                 />
               ))}
+            </div>
+
+            {/* 참고가 통합 — 4셀 바로 아래, 얇은 구분선 + 2열(ATH / 52주 고점).
+                각 열: 라벨(10px) → 값(13px) → 짧은 날짜(9px). */}
+            <div
+              className="mt-4 grid grid-cols-2 gap-1 border-t border-[#222] pt-[14px]"
+              role="list"
+            >
+              <RefCell
+                label={dict.ath}
+                value={formatPrice(data.ath.price, data.exchange)}
+                date={formatShortDate(data.ath.date, lang)}
+              />
+              <RefCell
+                label={dict.oneYearHigh}
+                value={formatPrice(data.oneYear.price, data.exchange)}
+                date={formatShortDate(data.oneYear.date, lang)}
+              />
             </div>
           </div>
         </div>
@@ -425,6 +444,28 @@ function HeroNumbers({
             ))}
         </span>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * 참고가 셀 — 히트맵 아래 통합 그리드. 미묘한 톤, 클릭 액션 없음.
+ * 라벨 10px #666 → 값 13px #ccc → 날짜 9px #555 순서.
+ */
+function RefCell({
+  label,
+  value,
+  date,
+}: {
+  label: string;
+  value: string;
+  date: string;
+}) {
+  return (
+    <div role="listitem" className="text-center">
+      <div className="text-[10px] text-[#666]">{label}</div>
+      <div className="mt-0.5 font-mono text-[13px] text-[#ccc]">{value}</div>
+      <div className="text-[9px] text-[#555]">{date}</div>
     </div>
   );
 }
@@ -638,61 +679,9 @@ function Facts({
   dict: ReturnType<typeof getDict>;
   lang: Lang;
 }) {
-  // 시장 상태 띠는 카드 셋 외부 (위) — 카드 세 개를 동일 높이로 정렬하기 위함.
-  // 최근 종가 카드:
-  //   - NYSE: 큰 가격 + KST 날짜·요일·새벽 + US 날짜·요일·종가 (2줄).
-  //   - KRX:  큰 가격 + 단순 "YYYY년 M월 D일 (요일) 종가" 한 줄.
-  // ATH·52주는 기존 표기에 (요일) 한 단어만 추가.
-  const isKrx = data.exchange === "KRX";
-  const currentDate = data.current.date;
-
-  let kstLine: string;
-  let usLine: string | undefined;
-  if (isKrx) {
-    kstLine = dict.currentCloseSimple(
-      formatDate(currentDate, lang),
-      dict.weekdayShort(currentDate),
-    );
-    usLine = undefined;
-  } else {
-    const kstISO = kstMomentToISO(usCloseInKst(currentDate));
-    kstLine = dict.currentCloseKst(
-      formatShortDate(kstISO, lang),
-      dict.weekdayShort(kstISO),
-    );
-    usLine = dict.currentCloseUs(
-      formatShortDate(currentDate, lang),
-      dict.weekdayShort(currentDate),
-    );
-  }
-
   return (
     <div className="flex w-full max-w-3xl flex-col gap-3">
       <MarketStatusBanner data={data} dict={dict} lang={lang} />
-      <dl className="grid grid-cols-1 gap-3 text-sm text-neutral-300 sm:grid-cols-3">
-        <CurrentCloseCell
-          label={dict.current}
-          price={formatPrice(data.current.price, data.exchange)}
-          kstLine={kstLine}
-          usLine={usLine}
-        />
-        <Cell
-          label={dict.ath}
-          value={formatPrice(data.ath.price, data.exchange)}
-          sub={dict.dateWithWeekday(
-            formatDate(data.ath.date, lang),
-            dict.weekdayShort(data.ath.date),
-          )}
-        />
-        <Cell
-          label={dict.oneYearHigh}
-          value={formatPrice(data.oneYear.price, data.exchange)}
-          sub={dict.dateWithWeekday(
-            formatDate(data.oneYear.date, lang),
-            dict.weekdayShort(data.oneYear.date),
-          )}
-        />
-      </dl>
     </div>
   );
 }
@@ -767,52 +756,6 @@ function MarketStatusBanner({
           </span>
         ))}
       </span>
-    </div>
-  );
-}
-
-function CurrentCloseCell({
-  label,
-  price,
-  kstLine,
-  usLine,
-}: {
-  label: string;
-  price: string;
-  kstLine: string;
-  /** undefined = 단일 라인 카드 (KRX 등). 보조 ET 줄을 렌더하지 않음. */
-  usLine?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
-      <dt className="text-xs uppercase tracking-wide text-neutral-500">
-        {label}
-      </dt>
-      <dd className="mt-1 text-2xl text-neutral-100">{price}</dd>
-      <dd className="mt-2 text-sm text-neutral-100">{kstLine}</dd>
-      {usLine ? (
-        <dd className="text-[11px] text-neutral-600">{usLine}</dd>
-      ) : null}
-    </div>
-  );
-}
-
-function Cell({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-}) {
-  return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
-      <dt className="text-xs uppercase tracking-wide text-neutral-500">
-        {label}
-      </dt>
-      <dd className="mt-1 text-xl text-neutral-100">{value}</dd>
-      <dd className="text-xs text-neutral-500">{sub}</dd>
     </div>
   );
 }

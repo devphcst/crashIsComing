@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
@@ -39,14 +38,6 @@ import {
   SIDEBAR_GAP,
   CONTAINER_BASELINE_PX,
 } from "@/constants/layout";
-
-// recharts는 ~300KB. 펼침 토글이 열렸을 때만 import되도록 lazy load.
-// ssr:false — recharts ResponsiveContainer가 window 의존, 클라이언트에서만 마운트.
-// Phase 2 단계별 확장 예정 (B: 빠른 비교 버튼, C: 두 점 탭).
-const RechartsBreakdown = dynamic(
-  () => import("./RechartsBreakdown").then((m) => m.RechartsBreakdown),
-  { ssr: false, loading: () => <div className="mt-4 h-44 w-full" /> },
-);
 
 export type HeroData =
   | {
@@ -301,70 +292,17 @@ function HeroNumbers({
   fearGreed: FearGreedSnapshot | null;
 }) {
   const level = levelFor(data.ath.drawdownPct, data.thresholds);
-  // 보조 수치 툴팁 단일 active 슬롯. 한 항목 열리면 나머지 자동 닫힘.
-  const [activePeriod, setActivePeriod] = useState<
-    "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek" | null
-  >(null);
-  const breakdownRowRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!activePeriod) return;
-    const onDown = (e: MouseEvent | TouchEvent) => {
-      if (
-        breakdownRowRef.current &&
-        !breakdownRowRef.current.contains(e.target as Node)
-      ) {
-        setActivePeriod(null);
-      }
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActivePeriod(null);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("touchstart", onDown, { passive: true });
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("touchstart", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [activePeriod]);
-  const toggle = (
-    key: "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek",
-  ) => setActivePeriod((cur) => (cur === key ? null : key));
   // 보조 수치 영역 펼침/접힘 — 기본 접힘. ticker 변경 시 페이지 재렌더로 자동 초기화.
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   // 항목 4개 항상 유지 — null이어도 "데이터 누적 중" placeholder로 표시
   // (사용자가 항목이 사라진 게 아니라 곧 채워질 거란 걸 알 수 있게).
   // "최근 1년"은 252거래일 lookback. 52주 고점 셀(상단)과는 별개의 데이터 — closes 부족하면 null.
-  const visibleItems = [
-    {
-      key: "oneDay" as const,
-      label: dict.breakdown.oneDay,
-      point: data.breakdown.oneDay,
-    },
-    {
-      key: "oneWeek" as const,
-      label: dict.breakdown.oneWeek,
-      point: data.breakdown.oneWeek,
-    },
-    {
-      key: "oneMonth" as const,
-      label: dict.breakdown.oneMonth,
-      point: data.breakdown.oneMonth,
-    },
-    {
-      key: "fiftyTwoWeek" as const,
-      label: dict.breakdown.fiftyTwoWeek,
-      point: data.breakdown.oneYear,
-    },
+  const heatCells = [
+    { label: dict.breakdown.oneDay, point: data.breakdown.oneDay },
+    { label: dict.breakdown.oneWeek, point: data.breakdown.oneWeek },
+    { label: dict.breakdown.oneMonth, point: data.breakdown.oneMonth },
+    { label: dict.breakdown.fiftyTwoWeek, point: data.breakdown.oneYear },
   ];
-  // 4개 항목 같은 가로 막대 스케일 공유 — 시점 간 직관적 비교용.
-  // 최소 천장 5% — 모든 변동이 미세해도 막대가 0이 아닌 길이로 보이도록.
-  const MIN_BAR_SCALE = 5;
-  const maxAbsPct = Math.max(
-    MIN_BAR_SCALE,
-    ...visibleItems.map((i) => Math.abs(i.point?.pct ?? 0)),
-  );
   return (
     <div className="flex w-full max-w-full flex-col items-center gap-3 text-center">
       {/* SEO: pill을 <h1>로 마크업 — 종목 페이지마다 ticker가 페이지 주제 신호로
@@ -404,112 +342,71 @@ function HeroNumbers({
           위 도달 통계와 아래 시점별 변화율 pill 사이 시각적 분리를 위해 상단 border. */}
       {fearGreed ? <FearGreedBlock snapshot={fearGreed} dict={dict} /> : null}
 
-      {/* 시점별 변화율 — 기본 접힘. pill 버튼으로 토글.
-          표시 항목 0개면(불가능 케이스) pill 자체 숨김.
-          펼침 애니메이션: grid-template-rows 0fr→1fr (200ms ease-out). */}
-      {visibleItems.length > 0 ? (
-        <>
-          <button
-            type="button"
-            onClick={() => setBreakdownOpen((o) => !o)}
-            aria-expanded={breakdownOpen}
-            aria-controls="breakdown-panel"
-            className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-500 transition-colors hover:border-neutral-700 hover:text-neutral-400"
-          >
-            <span>
-              {breakdownOpen
-                ? dict.breakdownToggle.collapse
-                : dict.breakdownToggle.expand}
-            </span>
-            <svg
-              viewBox="0 0 12 12"
-              aria-hidden
-              className={`h-3 w-3 transition-transform duration-200 ${
-                breakdownOpen ? "rotate-180" : ""
-              }`}
+      {/* 시점별 변화율 — 기본 접힘. pill 버튼으로 토글. 4셀 2×2 히트맵 그리드. */}
+      <button
+        type="button"
+        onClick={() => setBreakdownOpen((o) => !o)}
+        aria-expanded={breakdownOpen}
+        aria-controls="breakdown-panel"
+        className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-500 transition-colors hover:border-neutral-700 hover:text-neutral-400"
+      >
+        <span>
+          {breakdownOpen
+            ? dict.breakdownToggle.collapse
+            : dict.breakdownToggle.expand}
+        </span>
+        <svg
+          viewBox="0 0 12 12"
+          aria-hidden
+          className={`h-3 w-3 transition-transform duration-200 ${
+            breakdownOpen ? "rotate-180" : ""
+          }`}
+        >
+          <path
+            d="M3 4.5l3 3 3-3"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+      <div
+        id="breakdown-panel"
+        className={`grid w-full transition-[grid-template-rows] duration-200 ease-out ${
+          breakdownOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+        aria-hidden={!breakdownOpen}
+      >
+        <div className="overflow-hidden">
+          <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-neutral-600">
+            {dict.breakdownHint}
+          </p>
+
+          <div className="mx-auto mt-6 w-full max-w-[300px]">
+            <div className="mb-2 text-center text-xs text-neutral-500">
+              {dict.chart.sectionPeriod.subtitle(
+                formatPrice(data.current.price, data.exchange),
+              )}
+            </div>
+            <div
+              className="grid grid-cols-2 gap-1.5"
+              role="list"
+              aria-label={dict.chart.sectionPeriod.title}
             >
-              <path
-                d="M3 4.5l3 3 3-3"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <div
-            id="breakdown-panel"
-            className={`grid w-full transition-[grid-template-rows] duration-200 ease-out ${
-              breakdownOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-            }`}
-            aria-hidden={!breakdownOpen}
-          >
-            <div className="overflow-hidden">
-              <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-neutral-600">
-                {dict.breakdownHint}
-              </p>
-
-              {/* 섹션 1 — 시점별 변화율(막대 차트). 헤더(제목 + 부제) 후 8px 간격.
-                  outer max-w는 섹션 2와 동일(400px) — 두 섹션 헤더 첫 글자 X 좌표 일치.
-                  막대 row만 안쪽에서 max-w-[200px] mx-auto로 가운데 정렬 유지 (디자인 보존). */}
-              <div className="mx-auto mt-6 w-full max-w-[400px]">
-                <div className="mb-2 text-left">
-                  <div className="text-base font-medium text-neutral-200">
-                    {dict.chart.sectionPeriod.title}
-                  </div>
-                  <div className="text-xs text-neutral-500">
-                    {dict.chart.sectionPeriod.subtitle(
-                      formatPrice(data.current.price, data.exchange),
-                    )}
-                  </div>
-                </div>
-                <div
-                  ref={breakdownRowRef}
-                  className="mx-auto flex w-full max-w-[200px] flex-col"
-                >
-                  {visibleItems.map((item) => (
-                    <PeriodItem
-                      key={item.key}
-                      period={item.key}
-                      label={item.label}
-                      point={item.point}
-                      dict={dict}
-                      lang={lang}
-                      exchange={data.exchange}
-                      maxAbsPct={maxAbsPct}
-                      active={activePeriod === item.key}
-                      onToggle={() => toggle(item.key)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* 섹션 구분선 — 위·아래 각각 28px. */}
-              <hr className="my-7 border-0 border-t-[0.5px] border-[#1f1f1f]" />
-
-              {/* 섹션 2 — 가격 추이(라인 차트). 헤더 후 12px 간격은 RechartsBreakdown
-                  자체 mb-3 (빠른 버튼 컨테이너)이 담당. */}
-              <div className="mx-auto w-full max-w-[400px]">
-                <div className="mb-3 text-left">
-                  <div className="text-base font-medium text-neutral-200">
-                    {dict.chart.sectionTrend.title}
-                  </div>
-                  <div className="text-xs text-neutral-500">
-                    {dict.chart.sectionTrend.subtitle}
-                  </div>
-                </div>
-                <RechartsBreakdown
-                  closes={data.recentCloses}
-                  exchange={data.exchange}
-                  lang={lang}
-                  dict={dict.chart}
+              {heatCells.map((cell) => (
+                <HeatCell
+                  key={cell.label}
+                  label={cell.label}
+                  point={cell.point}
+                  emptyLabel={dict.breakdownEmpty}
                 />
-              </div>
+              ))}
             </div>
           </div>
-        </>
-      ) : null}
+        </div>
+      </div>
       {/* 모바일·데스크톱 공통 인라인 방문자 텍스트 — 보조 수치 바로 아래 작게.
           오늘 + 누적 표시, today=0이면 i18n 함수가 자동으로 누적만 반환.
           parts 배열로 강조 영역(emphasis="value")은 밝은 톤, 라벨은 더 흐림.
@@ -532,7 +429,90 @@ function HeroNumbers({
   );
 }
 
-type BreakdownKey = "oneDay" | "oneWeek" | "oneMonth" | "fiftyTwoWeek";
+/**
+ * 시점별 변화율 히트맵 셀 — 절대값 크기 → 배경 알파, 부호 → 초록/빨강.
+ * 데이터 부족(point=null)은 회색 텍스트 placeholder.
+ */
+function HeatCell({
+  label,
+  point,
+  emptyLabel,
+}: {
+  label: string;
+  point: PeriodPoint | null;
+  emptyLabel: string;
+}) {
+  if (!point) {
+    return (
+      <div
+        role="listitem"
+        className="rounded-lg px-3 py-5 text-center"
+      >
+        <div className="text-[11px] text-neutral-600">{label}</div>
+        <div className="mt-1 text-[11px] text-neutral-600">{emptyLabel}</div>
+      </div>
+    );
+  }
+  const style = heatStyleFor(point.pct);
+  return (
+    <div
+      role="listitem"
+      className="rounded-lg px-3 py-5 text-center"
+      style={{ backgroundColor: style.background }}
+    >
+      <div className={`text-[11px] ${style.labelClass}`}>{label}</div>
+      <div className={`mt-1 font-mono text-[22px] font-medium ${style.valueClass}`}>
+        {formatSignedPct(point.pct, 1)}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 히트맵 셀 스타일 계산 — 절대값 크기별 임계 알파, 부호별 색상, 대비별 텍스트 톤.
+ * 임계값 (|pct|): <3 · 3~10 · 10~25 · 25~50 · 50~100 · >100 → 0.06/0.15/0.30/0.50/0.65/0.80.
+ * <0.1%면 배경 없음, 회색 텍스트.
+ * alpha >= 0.4면 진한 배경 대비를 위해 라벨=neutral-200, 값=white.
+ */
+function heatStyleFor(pct: number): {
+  background: string;
+  labelClass: string;
+  valueClass: string;
+} {
+  const abs = Math.abs(pct);
+  if (abs < 0.1) {
+    return {
+      background: "transparent",
+      labelClass: "text-neutral-500",
+      valueClass: "text-neutral-500",
+    };
+  }
+  const alpha =
+    abs < 3
+      ? 0.06
+      : abs < 10
+        ? 0.15
+        : abs < 25
+          ? 0.3
+          : abs < 50
+            ? 0.5
+            : abs < 100
+              ? 0.65
+              : 0.8;
+  const positive = pct > 0;
+  const rgb = positive ? "74, 222, 128" : "248, 113, 113";
+  const strong = alpha >= 0.4;
+  const valueBaseClass = strong
+    ? "text-white"
+    : positive
+      ? "text-green-400"
+      : "text-red-400";
+  return {
+    background: `rgba(${rgb}, ${alpha})`,
+    labelClass: strong ? "text-neutral-200" : "text-neutral-500",
+    valueClass: valueBaseClass,
+  };
+}
 
 /**
  * "이 낙폭 도달" 통계 블록 — 프로그레스 바 시각화.
@@ -647,120 +627,6 @@ function fearGreedColorClass(rating: FearGreedRating): string {
     case "extreme greed":
       return "text-emerald-400";
   }
-}
-
-/**
- * 기간별 폭락 단일 항목 — 세로 배치 한 줄. 라벨(좌) ↔ 값(우) flex justify-between.
- *   - point === null: UI 숨김 (신규 종목 데이터 부족)
- *   - pct < 0: 빨강(text-red-400) "-1.2%"
- *   - pct > 0: 회색(text-neutral-500) "+8.7%"  — 음수와 다른 톤, 폭락 모니터 정체성
- *   - pct === 0: 회색(text-neutral-500) "0.0%"
- *   - hover(데스크톱) 또는 active(탭) 시 툴팁 노출.
- */
-function PeriodItem({
-  period,
-  label,
-  point,
-  active,
-  onToggle,
-  dict,
-  lang,
-  exchange,
-  maxAbsPct,
-}: {
-  period: BreakdownKey;
-  label: string;
-  point: PeriodPoint | null;
-  active: boolean;
-  onToggle: () => void;
-  dict: ReturnType<typeof getDict>;
-  lang: Lang;
-  exchange: Exchange;
-  /** 4개 항목 공유 스케일 — 정규화된 막대 길이 계산용. */
-  maxAbsPct: number;
-}) {
-  // 데이터 부족 시 — 항목 유지하되 비활성. 호버/탭/툴팁/막대 모두 비활성.
-  // !point: null + undefined 둘 다 처리 (stale cache나 빌드 캐시가 옛 shape를 들고 와
-  // breakdown.oneYear가 undefined로 들어오는 케이스 가드).
-  if (!point) {
-    return (
-      <div className="flex w-full cursor-default items-baseline justify-between rounded px-2 py-0.5 text-sm">
-        <span className="text-neutral-600">{label}</span>
-        <span className="text-[11px] text-neutral-600">
-          {dict.breakdownEmpty}
-        </span>
-      </div>
-    );
-  }
-  const rounded = Number(point.pct.toFixed(1));
-  const negative = rounded < 0;
-  const valueClass = negative ? "text-red-400" : "text-neutral-500";
-  // 가로 막대 길이 — 0 기준 좌/우 각각 50% 영역 안에서 |pct|/maxAbs 비율.
-  // rounded 기준으로 그려 텍스트 값과 막대가 시각적으로 일치하게.
-  const barWidthPct = Math.min(
-    50,
-    (Math.abs(rounded) / Math.max(maxAbsPct, 0.001)) * 50,
-  );
-  const detailText = dict.breakdownTooltip({
-    period,
-    dateLabel: formatShortDate(point.date, lang),
-    priceLabel: formatPrice(point.price, exchange),
-    pct: point.pct,
-  });
-  // 단일 패턴 — 모든 환경에서 클릭/탭 시 행 강조 + 아래 inline 박스 펼침.
-  // 펼침은 grid-template-rows 0fr↔1fr transition으로 부드럽게 (200ms).
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={active}
-        aria-controls={`breakdown-detail-${period}`}
-        aria-label={detailText}
-        className={`block w-full rounded px-2 py-1 transition-colors hover:bg-neutral-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-700 ${
-          active ? "bg-neutral-900/60" : ""
-        }`}
-      >
-        <span className="flex items-baseline justify-between text-sm">
-          <span className="text-neutral-500">{label}</span>
-          <span className={`font-mono ${valueClass}`}>
-            {formatSignedPct(point.pct, 1)}
-          </span>
-        </span>
-        {/* 가로 막대 — 4항목 공유 스케일. 0 기준 중앙 수직선 + 양/음 방향 막대. */}
-        <span
-          aria-hidden
-          className="relative mt-1 block h-[3px] w-full overflow-hidden rounded-sm bg-neutral-900"
-        >
-          {/* 0% 기준 중앙 가이드 */}
-          <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-neutral-700" />
-          {/* 실 막대 — 양수는 중앙→오른쪽, 음수는 중앙→왼쪽 */}
-          <span
-            className={
-              "absolute top-0 h-full " +
-              (negative
-                ? "right-1/2 bg-red-400"
-                : "left-1/2 bg-neutral-500")
-            }
-            style={{ width: `${barWidthPct}%` }}
-          />
-        </span>
-      </button>
-      <div
-        id={`breakdown-detail-${period}`}
-        className={`grid transition-[grid-template-rows] duration-200 ease-out ${
-          active ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-        aria-hidden={!active}
-      >
-        <div className="overflow-hidden">
-          <div className="mt-1 rounded-lg bg-neutral-900 px-2.5 py-2 text-[11px] leading-relaxed text-neutral-300">
-            {detailText}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function Facts({

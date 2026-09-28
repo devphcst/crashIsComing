@@ -130,8 +130,8 @@ export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) 
                 rangeButtons={d.historyPage.rangeButtons}
                 summaryFormatter={d.historyPage.chartSummary}
                 multiplierFormatter={d.historyPage.multiplierLabel}
-                emptyLabel={d.chart.empty}
-                tapHintLabel={d.chart.tapHint}
+                emptyLabel={d.historyPage.chartEmpty}
+                tapHintLabel={d.historyPage.chartTapHint}
               />
             </div>
 

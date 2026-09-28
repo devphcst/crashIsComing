@@ -131,39 +131,11 @@ export type Dict = {
   };
   /** 보조 수치 항목 데이터 부족(closes 미달) 시 값 자리에 표시. */
   breakdownEmpty: string;
-  /** 보조 수치 항목 hover/탭 시 노출되는 툴팁 본문. */
-  breakdownTooltip: (params: {
-    period: 'oneDay' | 'oneWeek' | 'oneMonth' | 'fiftyTwoWeek';
-    dateLabel: string;
-    priceLabel: string;
-    pct: number;
-  }) => string;
-  /** 인터랙티브 차트 영역 라벨 (펼침 패널 안, Phase 1 막대 아래). */
+  /** 히트맵 상단 서브라벨 — "최근 종가($X) 기준 변화". */
   chart: {
-    /** closes 7거래일 미만일 때 차트 자리 표시 — Phase 2-A. */
-    empty: string;
-    /** 빠른 비교 버튼 4개 라벨 — 1일/1주/1개월/1년. */
-    compareButtons: {
-      day: string;
-      week: string;
-      month: string;
-      year: string;
-    };
-    /** 결과 박스 상단 — "[start] → [end]" 표기. */
-    compareRange: (startDate: string, endDate: string) => string;
-    /** 결과 박스 하단 — "[startPrice] → [endPrice]" 표기. */
-    comparePriceLine: (startPrice: string, endPrice: string) => string;
-    /** Phase 2-C: 사용자 탭 모드 안내 — 결과 박스 자리 (start만 있고 end 없는 동안). */
-    tapHint: string;
-    /** 섹션 1 (시점별 변화율 — 막대 차트). subtitle은 현재 가격 표시 라벨을 받음. */
     sectionPeriod: {
       title: string;
       subtitle: (latestPriceLabel: string) => string;
-    };
-    /** 섹션 2 (가격 추이 — 라인 차트). */
-    sectionTrend: {
-      title: string;
-      subtitle: string;
     };
   };
   menu: {
@@ -244,6 +216,10 @@ export type Dict = {
       tenYear: string;
       all: string;
     };
+    /** 차트 데이터 부족 폴백 텍스트. */
+    chartEmpty: string;
+    /** 두 점 탭 진행 중 안내. */
+    chartTapHint: string;
     /** 차트 하단 요약 — "$27.40 → $725.17 (26배 상승)". */
     chartSummary: (
       startPrice: string,
@@ -472,34 +448,10 @@ const ko: Dict = {
     range: (min, max) => `지난 1년 범위 ${min} ~ ${max}`,
   },
   breakdownEmpty: '데이터 누적 중',
-  breakdownTooltip: ({ dateLabel, priceLabel, pct }) => {
-    const abs = Math.abs(pct).toFixed(1);
-    if (pct > 0.05) {
-      return `${dateLabel} 종가 ${priceLabel} 대비 ${abs}% 올랐어요`;
-    }
-    if (pct < -0.05) {
-      return `${dateLabel} 종가 ${priceLabel} 대비 ${abs}% 내렸어요`;
-    }
-    return `${dateLabel} 종가 ${priceLabel} 대비 변동 없어요`;
-  },
   chart: {
-    empty: '차트 데이터 누적 중',
-    compareButtons: {
-      day: '1일',
-      week: '1주',
-      month: '1개월',
-      year: '1년',
-    },
-    compareRange: (start, end) => `${start} → ${end}`,
-    comparePriceLine: (start, end) => `${start} → ${end}`,
-    tapHint: '두 점을 탭해서 비교',
     sectionPeriod: {
       title: '시점별 변화율',
       subtitle: (latestPrice) => `최근 종가(${latestPrice}) 기준 변화`,
-    },
-    sectionTrend: {
-      title: '가격 추이',
-      subtitle: '두 점을 탭하면 그 사이 변화를 보여줘요',
     },
   },
   menu: {
@@ -574,6 +526,8 @@ const ko: Dict = {
       tenYear: '10년',
       all: '전체',
     },
+    chartEmpty: '차트 데이터 누적 중',
+    chartTapHint: '두 점을 탭해서 비교',
     chartSummary: (start, end, multiplier) => `${start} → ${end} (${multiplier})`,
     multiplierLabel: (ratio) => {
       if (ratio >= 2) return `${ratio.toFixed(1)}배 상승`;
@@ -815,10 +769,10 @@ const en: Dict = {
     ];
   },
   breakdown: {
-    oneDay: 'Past day',
-    oneWeek: 'Past week',
-    oneMonth: 'Past month',
-    fiftyTwoWeek: 'Past year',
+    oneDay: '1D',
+    oneWeek: '1W',
+    oneMonth: '1M',
+    fiftyTwoWeek: '1Y',
   },
   breakdownHint:
     'Each value compares the current close to the close on that date\nValues only update on trading days — no changes on weekends or U.S. market holidays',
@@ -843,34 +797,10 @@ const en: Dict = {
     range: (min, max) => `1-yr range ${min} – ${max}`,
   },
   breakdownEmpty: 'Building up data',
-  breakdownTooltip: ({ dateLabel, priceLabel, pct }) => {
-    const abs = Math.abs(pct).toFixed(1);
-    if (pct > 0.05) {
-      return `${dateLabel} close ${priceLabel} — up ${abs}%`;
-    }
-    if (pct < -0.05) {
-      return `${dateLabel} close ${priceLabel} — down ${abs}%`;
-    }
-    return `${dateLabel} close ${priceLabel} — unchanged`;
-  },
   chart: {
-    empty: 'Chart data still loading',
-    compareButtons: {
-      day: '1D',
-      week: '1W',
-      month: '1M',
-      year: '1Y',
-    },
-    compareRange: (start, end) => `${start} → ${end}`,
-    comparePriceLine: (start, end) => `${start} → ${end}`,
-    tapHint: 'Tap two points to compare',
     sectionPeriod: {
       title: 'Period change',
-      subtitle: (latestPrice) => `Change from latest close (${latestPrice})`,
-    },
-    sectionTrend: {
-      title: 'Price trend',
-      subtitle: 'Tap two points to compare',
+      subtitle: (latestPrice) => `vs. latest close (${latestPrice})`,
     },
   },
   menu: {
@@ -953,6 +883,8 @@ const en: Dict = {
       tenYear: '10Y',
       all: 'All',
     },
+    chartEmpty: 'Chart data still loading',
+    chartTapHint: 'Tap two points to compare',
     chartSummary: (start, end, multiplier) => `${start} → ${end} (${multiplier})`,
     multiplierLabel: (ratio) => {
       if (ratio >= 2) return `${ratio.toFixed(1)}×`;

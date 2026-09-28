@@ -8,18 +8,6 @@ export type Dict = {
   current: string;
   ath: string;
   oneYearHigh: string;
-  /** 푸터 asOf 첫 줄 — 미국 시장 종가 날짜. */
-  asOfUs: (usDateFormatted: string) => string;
-  /** 푸터 asOf 둘째 줄 — 한국 시간 마감 (괄호 포함). */
-  asOfKst: (kstLine: string) => string;
-  updateSchedule: string;
-  /** 가격 카드 첫 줄 끝에 붙는 시간대 표기 — '(미국 시간)' / ' (US time)'. */
-  closeUsSuffix: string;
-  /**
-   * 가격 카드 둘째 줄(및 푸터 asOf 내 괄호 안)에서 쓰는 한국 시간 마감 표기.
-   * 미국 시장 16:00 ET을 KST로 환산한 결과(월/일/시).
-   */
-  closeKst: (month: number, day: number, hour: number) => string;
   /** 'YYYY-MM-DD' → 짧은 요일 ('월'/'Mon'). 단순 함수, 폼 라벨에 사용. */
   weekdayShort: (dateISO: string) => string;
   /**
@@ -39,12 +27,6 @@ export type Dict = {
   nextUpdateLine: (kstDateLabel: string, weekday: string) => string;
   /** KRX 종목용 업데이트 안내 — 한국시간 15:30 마감 기준. */
   nextUpdateLineKrx: (kstDateLabel: string, weekday: string) => string;
-  /** KRX 종목 푸터 — "{date} 한국 시장 종가" (자동/수동 구분 없이 사실만). */
-  asOfKrx: (krDateFormatted: string) => string;
-  /** KRX 종목 푸터 보조 — "(오후 3:30 마감)" 같은 마감 시각 표기. */
-  asOfKrxSuffix: string;
-  /** KRX 종목 푸터 — 자동 표현 없이 마감 시각 안내. */
-  updateScheduleKrx: string;
   notReady: string;
   notReadyHint: string;
   disclaimer: string;
@@ -67,8 +49,6 @@ export type Dict = {
     oneMonth: string;
     fiftyTwoWeek: string;
   };
-  /** 보조 수치 줄 위에 노출되는 한 줄 안내문 — 사용자 이해 도움. */
-  breakdownHint: string;
   /**
    * "이 낙폭 도달" 통계 블록 — 큰 숫자 아래 프로그레스 바 시각화.
    *   - reached: 제목 문장 → 내 "N번" 강조를 위해 prefix/count/suffix 3조각 반환.
@@ -318,12 +298,6 @@ const ko: Dict = {
   current: '최근 종가',
   ath: '전고점',
   oneYearHigh: '52주 고점',
-  asOfUs: (usDate) => `${usDate} 미국 시장 종가`,
-  asOfKst: (kstLine) => `(${kstLine})`,
-  updateSchedule: '거래일 기준 · 매일 미국 시장 마감 후 자동 업데이트됩니다.',
-  closeUsSuffix: ' (미국 시간)',
-  closeKst: (month, day, hour) =>
-    `한국 시간 ${month}월 ${day}일 ${String(hour).padStart(2, '0')}:00 마감`,
   weekdayShort: (dateISO) => {
     const d = new Date(`${dateISO}T00:00:00Z`);
     return ['일', '월', '화', '수', '목', '금', '토'][d.getUTCDay()];
@@ -336,9 +310,6 @@ const ko: Dict = {
     `한국 ${kstDateLabel}(${weekday}) 오전 7시 미국장 마감 후 업데이트`,
   nextUpdateLineKrx: (kstDateLabel, weekday) =>
     `한국 ${kstDateLabel}(${weekday}) 오후 3:30 한국장 마감 후 업데이트`,
-  asOfKrx: (krDate) => `${krDate} 한국 시장 종가`,
-  asOfKrxSuffix: '(오후 3:30 마감)',
-  updateScheduleKrx: '한국 시장 마감(오후 3:30) 기준.',
   notReady: '데이터를 준비 중입니다',
   notReadyHint:
     '관리자가 초기 ATH와 52주 고점 시드를 입력하면 화면에 수치가 표시됩니다.',
@@ -368,8 +339,6 @@ const ko: Dict = {
     oneMonth: '최근 1개월',
     fiftyTwoWeek: '최근 1년',
   },
-  breakdownHint:
-    '아래는 각 시점의 종가 대비 변화율입니다\n거래일 기준이라 주말·휴장일에는 업데이트되지 않습니다',
   atDrawdownStats: {
     reached: (absPct, n) => ({
       prefix: `지금껏 전고점 대비 −${absPct}%는 `,
@@ -610,28 +579,6 @@ const en: Dict = {
   current: 'Latest close',
   ath: 'All-time high',
   oneYearHigh: '52-week high',
-  asOfUs: (usDate) => `US market close on ${usDate}`,
-  asOfKst: (kstLine) => `(${kstLine})`,
-  updateSchedule:
-    'Trading days only · Updates automatically after each U.S. market close.',
-  closeUsSuffix: ' (US time)',
-  closeKst: (month, day, hour) => {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return `Closed ${String(hour).padStart(2, '0')}:00 KST, ${months[month - 1]} ${day}`;
-  },
   weekdayShort: (dateISO) => {
     const d = new Date(`${dateISO}T00:00:00Z`);
     if (Number.isNaN(d.getTime())) return '';
@@ -645,9 +592,6 @@ const en: Dict = {
     `Updates after US market close (${kstDateLabel} (${weekday}) KST 7am)`,
   nextUpdateLineKrx: (kstDateLabel, weekday) =>
     `Updates after Korea market close (${kstDateLabel} (${weekday}) KST 15:30)`,
-  asOfKrx: (krDate) => `Korea market close on ${krDate}`,
-  asOfKrxSuffix: '(15:30 KST close)',
-  updateScheduleKrx: 'Korea market close (15:30 KST) basis.',
   notReady: 'Data not ready yet',
   notReadyHint:
     'Once the admin seeds the initial ATH and 52-week high, numbers will appear here.',
@@ -674,8 +618,6 @@ const en: Dict = {
     oneMonth: '1M',
     fiftyTwoWeek: '1Y',
   },
-  breakdownHint:
-    'Each value compares the current close to the close on that date\nValues only update on trading days — no changes on weekends or U.S. market holidays',
   atDrawdownStats: {
     reached: (absPct, n) => ({
       prefix: `We've been down −${absPct}% `,

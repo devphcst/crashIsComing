@@ -20,7 +20,6 @@ import {
   type LevelThresholds,
 } from "@/constants/thresholds";
 import { LangToggle } from "./LangToggle";
-import { LastUpdated } from "./LastUpdated";
 import { Disclaimer } from "./Disclaimer";
 import { AboutSection } from "./AboutSection";
 import { AllInWarningSection } from "./AllInWarningSection";
@@ -217,25 +216,6 @@ export function HeroDrawdown({
                   }}
                   fearGreed={fearGreed}
                 />
-                {data.exchange === "KRX" ? (
-                  // KRX 종목 캡션 — 자동 표현 빼고 마감 시각 사실만.
-                  <LastUpdated
-                    asOfUsText={d.asOfKrx(formatDate(data.current.date, lang))}
-                    asOfKstText={d.asOfKrxSuffix}
-                    scheduleText={d.updateScheduleKrx}
-                  />
-                ) : (
-                  <LastUpdated
-                    asOfUsText={d.asOfUs(formatDate(data.current.date, lang))}
-                    asOfKstText={(() => {
-                      const kst = usCloseInKst(data.current.date);
-                      return d.asOfKst(
-                        d.closeKst(kst.month, kst.day, kst.hour),
-                      );
-                    })()}
-                    scheduleText={d.updateSchedule}
-                  />
-                )}
               </>
             ) : (
               <NotReady dict={d} />
@@ -340,15 +320,11 @@ function HeroNumbers({
       {fearGreed ? <FearGreedBlock snapshot={fearGreed} dict={dict} /> : null}
 
       {/* 시점별 변화율 통합 블록 — 항상 표시.
-          순서: 시장 상태 문구 → 안내 문구 → "최근 종가 $X" → 히트맵 4셀 → 참고가 2열. */}
-      <div className="mx-auto mt-2 w-full max-w-[300px]">
+          순서: 시장 상태 문구 → "최근 종가 $X" → 히트맵 4셀 → 참고가 (통합 or 2열). */}
+      <div className="mx-auto mt-2 w-full max-w-[300px] px-4 py-6">
         <MarketStatusBanner data={data} dict={dict} lang={lang} />
 
-        <p className="mt-4 whitespace-pre-line text-center text-xs leading-relaxed text-neutral-600">
-          {dict.breakdownHint}
-        </p>
-
-        <div className="mb-2 mt-6 text-center text-[12px] text-neutral-500">
+        <div className="mb-3 mt-6 text-center text-[12px] text-neutral-500">
           {dict.current}{" "}
           <span className="font-medium text-white">
             {formatPrice(data.current.price, data.exchange)}
@@ -369,23 +345,19 @@ function HeroNumbers({
           ))}
         </div>
 
-        {/* 참고가 통합 — 4셀 바로 아래, 얇은 구분선 + 2열(ATH / 52주 고점).
-            각 열: 라벨(10px) → 값(13px) → 짧은 날짜(9px). */}
-        <div
-          className="mt-4 grid grid-cols-2 gap-1 border-t border-[#222] pt-[14px]"
-          role="list"
-        >
-          <RefCell
-            label={dict.ath}
-            value={formatPrice(data.ath.price, data.exchange)}
-            date={formatShortDate(data.ath.date, lang)}
-          />
-          <RefCell
-            label={dict.oneYearHigh}
-            value={formatPrice(data.oneYear.price, data.exchange)}
-            date={formatShortDate(data.oneYear.date, lang)}
-          />
-        </div>
+        {/* 참고가 — 값+날짜가 완전히 같으면 한 줄, 다르면 2열. */}
+        <RefRow
+          ath={{
+            label: dict.ath,
+            value: formatPrice(data.ath.price, data.exchange),
+            date: formatDate(data.ath.date, lang),
+          }}
+          oneYear={{
+            label: dict.oneYearHigh,
+            value: formatPrice(data.oneYear.price, data.exchange),
+            date: formatDate(data.oneYear.date, lang),
+          }}
+        />
       </div>
       {/* 모바일·데스크톱 공통 인라인 방문자 텍스트 — 보조 수치 바로 아래 작게.
           오늘 + 누적 표시, today=0이면 i18n 함수가 자동으로 누적만 반환.
@@ -405,6 +377,43 @@ function HeroNumbers({
             ))}
         </span>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * 참고가 행 — 값+날짜가 완전히 같으면 한 줄 통합, 다르면 2열.
+ * 통합 케이스: "전고점 $747.47 · 2026년 9월 22일" (11px, 값만 살짝 밝게)
+ * 2열 케이스: 각 열에 RefCell (라벨/값/날짜 3줄)
+ */
+function RefRow({
+  ath,
+  oneYear,
+}: {
+  ath: { label: string; value: string; date: string };
+  oneYear: { label: string; value: string; date: string };
+}) {
+  const identical = ath.value === oneYear.value && ath.date === oneYear.date;
+  if (identical) {
+    return (
+      <div className="mt-4 border-t border-[#222] pt-3 text-center text-[11px] text-neutral-500">
+        <span>{ath.label} </span>
+        <span className="font-mono text-neutral-300">{ath.value}</span>
+        <span> · {ath.date}</span>
+      </div>
+    );
+  }
+  return (
+    <div
+      className="mt-4 grid grid-cols-2 gap-1 border-t border-[#222] pt-3"
+      role="list"
+    >
+      <RefCell label={ath.label} value={ath.value} date={ath.date} />
+      <RefCell
+        label={oneYear.label}
+        value={oneYear.value}
+        date={oneYear.date}
+      />
     </div>
   );
 }

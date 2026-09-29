@@ -341,27 +341,111 @@ function HeroNumbers({
           }}
         />
       </div>
-      {/* 모바일·데스크톱 공통 인라인 방문자 텍스트 — 보조 수치 바로 아래 작게.
-          오늘 + 누적 표시, today=0이면 i18n 함수가 자동으로 누적만 반환.
-          parts 배열로 강조 영역(emphasis="value")은 밝은 톤, 라벨은 더 흐림.
-          showVisitorCount(admin 토글) 꺼져 있으면 텍스트도 노출 안 함. */}
-      {visitor.show ? (
-        <span className="mt-3 text-xs text-neutral-700">
-          {dict
-            .visitorInline(visitor.today || null, visitor.total)
-            .map((p, i) => (
-              <span
-                key={i}
-                className={p.emphasis === "value" ? "text-neutral-500" : ""}
-              >
-                {p.text}
-              </span>
-            ))}
-        </span>
-      ) : null}
+      {/* 방문자 텍스트 + 공유 버튼 — 히트맵 블록 바로 아래.
+          방문자 텍스트: showVisitorCount(admin 토글) 꺼져 있으면 숨김.
+          공유 버튼: 항상 표시 (SNS 캐시 무효화용 URL 클립보드 복사). */}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+        {visitor.show ? (
+          <span className="text-xs text-neutral-700">
+            {dict
+              .visitorInline(visitor.today || null, visitor.total)
+              .map((p, i) => (
+                <span
+                  key={i}
+                  className={p.emphasis === "value" ? "text-neutral-500" : ""}
+                >
+                  {p.text}
+                </span>
+              ))}
+          </span>
+        ) : null}
+        <ShareButton dict={dict} />
+      </div>
     </div>
   );
 }
+
+/**
+ * 링크 공유 버튼 — 오늘 날짜(KST YYYYMMDD)를 붙인 URL을 클립보드에 복사.
+ * SNS(카톡·X·스레드 등)의 og:image 캐시를 무효화하기 위한 URL 변형이 목적.
+ * navigator.clipboard 미지원 브라우저에서는 textarea+execCommand 폴백.
+ * 성공 시 "복사됨 ✓" 라벨로 2초간 피드백.
+ */
+function ShareButton({ dict }: { dict: ReturnType<typeof getDict> }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const t = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(t);
+  }, [copied]);
+
+  const onClick = async () => {
+    const kstYmd = todayKstYmd();
+    const url = `${window.location.origin}${window.location.pathname}?d=${kstYmd}`;
+    const ok = await copyToClipboard(url);
+    if (ok) setCopied(true);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-live="polite"
+      className="inline-flex items-center gap-1 rounded-full border border-[#333] px-2.5 py-1 text-[10px] text-neutral-500 transition-colors hover:bg-neutral-900 hover:text-neutral-300"
+    >
+      <svg
+        viewBox="0 0 12 12"
+        aria-hidden
+        className="h-2.5 w-2.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {/* 위쪽 화살표 + 박스: share/upload 관용 아이콘 */}
+        <path d="M6 8V2" />
+        <path d="M3.5 4.5L6 2l2.5 2.5" />
+        <path d="M3 7v2.5a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5V7" />
+      </svg>
+      <span>{copied ? dict.share.copied : dict.share.button}</span>
+    </button>
+  );
+}
+
+/** KST 기준 오늘 YYYYMMDD. og URL `?v=`와는 별개로 UI 공유 URL `?d=`에 사용. */
+const todayKstYmd = (): string => {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const iso = kst.toISOString(); // YYYY-MM-DDT...
+  return iso.slice(0, 10).replace(/-/g, "");
+};
+
+/** clipboard API 우선, 실패/미지원 시 textarea+execCommand 폴백. */
+const copyToClipboard = async (text: string): Promise<boolean> => {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fall through to legacy fallback
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+};
 
 /**
  * 참고가 행 — 값+날짜가 완전히 같으면 한 줄 통합, 다르면 2열.

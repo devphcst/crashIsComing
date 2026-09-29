@@ -41,6 +41,14 @@ export type Dict = {
     today: number | null,
     total: number,
   ) => Array<{ text: string; emphasis?: 'value' }>;
+  /**
+   * 공유 버튼 라벨 — button은 기본 상태, copied는 복사 성공 후 2초 피드백.
+   * URL 뒤에 오늘 날짜(YYYYMMDD) `?d=` 파라미터를 붙여 SNS 캐시 무효화.
+   */
+  share: {
+    button: string;
+    copied: string;
+  };
   /** 기간별 폭락률 라벨 (전날/1주일/1개월/52주). */
   breakdown: {
     oneDay: string;
@@ -329,6 +337,10 @@ const ko: Dict = {
       { text: '명이 다녀갔어요' },
     ];
   },
+  share: {
+    button: '공유',
+    copied: '복사됨 ✓',
+  },
   breakdown: {
     oneDay: '최근 1일',
     oneWeek: '최근 1주',
@@ -605,6 +617,10 @@ const en: Dict = {
       { text: totalStr, emphasis: 'value' },
       { text: ' total' },
     ];
+  },
+  share: {
+    button: 'Share',
+    copied: 'Copied ✓',
   },
   breakdown: {
     oneDay: '1D',

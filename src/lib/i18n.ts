@@ -213,34 +213,45 @@ export type Dict = {
   };
   /** 월별 계절성 페이지(/seasonality/[ticker]) + 티저. */
   seasonality: {
-    /** 페이지 제목 — "{displayName} 월별 계절성". */
+    /** metadata 전용 — "{displayName} 월별 계절성". UI 제목은 questionTitle 사용. */
     pageTitle: (displayName: string) => string;
     /** 1~12 → 월 라벨 ("1월" / "January"). */
     monthLabel: (m: number) => string;
     /** 월 탭 짧은 라벨 (모바일) — "1월" / "Jan". */
     monthShort: (m: number) => string;
-    /** 통계 카드 라벨들. */
-    cardMean: string;
-    cardWinRate: string;
-    cardBest: string;
-    cardWorst: string;
+    /** 작은 회색 상단 라벨 — "{TICKER} · {displayName}". */
+    headerLabel: (tickerUpper: string, displayName: string) => string;
+    /** 큰 제목 — "{N}월엔 오를까, 내릴까?". */
+    questionTitle: (monthLabel: string) => string;
+    /** 부제 — "{시작}–{끝}년, 매년 {N}월 한 달 동안의 수익률". */
+    rangeSubtitle: (
+      startYear: number,
+      endYear: number,
+      monthLabel: string,
+    ) => string;
+    /** 통계 카드 1: 상승 횟수. 라벨/값/보조 3조각. */
+    cardWinsLabel: (total: number) => string;
+    cardWinsValue: (wins: number) => string;
+    cardWinsSub: (pct: string) => string;
+    /** 통계 카드 2: 평균 수익률. */
+    cardMeanLabel: string;
+    cardMeanSub: (monthLabel: string) => string;
+    /** 통계 카드 3: 최고/최저. */
+    cardBestWorstLabel: string;
+    cardBestWorstSub: (bestYear: number, worstYear: number) => string;
     /** 평균 카드 툴팁 — "중앙값 X.X%". */
     tooltipMedian: (medianLabel: string) => string;
-    /** 상승 확률 보조 설명 — "N년 중 K번 상승". */
-    winRateSub: (wins: number, total: number) => string;
-    /** 최고/최저 보조 라벨 — "YYYY년". */
+    /** 최고/최저 보조 라벨 — "YYYY년". (바둑판 셀 등에 재사용) */
     yearLabel: (year: number) => string;
     /** 샘플 적음 뱃지. */
     smallSample: (years: number) => string;
-    /** 바둑판 섹션 헤더 — "{month} 수익률". */
+    /** 바둑판 섹션 헤더 — "연도별 {N}월 수익률". */
     gridHeader: (monthLabel: string) => string;
     /** 전체 히트맵 토글 라벨. */
     toggleHeatmapShow: string;
     toggleHeatmapHide: string;
     /** 히트맵 맨 아래 행 라벨 — "평균". */
     heatmapAvgRow: string;
-    /** 범례 라벨. */
-    legendTitle: string;
     /** 하단 안내 — "배당 미포함 가격 수익률 기준". */
     priceReturnNote: string;
     /** 데이터 비었을 때. */
@@ -545,19 +556,24 @@ const ko: Dict = {
     pageTitle: (displayName) => `${displayName} 월별 계절성`,
     monthLabel: (m) => `${m}월`,
     monthShort: (m) => `${m}월`,
-    cardMean: '평균 수익률',
-    cardWinRate: '상승 확률',
-    cardBest: '최고',
-    cardWorst: '최저',
+    headerLabel: (tickerUpper, displayName) => `${tickerUpper} · ${displayName}`,
+    questionTitle: (monthLabel) => `${monthLabel}엔 오를까, 내릴까?`,
+    rangeSubtitle: (startYear, endYear, monthLabel) =>
+      `${startYear}–${endYear}년, 매년 ${monthLabel} 한 달 동안의 수익률`,
+    cardWinsLabel: (total) => `${total}년 중 상승`,
+    cardWinsValue: (wins) => `${wins}번`,
+    cardWinsSub: (pct) => `상승 확률 ${pct}`,
+    cardMeanLabel: '평균 수익률',
+    cardMeanSub: (monthLabel) => `${monthLabel} 한 달`,
+    cardBestWorstLabel: '최고 / 최저',
+    cardBestWorstSub: (bestYear, worstYear) => `${bestYear}년 / ${worstYear}년`,
     tooltipMedian: (medianLabel) => `중앙값 ${medianLabel}`,
-    winRateSub: (wins, total) => `${total}년 중 ${wins}번 상승`,
     yearLabel: (year) => `${year}년`,
     smallSample: (years) => `표본 적음 (${years}년)`,
-    gridHeader: (monthLabel) => `${monthLabel} 수익률 (연도별)`,
+    gridHeader: (monthLabel) => `연도별 ${monthLabel} 수익률`,
     toggleHeatmapShow: '전체 히트맵 보기',
     toggleHeatmapHide: '전체 히트맵 숨기기',
     heatmapAvgRow: '평균',
-    legendTitle: '색 범례',
     priceReturnNote: '배당 미포함 가격 수익률(price return) 기준. 분할은 조정됨.',
     empty: '월별 수익률을 계산할 데이터가 아직 충분하지 않습니다.',
     shareButton: '공유',
@@ -889,19 +905,24 @@ const en: Dict = {
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return names[m - 1] ?? String(m);
     },
-    cardMean: 'Average return',
-    cardWinRate: 'Win rate',
-    cardBest: 'Best',
-    cardWorst: 'Worst',
+    headerLabel: (tickerUpper, displayName) => `${tickerUpper} · ${displayName}`,
+    questionTitle: (monthLabel) => `Will ${monthLabel} be up or down?`,
+    rangeSubtitle: (startYear, endYear, monthLabel) =>
+      `${startYear}–${endYear}, one-month returns in ${monthLabel}`,
+    cardWinsLabel: (total) => `${total} years positive`,
+    cardWinsValue: (wins) => `${wins}`,
+    cardWinsSub: (pct) => `Win rate ${pct}`,
+    cardMeanLabel: 'Average return',
+    cardMeanSub: (monthLabel) => `In ${monthLabel}`,
+    cardBestWorstLabel: 'Best / Worst',
+    cardBestWorstSub: (bestYear, worstYear) => `${bestYear} / ${worstYear}`,
     tooltipMedian: (medianLabel) => `Median ${medianLabel}`,
-    winRateSub: (wins, total) => `${wins} of ${total} years positive`,
     yearLabel: (year) => `${year}`,
     smallSample: (years) => `Small sample (${years} yrs)`,
     gridHeader: (monthLabel) => `${monthLabel} returns by year`,
     toggleHeatmapShow: 'Show full heatmap',
     toggleHeatmapHide: 'Hide full heatmap',
     heatmapAvgRow: 'Avg',
-    legendTitle: 'Legend',
     priceReturnNote: 'Price return (dividends not included). Splits adjusted.',
     empty: 'Not enough data yet to compute monthly returns.',
     shareButton: 'Share',

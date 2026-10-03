@@ -86,19 +86,21 @@ export const tierClasses: Record<ColorTier, string> = {
   "down-strong": "bg-rose-500 text-rose-950",
 };
 
-/** 범례용 — 모든 티어 라벨과 함께 클래스 반환. 각 밴드 % 라벨은 호출부에서 지정. */
+/**
+ * 범례용 — 하락→상승 6단계. "0%" 중립은 범례에서 제외 (타일 색상 티어 자체는 유지).
+ * 라벨 포맷: "−hi% 이하" / "−lo~−hi%" / "0~−lo%" / "0~+lo%" / "+lo~+hi%" / "+hi% 이상".
+ */
 export const legendTiers = (
   leverage: number,
 ): Array<{ tier: ColorTier; label: string; className: string }> => {
   const b = bandFor(leverage);
   return [
-    { tier: "down-strong", label: `≤ −${b.hi}%`, className: tierClasses["down-strong"] },
-    { tier: "down-mid", label: `−${b.lo}%~−${b.hi}%`, className: tierClasses["down-mid"] },
+    { tier: "down-strong", label: `−${b.hi}% 이하`, className: tierClasses["down-strong"] },
+    { tier: "down-mid", label: `−${b.lo}~−${b.hi}%`, className: tierClasses["down-mid"] },
     { tier: "down-weak", label: `0~−${b.lo}%`, className: tierClasses["down-weak"] },
-    { tier: "zero", label: "0%", className: tierClasses.zero },
     { tier: "up-weak", label: `0~+${b.lo}%`, className: tierClasses["up-weak"] },
-    { tier: "up-mid", label: `+${b.lo}%~+${b.hi}%`, className: tierClasses["up-mid"] },
-    { tier: "up-strong", label: `≥ +${b.hi}%`, className: tierClasses["up-strong"] },
+    { tier: "up-mid", label: `+${b.lo}~+${b.hi}%`, className: tierClasses["up-mid"] },
+    { tier: "up-strong", label: `+${b.hi}% 이상`, className: tierClasses["up-strong"] },
   ];
 };
 

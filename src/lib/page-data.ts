@@ -177,42 +177,36 @@ export const loadVisibleMetas = async (): Promise<SymbolMeta[]> => {
   return all.filter((m) => !isHidden(m));
 };
 
+/** 현재 KST 월(1~12). */
+const currentKstMonth = (): number => {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kst.getUTCMonth() + 1;
+};
+
 /**
- * 월별 계절성 티저 — "데이터상 마지막 종가의 '달력상 직전 달'"의 통계를 요약.
- * seasonality 모듈 자체가 'symbols' 태그로 캐시됨 → 중복 호출 비용 미미.
- * 데이터가 부족하거나 해당 월에 샘플이 없으면 null.
+ * 월별 계절성 티저 — 현재 KST 월의 과거 N년 통계를 요약.
+ * 현재 월은 데이터상 "미완성"이지만 과거 N년의 완결된 샘플만 쓰므로 안전.
+ * 해당 월에 샘플이 0이면 null (블록 미표시).
  */
 export const loadSeasonalityTeaser = async (
   ticker: string,
 ): Promise<SeasonalityTeaser | null> => {
   try {
     const sea = await getSeasonality(ticker);
-    if (!sea.lastCloseDate) return null;
-    const lm = Number(sea.lastCloseDate.slice(5, 7));
-    const month = lm === 1 ? 12 : lm - 1;
+    const month = currentKstMonth();
     const series = sea.byMonth[month];
-    if (!series || series.returns.length === 0) {
-      // 해당 월 샘플이 비면 전체에서 가장 샘플 많은 월로 폴백 — "티저 숨김" 대신
-      // 사이트 밸류 제공 유지. 그래도 전무면 null.
-      let best = series;
-      for (let i = 1; i <= 12; i++) {
-        if (sea.byMonth[i].returns.length > (best?.returns.length ?? 0)) {
-          best = sea.byMonth[i];
-        }
-      }
-      if (!best || best.returns.length === 0) return null;
-      return {
-        month: best.month,
-        mean: best.stats.mean,
-        wins: best.stats.wins,
-        count: best.stats.count,
-      };
-    }
+    const s = series?.stats;
+    if (!series || !s || s.count === 0 || !s.best || !s.worst) return null;
     return {
       month,
-      mean: series.stats.mean,
-      wins: series.stats.wins,
-      count: series.stats.count,
+      mean: s.mean,
+      wins: s.wins,
+      count: s.count,
+      bestRet: s.best.ret,
+      bestYear: s.best.year,
+      worstRet: s.worst.ret,
+      worstYear: s.worst.year,
     };
   } catch (err) {
     console.error(`loadSeasonalityTeaser(${ticker}) failed:`, err);

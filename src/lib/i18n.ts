@@ -248,18 +248,28 @@ export type Dict = {
     /** 공유 버튼. */
     shareButton: string;
     shareCopied: string;
-    /** 티저(/[ticker]) 블록. */
+    /** 티저(/[ticker]) 블록 — 텍스트 전용. */
     teaser: {
-      /** 블록 제목 — "{month} 계절성" */
-      title: (monthLabel: string) => string;
-      /** 큰 숫자 라벨. */
-      meanLabel: string;
-      /** 보조 라벨 — "N년 중 K번 상승 · 평균 X.X%" */
-      sub: (wins: number, total: number, meanLabel: string) => string;
-      /** 전용 페이지로 가는 CTA. */
+      /** 작은 회색 라벨 — "{displayName} · {N}월". */
+      label: (displayName: string, monthLabel: string) => string;
+      /** 큰 헤드라인 — "{total}번 중 {up}번 올랐어요"를 prefix/count/suffix로 쪼개 반환.
+       *  count 조각만 상승 확률에 따라 색상 분기. */
+      headline: (
+        total: number,
+        up: number,
+      ) => { prefix: string; count: string; suffix: string };
+      /** 40~60% 구간 "뚜렷한 경향 없음" 작은 배지. */
+      noTrendBadge: string;
+      /** 보조 라인 (mono) — "평균 {avg} · 최고 {max} ('{yy}) · 최저 {min} ('{yy})". */
+      sub: (
+        avgLabel: string,
+        maxLabel: string,
+        maxYy: string,
+        minLabel: string,
+        minYy: string,
+      ) => string;
+      /** CTA — "월별 전체 보기 →". */
       cta: string;
-      /** 데이터 부족. */
-      notEnough: string;
     };
   };
   admin: {
@@ -553,12 +563,16 @@ const ko: Dict = {
     shareButton: '공유',
     shareCopied: '복사됨',
     teaser: {
-      title: (monthLabel) => `${monthLabel} 계절성`,
-      meanLabel: '평균 수익률',
-      sub: (wins, total, meanLabel) =>
-        `${total}년 중 ${wins}번 상승 · 평균 ${meanLabel}`,
-      cta: '월별 계절성 전체 보기 →',
-      notEnough: '월별 수익률을 계산할 데이터가 부족합니다.',
+      label: (displayName, monthLabel) => `${displayName} · ${monthLabel}`,
+      headline: (total, up) => ({
+        prefix: `${total}번 중 `,
+        count: `${up}번 올랐어요`,
+        suffix: '',
+      }),
+      noTrendBadge: '뚜렷한 경향 없음',
+      sub: (avgLabel, maxLabel, maxYy, minLabel, minYy) =>
+        `평균 ${avgLabel} · 최고 ${maxLabel} ('${maxYy}) · 최저 ${minLabel} ('${minYy})`,
+      cta: '월별 전체 보기 →',
     },
   },
   allInWarning: {
@@ -893,12 +907,16 @@ const en: Dict = {
     shareButton: 'Share',
     shareCopied: 'Copied',
     teaser: {
-      title: (monthLabel) => `${monthLabel} seasonality`,
-      meanLabel: 'Average return',
-      sub: (wins, total, meanLabel) =>
-        `${wins}/${total} years up · avg ${meanLabel}`,
-      cta: 'See full monthly seasonality →',
-      notEnough: 'Not enough data to compute monthly returns yet.',
+      label: (displayName, monthLabel) => `${displayName} · ${monthLabel}`,
+      headline: (total, up) => ({
+        prefix: '',
+        count: `${up} of ${total}`,
+        suffix: ' years up',
+      }),
+      noTrendBadge: 'No clear bias',
+      sub: (avgLabel, maxLabel, maxYy, minLabel, minYy) =>
+        `avg ${avgLabel} · max ${maxLabel} ('${maxYy}) · min ${minLabel} ('${minYy})`,
+      cta: 'See all months →',
     },
   },
   allInWarning: {

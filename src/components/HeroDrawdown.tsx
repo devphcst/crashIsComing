@@ -78,12 +78,20 @@ export type VisitorInfo = {
   total: number;
 };
 
-/** 월별 계절성 티저 — "{month} 평균 수익률 +X.X% · N년 중 K번 상승". */
+/**
+ * 월별 계절성 티저 — 텍스트 전용 카드용 payload.
+ * month는 현재 KST 월(1~12). 통계는 해당 월의 과거 N년 집계.
+ * count=0이면 UI에서 블록 미표시(null로 치환).
+ */
 export type SeasonalityTeaser = {
   month: number;
   mean: number;
   wins: number;
   count: number;
+  bestRet: number;
+  bestYear: number;
+  worstRet: number;
+  worstYear: number;
 };
 
 const LANG_STORAGE_KEY = "tqqq.lang";
@@ -230,6 +238,7 @@ export function HeroDrawdown({
           {seasonalityTeaser ? (
             <SeasonalityTeaserBlock
               ticker={current}
+              displayName={currentDisplayName}
               teaser={seasonalityTeaser}
               dict={d}
             />
@@ -782,40 +791,65 @@ function NotReady({ dict }: { dict: ReturnType<typeof getDict> }) {
 }
 
 /**
- * 월별 계절성 티저 블록 — 요약 페이지(/{ticker})에서 전용 페이지(/seasonality/{ticker})로의
- * 진입점. 큰 숫자 1개 + 승률 보조 + CTA 링크. 모바일에서도 그대로.
+ * 월별 계절성 티저 — 텍스트 전용 카드 (차트 없음).
+ *   라벨:    "{displayName} · {N}월"
+ *   헤드라인: "{total}번 중 {up}번 올랐어요" — count 조각만 승률 60/40 임계로 색 분기
+ *   배지:    40~60% 구간이면 "뚜렷한 경향 없음" 작은 배지
+ *   보조:    "평균 {avg}% · 최고 {max}% ('{yy}) · 최저 {min}% ('{yy})" (mono)
+ *   CTA:     "월별 전체 보기 →"
  */
 function SeasonalityTeaserBlock({
   ticker,
+  displayName,
   teaser,
   dict,
 }: {
   ticker: string;
+  displayName: string;
   teaser: SeasonalityTeaser;
   dict: ReturnType<typeof getDict>;
 }) {
   const t = dict.seasonality;
   const monthLabel = t.monthLabel(teaser.month);
-  const meanLabel = formatSignedPct(teaser.mean * 100, 1);
-  const tone =
-    teaser.mean > 0 ? "text-emerald-400" : teaser.mean < 0 ? "text-rose-400" : "text-neutral-200";
+  const winRate = teaser.count > 0 ? teaser.wins / teaser.count : 0;
+
+  // 승률 기준 색상/배지 분기 — 60%+ 초록, 40% 이하 빨강, 사이는 중립 회색 + 배지.
+  const countColor =
+    winRate >= 0.6
+      ? "text-emerald-400"
+      : winRate <= 0.4
+        ? "text-rose-400"
+        : "text-neutral-300";
+  const showNoTrend = winRate > 0.4 && winRate < 0.6;
+
+  const headline = t.teaser.headline(teaser.count, teaser.wins);
+  const sub = t.teaser.sub(
+    formatSignedPct(teaser.mean * 100, 1),
+    formatSignedPct(teaser.bestRet * 100, 1),
+    String(teaser.bestYear).slice(-2),
+    formatSignedPct(teaser.worstRet * 100, 1),
+    String(teaser.worstYear).slice(-2),
+  );
   const href = `/seasonality/${ticker}?m=${teaser.month}`;
+
   return (
     <section className="mx-auto w-full max-w-xl rounded-lg border border-neutral-800 bg-neutral-900/40 px-5 py-4">
       <div className="text-[11px] uppercase tracking-wide text-neutral-500">
-        {t.teaser.title(monthLabel)}
+        {t.teaser.label(displayName, monthLabel)}
       </div>
-      <div className="mt-1 flex items-baseline gap-3">
-        <span className={"font-mono text-2xl font-medium " + tone}>
-          {teaser.count > 0 ? meanLabel : "—"}
-        </span>
-        <span className="text-xs text-neutral-500">{t.teaser.meanLabel}</span>
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <h3 className="text-xl font-medium leading-tight text-neutral-100 sm:text-2xl">
+          <span className="text-neutral-400">{headline.prefix}</span>
+          <span className={countColor}>{headline.count}</span>
+          <span className="text-neutral-400">{headline.suffix}</span>
+        </h3>
+        {showNoTrend ? (
+          <span className="rounded-full border border-neutral-700 bg-neutral-900 px-2 py-0.5 text-[10px] text-neutral-400">
+            {t.teaser.noTrendBadge}
+          </span>
+        ) : null}
       </div>
-      <div className="mt-1 text-xs text-neutral-500">
-        {teaser.count > 0
-          ? t.teaser.sub(teaser.wins, teaser.count, meanLabel)
-          : t.teaser.notEnough}
-      </div>
+      <div className="mt-1.5 font-mono text-xs text-neutral-500">{sub}</div>
       <a
         href={href}
         className="mt-3 inline-block text-xs text-neutral-300 underline-offset-4 hover:text-neutral-100 hover:underline"

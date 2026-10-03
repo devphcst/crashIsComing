@@ -6,6 +6,7 @@ import { readMeta, readSymbolList } from "@/lib/kv";
 import {
   loadFearGreed,
   loadHeroData,
+  loadSeasonalityTeaser,
   loadVisibleMetas,
   loadVisitorInfo,
 } from "@/lib/page-data";
@@ -61,13 +62,15 @@ export default async function TickerPage({
   if (normalize(params.ticker) === DEFAULT_SYMBOL) permanentRedirect("/");
   const ticker = await resolveOr404(params.ticker);
   const lang = readLangFromCookie();
-  const [data, visitor, metas, meta, fearGreed] = await Promise.all([
-    loadHeroData(ticker),
-    loadVisitorInfo(),
-    loadVisibleMetas(),
-    readMeta(ticker),
-    loadFearGreed(),
-  ]);
+  const [data, visitor, metas, meta, fearGreed, seasonalityTeaser] =
+    await Promise.all([
+      loadHeroData(ticker),
+      loadVisitorInfo(),
+      loadVisibleMetas(),
+      readMeta(ticker),
+      loadFearGreed(),
+      loadSeasonalityTeaser(ticker),
+    ]);
   return (
     <>
       <script
@@ -82,6 +85,7 @@ export default async function TickerPage({
         tabs={metas}
         current={ticker}
         fearGreed={fearGreed}
+        seasonalityTeaser={seasonalityTeaser}
       />
     </>
   );

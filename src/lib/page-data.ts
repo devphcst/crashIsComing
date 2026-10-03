@@ -19,7 +19,8 @@ import type { FearGreedSnapshot } from "./ingest/cnn-fear-greed";
 import { getProvider } from "./providers";
 import { getExchange, isHidden, type SymbolMeta } from "./symbols";
 import { computeAtDrawdownStats } from "./at-drawdown";
-import type { HeroData } from "@/components/HeroDrawdown";
+import { getSeasonality } from "./seasonality";
+import type { HeroData, SeasonalityTeaser } from "@/components/HeroDrawdown";
 
 export type VisitorInfo = {
   show: boolean;
@@ -174,6 +175,49 @@ export const loadAllMetas = unstable_cache(_loadAllMetas, ["all-metas"], {
 export const loadVisibleMetas = async (): Promise<SymbolMeta[]> => {
   const all = await loadAllMetas();
   return all.filter((m) => !isHidden(m));
+};
+
+/**
+ * 월별 계절성 티저 — "데이터상 마지막 종가의 '달력상 직전 달'"의 통계를 요약.
+ * seasonality 모듈 자체가 'symbols' 태그로 캐시됨 → 중복 호출 비용 미미.
+ * 데이터가 부족하거나 해당 월에 샘플이 없으면 null.
+ */
+export const loadSeasonalityTeaser = async (
+  ticker: string,
+): Promise<SeasonalityTeaser | null> => {
+  try {
+    const sea = await getSeasonality(ticker);
+    if (!sea.lastCloseDate) return null;
+    const lm = Number(sea.lastCloseDate.slice(5, 7));
+    const month = lm === 1 ? 12 : lm - 1;
+    const series = sea.byMonth[month];
+    if (!series || series.returns.length === 0) {
+      // 해당 월 샘플이 비면 전체에서 가장 샘플 많은 월로 폴백 — "티저 숨김" 대신
+      // 사이트 밸류 제공 유지. 그래도 전무면 null.
+      let best = series;
+      for (let i = 1; i <= 12; i++) {
+        if (sea.byMonth[i].returns.length > (best?.returns.length ?? 0)) {
+          best = sea.byMonth[i];
+        }
+      }
+      if (!best || best.returns.length === 0) return null;
+      return {
+        month: best.month,
+        mean: best.stats.mean,
+        wins: best.stats.wins,
+        count: best.stats.count,
+      };
+    }
+    return {
+      month,
+      mean: series.stats.mean,
+      wins: series.stats.wins,
+      count: series.stats.count,
+    };
+  } catch (err) {
+    console.error(`loadSeasonalityTeaser(${ticker}) failed:`, err);
+    return null;
+  }
 };
 
 /**

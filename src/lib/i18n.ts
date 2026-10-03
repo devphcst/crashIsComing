@@ -211,6 +211,57 @@ export type Dict = {
     title: string;
     paragraphs: string[];
   };
+  /** 월별 계절성 페이지(/seasonality/[ticker]) + 티저. */
+  seasonality: {
+    /** 페이지 제목 — "{displayName} 월별 계절성". */
+    pageTitle: (displayName: string) => string;
+    /** 1~12 → 월 라벨 ("1월" / "January"). */
+    monthLabel: (m: number) => string;
+    /** 월 탭 짧은 라벨 (모바일) — "1월" / "Jan". */
+    monthShort: (m: number) => string;
+    /** 통계 카드 라벨들. */
+    cardMean: string;
+    cardWinRate: string;
+    cardBest: string;
+    cardWorst: string;
+    /** 평균 카드 툴팁 — "중앙값 X.X%". */
+    tooltipMedian: (medianLabel: string) => string;
+    /** 상승 확률 보조 설명 — "N년 중 K번 상승". */
+    winRateSub: (wins: number, total: number) => string;
+    /** 최고/최저 보조 라벨 — "YYYY년". */
+    yearLabel: (year: number) => string;
+    /** 샘플 적음 뱃지. */
+    smallSample: (years: number) => string;
+    /** 바둑판 섹션 헤더 — "{month} 수익률". */
+    gridHeader: (monthLabel: string) => string;
+    /** 전체 히트맵 토글 라벨. */
+    toggleHeatmapShow: string;
+    toggleHeatmapHide: string;
+    /** 히트맵 맨 아래 행 라벨 — "평균". */
+    heatmapAvgRow: string;
+    /** 범례 라벨. */
+    legendTitle: string;
+    /** 하단 안내 — "배당 미포함 가격 수익률 기준". */
+    priceReturnNote: string;
+    /** 데이터 비었을 때. */
+    empty: string;
+    /** 공유 버튼. */
+    shareButton: string;
+    shareCopied: string;
+    /** 티저(/[ticker]) 블록. */
+    teaser: {
+      /** 블록 제목 — "{month} 계절성" */
+      title: (monthLabel: string) => string;
+      /** 큰 숫자 라벨. */
+      meanLabel: string;
+      /** 보조 라벨 — "N년 중 K번 상승 · 평균 X.X%" */
+      sub: (wins: number, total: number, meanLabel: string) => string;
+      /** 전용 페이지로 가는 CTA. */
+      cta: string;
+      /** 데이터 부족. */
+      notEnough: string;
+    };
+  };
   admin: {
     title: string;
     login: string;
@@ -283,6 +334,9 @@ export type Dict = {
       /** "폭락" 최소 낙폭 slider — 유사 시기 리스트에 포함될 에피소드 하한. */
       minCrashLabel: string;
       minCrashHint: string;
+      /** 레버리지 배수 (월별 계절성 색 농도 밴드에 쓰임). */
+      leverageLabel: string;
+      leverageHint: string;
       addSubmit: string;
       metaSectionTitle: string;
       metaSubmit: string;
@@ -477,6 +531,36 @@ const ko: Dict = {
     crashUnrecovered: '미회복',
     crashesEmpty: '30% 이상 낙폭 없음',
   },
+  seasonality: {
+    pageTitle: (displayName) => `${displayName} 월별 계절성`,
+    monthLabel: (m) => `${m}월`,
+    monthShort: (m) => `${m}월`,
+    cardMean: '평균 수익률',
+    cardWinRate: '상승 확률',
+    cardBest: '최고',
+    cardWorst: '최저',
+    tooltipMedian: (medianLabel) => `중앙값 ${medianLabel}`,
+    winRateSub: (wins, total) => `${total}년 중 ${wins}번 상승`,
+    yearLabel: (year) => `${year}년`,
+    smallSample: (years) => `표본 적음 (${years}년)`,
+    gridHeader: (monthLabel) => `${monthLabel} 수익률 (연도별)`,
+    toggleHeatmapShow: '전체 히트맵 보기',
+    toggleHeatmapHide: '전체 히트맵 숨기기',
+    heatmapAvgRow: '평균',
+    legendTitle: '색 범례',
+    priceReturnNote: '배당 미포함 가격 수익률(price return) 기준. 분할은 조정됨.',
+    empty: '월별 수익률을 계산할 데이터가 아직 충분하지 않습니다.',
+    shareButton: '공유',
+    shareCopied: '복사됨',
+    teaser: {
+      title: (monthLabel) => `${monthLabel} 계절성`,
+      meanLabel: '평균 수익률',
+      sub: (wins, total, meanLabel) =>
+        `${total}년 중 ${wins}번 상승 · 평균 ${meanLabel}`,
+      cta: '월별 계절성 전체 보기 →',
+      notEnough: '월별 수익률을 계산할 데이터가 부족합니다.',
+    },
+  },
   allInWarning: {
     title: '그래서, 역사적 폭락에 올인(All-in)하는 것이 옳은가?',
     paragraphs: [
@@ -565,6 +649,9 @@ const ko: Dict = {
       minCrashLabel: '"폭락" 최소 낙폭 (%)',
       minCrashHint:
         '유사 시기 리스트에 포함될 과거 에피소드의 하한. 이보다 얕은 dip은 제외. 기본 15.',
+      leverageLabel: '레버리지 배수',
+      leverageHint:
+        '월별 계절성 색 농도 밴드 스케일에 사용. 음수는 인버스 (예: SQQQ -3). 0은 금지.',
       addSubmit: '추가',
       metaSectionTitle: '종목 정보 (메타)',
       metaSubmit: '메타 저장',
@@ -774,6 +861,46 @@ const en: Dict = {
     crashUnrecovered: 'Not reclaimed',
     crashesEmpty: 'No drawdowns exceeding 30%',
   },
+  seasonality: {
+    pageTitle: (displayName) => `${displayName} monthly seasonality`,
+    monthLabel: (m) => {
+      const names = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+      ];
+      return names[m - 1] ?? String(m);
+    },
+    monthShort: (m) => {
+      const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return names[m - 1] ?? String(m);
+    },
+    cardMean: 'Average return',
+    cardWinRate: 'Win rate',
+    cardBest: 'Best',
+    cardWorst: 'Worst',
+    tooltipMedian: (medianLabel) => `Median ${medianLabel}`,
+    winRateSub: (wins, total) => `${wins} of ${total} years positive`,
+    yearLabel: (year) => `${year}`,
+    smallSample: (years) => `Small sample (${years} yrs)`,
+    gridHeader: (monthLabel) => `${monthLabel} returns by year`,
+    toggleHeatmapShow: 'Show full heatmap',
+    toggleHeatmapHide: 'Hide full heatmap',
+    heatmapAvgRow: 'Avg',
+    legendTitle: 'Legend',
+    priceReturnNote: 'Price return (dividends not included). Splits adjusted.',
+    empty: 'Not enough data yet to compute monthly returns.',
+    shareButton: 'Share',
+    shareCopied: 'Copied',
+    teaser: {
+      title: (monthLabel) => `${monthLabel} seasonality`,
+      meanLabel: 'Average return',
+      sub: (wins, total, meanLabel) =>
+        `${wins}/${total} years up · avg ${meanLabel}`,
+      cta: 'See full monthly seasonality →',
+      notEnough: 'Not enough data to compute monthly returns yet.',
+    },
+  },
   allInWarning: {
     title: 'Is it right to go all-in on a historic crash?',
     paragraphs: [
@@ -865,6 +992,9 @@ const en: Dict = {
       minCrashLabel: 'Min "crash" drawdown (%)',
       minCrashHint:
         'Lower bound on past episodes eligible for the similar-periods list. Shallower dips are excluded. Default 15.',
+      leverageLabel: 'Leverage multiplier',
+      leverageHint:
+        'Used to scale monthly seasonality color bands. Negative = inverse (e.g. SQQQ -3). Zero not allowed.',
       addSubmit: 'Add',
       metaSectionTitle: 'Symbol info (meta)',
       metaSubmit: 'Save meta',

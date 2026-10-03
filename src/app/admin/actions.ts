@@ -29,6 +29,8 @@ import {
 } from "@/lib/kv";
 import {
   DEFAULT_SYMBOL,
+  LEVERAGE_MAX,
+  LEVERAGE_MIN,
   MIN_CRASH_DRAWDOWN_PCT_MAX,
   MIN_CRASH_DRAWDOWN_PCT_MIN,
   SIMILAR_RANGE_PPBP_MAX,
@@ -83,6 +85,7 @@ const META_ERROR_MESSAGES: Record<MetaValidationError, string> = {
   exchange_invalid: "거래소는 NYSE 또는 KRX만 허용됩니다.",
   similar_range_out_of_bounds: `유사 시기 반경은 ${SIMILAR_RANGE_PPBP_MIN} ~ ${SIMILAR_RANGE_PPBP_MAX} 사이여야 합니다.`,
   min_crash_out_of_bounds: `"폭락" 최소 낙폭은 ${MIN_CRASH_DRAWDOWN_PCT_MIN} ~ ${MIN_CRASH_DRAWDOWN_PCT_MAX}% 사이여야 합니다.`,
+  leverage_invalid: `레버리지 배수는 ${LEVERAGE_MIN} ~ ${LEVERAGE_MAX} 사이의 0이 아닌 값이어야 합니다.`,
 };
 
 /** 폼 'exchange' 값을 정규화 — undefined/빈문자/기타는 NYSE로 처리. */
@@ -117,6 +120,19 @@ const parseSimilarRangePpBp = (
  * 검증(범위)은 validateMeta에서.
  */
 const parseMinCrashDrawdownPct = (
+  v: FormDataEntryValue | null,
+): number | undefined => {
+  if (v === null || v === "") return undefined;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return undefined;
+  return n;
+};
+
+/**
+ * 폼 'leverage' 파싱. parseSimilarRangePpBp과 동일 규약.
+ * 음수 허용 (인버스). 범위/0 검증은 validateMeta에서.
+ */
+const parseLeverage = (
   v: FormDataEntryValue | null,
 ): number | undefined => {
   if (v === null || v === "") return undefined;
@@ -411,6 +427,7 @@ export async function addSymbolAction(
   const minCrashDrawdownPct = parseMinCrashDrawdownPct(
     formData.get("minCrashDrawdownPct"),
   );
+  const leverage = parseLeverage(formData.get("leverage"));
 
   const meta: SymbolMeta = {
     ticker,
@@ -421,6 +438,7 @@ export async function addSymbolAction(
     hidden,
     similarRangePpBp,
     minCrashDrawdownPct,
+    leverage,
   };
   const err = validateMeta(meta);
   if (err) return { ok: false, message: META_ERROR_MESSAGES[err] };
@@ -457,6 +475,7 @@ export async function updateMetaAction(
   const minCrashDrawdownPct = parseMinCrashDrawdownPct(
     formData.get("minCrashDrawdownPct"),
   );
+  const leverage = parseLeverage(formData.get("leverage"));
 
   // newTicker는 옵셔널 — 폼이 안 보내면 기존 ticker 유지(rename 미사용).
   const rawNewTicker = formData.get("newTicker");
@@ -482,6 +501,7 @@ export async function updateMetaAction(
     hidden,
     similarRangePpBp,
     minCrashDrawdownPct,
+    leverage,
   };
   const err = validateMeta(meta);
   if (err) return { ok: false, message: META_ERROR_MESSAGES[err] };

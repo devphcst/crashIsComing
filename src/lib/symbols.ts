@@ -39,6 +39,12 @@ export type SymbolMeta = {
    * undefined ≡ DEFAULT_MIN_CRASH_DRAWDOWN_PCT.
    */
   minCrashDrawdownPct?: number;
+  /**
+   * ETF 레버리지 배수. 음수는 인버스(SQQQ=-3). 1.5 같은 소수도 허용.
+   * undefined ≡ 1 (기존 종목 호환). 월별 계절성 색 농도 밴드 스케일에 쓰임.
+   * 색은 ETF 수익률 방향 그대로 — 인버스가 올랐으면 초록.
+   */
+  leverage?: number;
 };
 
 /** SymbolMeta의 similarRangePpBp 기본값. */
@@ -64,7 +70,12 @@ export type MetaValidationError =
   | "orange_must_be_above_red"
   | "exchange_invalid"
   | "similar_range_out_of_bounds"
-  | "min_crash_out_of_bounds";
+  | "min_crash_out_of_bounds"
+  | "leverage_invalid";
+
+/** leverage 허용 범위. 0은 금지 — 수익률 색 분기가 의미 없어짐. */
+export const LEVERAGE_MIN = -5;
+export const LEVERAGE_MAX = 5;
 
 export const validateMeta = (meta: SymbolMeta): MetaValidationError | null => {
   if (!meta.ticker) return "ticker_empty";
@@ -100,15 +111,51 @@ export const validateMeta = (meta: SymbolMeta): MetaValidationError | null => {
       return "min_crash_out_of_bounds";
     }
   }
+  if (meta.leverage !== undefined) {
+    if (
+      !Number.isFinite(meta.leverage) ||
+      meta.leverage === 0 ||
+      meta.leverage < LEVERAGE_MIN ||
+      meta.leverage > LEVERAGE_MAX
+    ) {
+      return "leverage_invalid";
+    }
+  }
   return null;
 };
 
-export const defaultMetaFor = (ticker: string): SymbolMeta => ({
-  ticker,
-  displayName: ticker.toUpperCase(),
-  orangeThreshold: -10,
-  redThreshold: -30,
-});
+/**
+ * ticker별 레버리지 하드코드 매핑.
+ *   - 3배: TQQQ, SOXL, SPXL, FNGU, TNA, UPRO, TMF, LABU, DPST, BULZ, UDOW
+ *   - -3배(인버스 3배): SQQQ, SOXS, SPXU, FNGD, TZA, SPXS, TMV, LABD, DRV, BERZ, SDOW
+ *   - 2배: QLD, SSO, DDM, USD, UWM, UBT
+ *   - -2배: QID, SDS, DXD, SKF
+ *   - 1배: 그 외 (명시 매핑 없는 모든 ticker — undefined ≡ 1)
+ * admin에서 덮어쓰기 가능 (writeMeta로 저장).
+ */
+const LEVERAGE_BY_TICKER: Record<string, number> = {
+  tqqq: 3, soxl: 3, spxl: 3, fngu: 3, tna: 3, upro: 3, tmf: 3, labu: 3,
+  dpst: 3, bulz: 3, udow: 3,
+  sqqq: -3, soxs: -3, spxu: -3, fngd: -3, tza: -3, spxs: -3, tmv: -3,
+  labd: -3, drv: -3, berz: -3, sdow: -3,
+  qld: 2, sso: 2, ddm: 2, usd: 2, uwm: 2, ubt: 2,
+  qid: -2, sds: -2, dxd: -2, skf: -2,
+};
+
+export const defaultLeverageFor = (ticker: string): number =>
+  LEVERAGE_BY_TICKER[ticker.toLowerCase()] ?? 1;
+
+export const defaultMetaFor = (ticker: string): SymbolMeta => {
+  const lev = defaultLeverageFor(ticker);
+  return {
+    ticker,
+    displayName: ticker.toUpperCase(),
+    orangeThreshold: -10,
+    redThreshold: -30,
+    // 1배는 메타에 안 박아 payload 작게 유지 (undefined ≡ 1 규약).
+    ...(lev !== 1 ? { leverage: lev } : {}),
+  };
+};
 
 /** SymbolMeta의 exchange를 안전하게 읽기. undefined ≡ "NYSE" (기존 종목 호환). */
 export const getExchange = (meta: SymbolMeta): Exchange =>
@@ -138,3 +185,19 @@ export const getMinCrashDrawdownPct = (meta: SymbolMeta): number =>
   Number.isFinite(meta.minCrashDrawdownPct)
     ? meta.minCrashDrawdownPct
     : DEFAULT_MIN_CRASH_DRAWDOWN_PCT;
+
+/**
+ * SymbolMeta의 leverage를 안전하게 읽기.
+ * undefined/0/NaN이면 ticker 하드코드 매핑으로 폴백 (매핑도 없으면 1).
+ * admin이 명시 저장한 값이 있으면 그걸 최우선.
+ */
+export const getLeverage = (meta: SymbolMeta): number => {
+  if (
+    meta.leverage !== undefined &&
+    Number.isFinite(meta.leverage) &&
+    meta.leverage !== 0
+  ) {
+    return meta.leverage;
+  }
+  return defaultLeverageFor(meta.ticker);
+};

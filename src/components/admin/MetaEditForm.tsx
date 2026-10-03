@@ -7,10 +7,13 @@ import {
   DEFAULT_SYMBOL,
   DEFAULT_MIN_CRASH_DRAWDOWN_PCT,
   DEFAULT_SIMILAR_RANGE_PPBP,
+  LEVERAGE_MAX,
+  LEVERAGE_MIN,
   MIN_CRASH_DRAWDOWN_PCT_MAX,
   MIN_CRASH_DRAWDOWN_PCT_MIN,
   SIMILAR_RANGE_PPBP_MAX,
   SIMILAR_RANGE_PPBP_MIN,
+  defaultLeverageFor,
   getExchange,
   getMinCrashDrawdownPct,
   getSimilarRangePpBp,
@@ -214,6 +217,23 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
         />
         <span className="mt-1 block text-[10px] text-neutral-500">
           {t.minCrashHint} (기본 {DEFAULT_MIN_CRASH_DRAWDOWN_PCT})
+        </span>
+      </label>
+
+      <label className="block text-xs text-neutral-400">
+        {t.leverageLabel}
+        <input
+          type="number"
+          name="leverage"
+          step="0.5"
+          min={LEVERAGE_MIN}
+          max={LEVERAGE_MAX}
+          defaultValue={meta.leverage ?? ""}
+          placeholder={String(defaultLeverageFor(meta.ticker))}
+          className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
+        />
+        <span className="mt-1 block text-[10px] text-neutral-500">
+          {t.leverageHint} (기본 {defaultLeverageFor(meta.ticker)}, 비워두면 ticker 매핑 사용)
         </span>
       </label>
 

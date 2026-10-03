@@ -5,6 +5,7 @@ import { readMeta } from "@/lib/kv";
 import {
   loadFearGreed,
   loadHeroData,
+  loadSeasonalityTeaser,
   loadVisibleMetas,
   loadVisitorInfo,
 } from "@/lib/page-data";
@@ -58,13 +59,15 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page() {
   const lang = readLangFromCookie();
-  const [data, visitor, metas, meta, fearGreed] = await Promise.all([
-    loadHeroData(DEFAULT_SYMBOL),
-    loadVisitorInfo(),
-    loadVisibleMetas(),
-    readMeta(DEFAULT_SYMBOL),
-    loadFearGreed(),
-  ]);
+  const [data, visitor, metas, meta, fearGreed, seasonalityTeaser] =
+    await Promise.all([
+      loadHeroData(DEFAULT_SYMBOL),
+      loadVisitorInfo(),
+      loadVisibleMetas(),
+      readMeta(DEFAULT_SYMBOL),
+      loadFearGreed(),
+      loadSeasonalityTeaser(DEFAULT_SYMBOL),
+    ]);
   return (
     <>
       <script
@@ -79,6 +82,7 @@ export default async function Page() {
         tabs={metas}
         current={DEFAULT_SYMBOL}
         fearGreed={fearGreed}
+        seasonalityTeaser={seasonalityTeaser}
       />
     </>
   );

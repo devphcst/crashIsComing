@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
+  defaultLeverageFor,
   defaultMetaFor,
   DEFAULT_SYMBOL,
   getExchange,
+  getLeverage,
   isHidden,
   validateMeta,
   type SymbolMeta,
@@ -78,18 +80,77 @@ describe("validateMeta", () => {
 });
 
 describe("defaultMetaFor", () => {
-  it("uses ticker as base and upper-cases displayName", () => {
-    const m = defaultMetaFor("soxl");
-    expect(m).toEqual({
+  it("uses ticker as base and upper-cases displayName (leveraged default fills in)", () => {
+    // soxl은 하드코드 매핑으로 leverage=3이 자동으로 들어감.
+    expect(defaultMetaFor("soxl")).toEqual({
       ticker: "soxl",
       displayName: "SOXL",
       orangeThreshold: -10,
       redThreshold: -30,
+      leverage: 3,
     });
+  });
+
+  it("omits leverage key when ticker maps to 1x (payload 축소)", () => {
+    const m = defaultMetaFor("spy");
+    expect(m).toEqual({
+      ticker: "spy",
+      displayName: "SPY",
+      orangeThreshold: -10,
+      redThreshold: -30,
+    });
+    expect("leverage" in m).toBe(false);
   });
 
   it("produces a meta that passes validateMeta", () => {
     expect(validateMeta(defaultMetaFor(DEFAULT_SYMBOL))).toBeNull();
+  });
+});
+
+describe("leverage field", () => {
+  it("accepts undefined leverage (legacy meta)", () => {
+    expect(validateMeta(base())).toBeNull();
+  });
+
+  it("accepts positive and inverse multiples", () => {
+    expect(validateMeta({ ...base(), leverage: 1 })).toBeNull();
+    expect(validateMeta({ ...base(), leverage: 2 })).toBeNull();
+    expect(validateMeta({ ...base(), leverage: 3 })).toBeNull();
+    expect(validateMeta({ ...base(), leverage: 1.5 })).toBeNull();
+    expect(validateMeta({ ...base(), leverage: -3 })).toBeNull();
+  });
+
+  it("rejects 0 and out-of-range values", () => {
+    expect(validateMeta({ ...base(), leverage: 0 })).toBe("leverage_invalid");
+    expect(validateMeta({ ...base(), leverage: 10 })).toBe("leverage_invalid");
+    expect(validateMeta({ ...base(), leverage: -10 })).toBe("leverage_invalid");
+    expect(validateMeta({ ...base(), leverage: NaN })).toBe("leverage_invalid");
+  });
+});
+
+describe("defaultLeverageFor / getLeverage", () => {
+  it("maps known leveraged tickers", () => {
+    expect(defaultLeverageFor("tqqq")).toBe(3);
+    expect(defaultLeverageFor("sqqq")).toBe(-3);
+    expect(defaultLeverageFor("qld")).toBe(2);
+    expect(defaultLeverageFor("qid")).toBe(-2);
+    expect(defaultLeverageFor("soxl")).toBe(3);
+  });
+
+  it("falls back to 1 for unknown tickers", () => {
+    expect(defaultLeverageFor("qqq")).toBe(1);
+    expect(defaultLeverageFor("random")).toBe(1);
+  });
+
+  it("getLeverage uses explicit meta value over ticker mapping", () => {
+    // admin이 명시 저장한 2x가 ticker 매핑(=3)을 덮어씀.
+    expect(getLeverage({ ...base(), ticker: "tqqq", leverage: 2 })).toBe(2);
+  });
+
+  it("getLeverage falls back to ticker mapping when leverage undefined/invalid", () => {
+    expect(getLeverage({ ...base(), ticker: "soxl" })).toBe(3);
+    // 0은 저장돼 있어도 매핑으로 폴백 (ticker가 매핑에 없으면 1).
+    expect(getLeverage({ ...base(), ticker: "qqq", leverage: 0 })).toBe(1);
   });
 });
 

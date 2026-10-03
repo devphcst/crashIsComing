@@ -78,6 +78,14 @@ export type VisitorInfo = {
   total: number;
 };
 
+/** 월별 계절성 티저 — "{month} 평균 수익률 +X.X% · N년 중 K번 상승". */
+export type SeasonalityTeaser = {
+  month: number;
+  mean: number;
+  wins: number;
+  count: number;
+};
+
 const LANG_STORAGE_KEY = "tqqq.lang";
 
 const colorClassFor = (level: DrawdownLevel): string => {
@@ -97,6 +105,7 @@ export function HeroDrawdown({
   tabs,
   current,
   fearGreed,
+  seasonalityTeaser = null,
 }: {
   data: HeroData;
   visitor: VisitorInfo;
@@ -104,6 +113,8 @@ export function HeroDrawdown({
   current: string;
   /** CNN Fear & Greed 지수 — 서버에서 로드된 시스템 전역 값. null이면 UI 블록 미표시. */
   fearGreed: FearGreedSnapshot | null;
+  /** 월별 계절성 티저 — 서버에서 pre-computed. null이면 블록 미표시. */
+  seasonalityTeaser?: SeasonalityTeaser | null;
 }) {
   const [lang, setLang] = useState<Lang>("ko");
   const [hydrated, setHydrated] = useState(false);
@@ -215,6 +226,14 @@ export function HeroDrawdown({
           <div id="ad">
             <ProductAdBanner lang={lang} />
           </div>
+
+          {seasonalityTeaser ? (
+            <SeasonalityTeaserBlock
+              ticker={current}
+              teaser={seasonalityTeaser}
+              dict={d}
+            />
+          ) : null}
 
           <AboutSection lang={lang} />
           <AllInWarningSection lang={lang} />
@@ -759,5 +778,50 @@ function NotReady({ dict }: { dict: ReturnType<typeof getDict> }) {
       <span className="text-3xl text-neutral-200">{dict.notReady}</span>
       <span className="text-sm">{dict.notReadyHint}</span>
     </div>
+  );
+}
+
+/**
+ * 월별 계절성 티저 블록 — 요약 페이지(/{ticker})에서 전용 페이지(/seasonality/{ticker})로의
+ * 진입점. 큰 숫자 1개 + 승률 보조 + CTA 링크. 모바일에서도 그대로.
+ */
+function SeasonalityTeaserBlock({
+  ticker,
+  teaser,
+  dict,
+}: {
+  ticker: string;
+  teaser: SeasonalityTeaser;
+  dict: ReturnType<typeof getDict>;
+}) {
+  const t = dict.seasonality;
+  const monthLabel = t.monthLabel(teaser.month);
+  const meanLabel = formatSignedPct(teaser.mean * 100, 1);
+  const tone =
+    teaser.mean > 0 ? "text-emerald-400" : teaser.mean < 0 ? "text-rose-400" : "text-neutral-200";
+  const href = `/seasonality/${ticker}?m=${teaser.month}`;
+  return (
+    <section className="mx-auto w-full max-w-xl rounded-lg border border-neutral-800 bg-neutral-900/40 px-5 py-4">
+      <div className="text-[11px] uppercase tracking-wide text-neutral-500">
+        {t.teaser.title(monthLabel)}
+      </div>
+      <div className="mt-1 flex items-baseline gap-3">
+        <span className={"font-mono text-2xl font-medium " + tone}>
+          {teaser.count > 0 ? meanLabel : "—"}
+        </span>
+        <span className="text-xs text-neutral-500">{t.teaser.meanLabel}</span>
+      </div>
+      <div className="mt-1 text-xs text-neutral-500">
+        {teaser.count > 0
+          ? t.teaser.sub(teaser.wins, teaser.count, meanLabel)
+          : t.teaser.notEnough}
+      </div>
+      <a
+        href={href}
+        className="mt-3 inline-block text-xs text-neutral-300 underline-offset-4 hover:text-neutral-100 hover:underline"
+      >
+        {t.teaser.cta}
+      </a>
+    </section>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import Link from "next/link";
 import { addSymbolAction, type ActionState } from "@/app/admin/actions";
+import { LEVERAGE_MAX, LEVERAGE_MIN } from "@/lib/symbols";
 import { dictionaries } from "@/lib/i18n";
 
 const t = dictionaries.ko.admin.symbols;
@@ -92,6 +93,22 @@ export function AddSymbolForm({ currentSymbol }: { currentSymbol: string }) {
             <span className="mt-0.5 block text-[10px] text-neutral-500">
               {t.hiddenHint}
             </span>
+          </span>
+        </label>
+
+        <label className="block text-xs text-neutral-400">
+          {t.leverageLabel}
+          <input
+            type="number"
+            name="leverage"
+            step="0.5"
+            min={LEVERAGE_MIN}
+            max={LEVERAGE_MAX}
+            placeholder="3 (TQQQ/SOXL), -3 (SQQQ), 2 (QLD), 비우면 1배"
+            className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
+          />
+          <span className="mt-1 block text-[10px] text-neutral-500">
+            {t.leverageHint}
           </span>
         </label>
 

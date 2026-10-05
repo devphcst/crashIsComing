@@ -3,22 +3,29 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+
+  /* 디자인 토큰 — 라이트 테마. 다크 토글 없음. */
+  --bg: #FFFFFF;
+  --surface-hover: #FAFAFA;
+  --fg: #111113;
+  --muted: #8B8B90;
+  --subtle: #B4B4B8;
+  --line: #E6E6E9;
+  --up: #1F8A55;
+  --down: #D03A4B;
+  --radius-card: 8px;
+  --radius-tile: 6px;
 }
 
 html,
 body {
-  background: #0a0a0a;
-  color: #e5e5e5;
+  background: var(--bg);
+  color: var(--fg);
   min-height: 100%;
 }
 
-/* scroll-behavior: smooth는 전역에서 제거 — 브라우저의 새로고침 시 스크롤 복원이
-   smooth로 처리되어 "맨 위에서 점프"하는 현상이 발생함. 햄버거 anchor 클릭의
-   smooth scroll은 MobileMenu의 JS 핸들러(scrollIntoView)로 명시적 처리한다.
-
-   모바일 햄버거 메뉴에서 anchor 클릭 시 sticky 헤더(브랜드 ~52px + 종목 탭 ~44px)에
-   섹션 상단이 가려지지 않도록 보정. 데스크톱은 sticky가 아니라 여유 마진 정도. */
+/* 모바일 햄버거 메뉴 anchor 클릭 시 sticky 헤더에 가리지 않도록. */
 [id="about"],
 [id="history"],
 [id="all-in-warning"],
@@ -26,8 +33,7 @@ body {
   scroll-margin-top: 7rem;
 }
 
-/* 가로 스크롤 영역(모바일 종목 탭 등)에서 스크롤바 시각적으로 숨기되 스크롤 기능 유지.
-   `-webkit-overflow-scrolling: touch`는 iOS 모멘텀 스크롤 명시(13+ 기본이지만 안전 차원). */
+/* 가로 스크롤 영역에서 스크롤바 시각적으로 숨김 + 모멘텀 스크롤 유지. */
 .scrollbar-hide {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -37,9 +43,7 @@ body {
   display: none;
 }
 
-/* 메인 페이지 3단 레이아웃.
-   --sidebar-width / --sidebar-gap 는 HeroDrawdown 에서 inline style 로 주입한다
-   (src/constants/layout.ts 의 SIDEBAR_WIDTH / SIDEBAR_GAP). */
+/* 메인 페이지 3단 레이아웃. */
 .three-col-grid {
   grid-template-columns: 1fr;
 }

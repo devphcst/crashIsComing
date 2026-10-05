@@ -99,7 +99,7 @@ export function MobileMenu({
   };
 
   const spanBase =
-    "block h-0.5 w-6 bg-neutral-200 transition-transform duration-200";
+    "block h-0.5 w-6 bg-fg transition-transform duration-200";
 
   return (
     <>
@@ -130,7 +130,7 @@ export function MobileMenu({
 
       <div
         className={
-          "fixed inset-0 z-40 bg-black/60 transition-opacity duration-200 lg:hidden " +
+          "fixed inset-0 z-40 bg-fg/40 transition-opacity duration-200 lg:hidden " +
           (open ? "opacity-100" : "pointer-events-none opacity-0")
         }
         onClick={() => setOpen(false)}
@@ -143,15 +143,15 @@ export function MobileMenu({
         aria-modal="true"
         aria-hidden={!open}
         className={
-          "fixed inset-x-0 top-0 z-50 border-b border-neutral-800 bg-neutral-950 px-6 pb-6 pt-20 transition-transform duration-200 lg:hidden " +
+          "fixed inset-x-0 top-0 z-50 border-b border-line bg-bg px-6 pb-6 pt-20 transition-transform duration-200 lg:hidden " +
           (open ? "translate-y-0" : "-translate-y-full")
         }
       >
         <nav>
-          <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+          <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted">
             {dict.menu.title}
           </div>
-          <ul className="divide-y divide-neutral-900">
+          <ul className="divide-y divide-line">
             {MENU_ITEMS.map((item) => {
               const href = anchorBase ? `${anchorBase}${item.href}` : item.href;
               return (
@@ -159,7 +159,7 @@ export function MobileMenu({
                   <a
                     href={href}
                     onClick={(e) => handleAnchorClick(e, href)}
-                    className="block py-3 text-base text-neutral-200 hover:text-white"
+                    className="block py-3 text-base text-fg hover:text-muted"
                   >
                     {dict.menu[item.key]}
                   </a>
@@ -171,7 +171,7 @@ export function MobileMenu({
                 <button
                   type="button"
                   onClick={handleInstallApp}
-                  className="block w-full py-3 text-left text-base text-neutral-200 hover:text-white"
+                  className="block w-full py-3 text-left text-base text-fg hover:text-muted"
                 >
                   {dict.menu.installApp}
                 </button>
@@ -180,10 +180,10 @@ export function MobileMenu({
           </ul>
         </nav>
 
-        <div className="my-5 border-t border-neutral-800" />
+        <div className="my-5 border-t border-line" />
 
         <div className="space-y-2">
-          <div className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-muted">
             {dict.menu.langSection}
           </div>
           <LangToggle

@@ -6,13 +6,13 @@ import { CrashChart } from "./CrashChart";
 export function AboutSection({ lang }: { lang: Lang }) {
   const d = getDict(lang);
   return (
-    <section id="about" className="border-t border-neutral-900 px-6 py-16">
+    <section id="about" className="border-t border-line px-6 py-16">
       <div className="mx-auto max-w-3xl space-y-12">
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-neutral-200">
+          <h2 className="font-sans text-lg font-semibold text-fg">
             {d.about.title}
           </h2>
-          <div className="space-y-4 text-sm leading-7 text-neutral-400">
+          <div className="space-y-4 text-sm leading-7 text-muted">
             {d.about.paragraphs.map((p, i) => (
               <p key={i}>{p}</p>
             ))}
@@ -20,7 +20,7 @@ export function AboutSection({ lang }: { lang: Lang }) {
         </div>
 
         <div id="history" className="space-y-4">
-          <h2 className="text-lg font-semibold text-neutral-200">
+          <h2 className="font-sans text-lg font-semibold text-fg">
             {d.history.title}
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -36,7 +36,7 @@ export function AboutSection({ lang }: { lang: Lang }) {
               />
             ))}
           </div>
-          <p className="pt-2 text-xs leading-relaxed text-neutral-500">
+          <p className="pt-2 text-xs leading-relaxed text-muted">
             {d.history.note}
           </p>
         </div>

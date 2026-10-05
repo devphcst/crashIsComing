@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "폭락장은 온다",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
   icons: {
     icon: [
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
 
 // viewport-fit=cover: iOS 노치/홈 인디케이터 영역까지 배경 확장 → safe-area-inset로 컨텐츠 보호.
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#FFFFFF",
   viewportFit: "cover",
 };
 

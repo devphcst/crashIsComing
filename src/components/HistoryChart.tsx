@@ -189,12 +189,12 @@ export function HistoryChart({
   const tapInProgress = !!tappedStart && !tappedEnd;
 
   const gradientId = useId().replace(/:/g, "-");
-  const BASE_STROKE = "#888888";
+  const BASE_STROKE = "#111113"; // --fg
   const highlightColor = !comparePoints
     ? BASE_STROKE
     : comparePoints.pct < 0
-      ? "#f87171"
-      : "#e5e5e5";
+      ? "#D03A4B"
+      : "#1F8A55";
   const segmentPct = useMemo(() => {
     if (!comparePoints || rendered.length < 2) return null;
     const startIdx = rendered.findIndex(
@@ -225,7 +225,7 @@ export function HistoryChart({
 
   if (closes.length < MIN_POINTS) {
     return (
-      <div className="flex h-56 items-center justify-center rounded-md border border-neutral-800 bg-neutral-950/40 text-xs text-neutral-500">
+      <div className="flex h-56 items-center justify-center rounded-card border border-line bg-transparent text-xs text-muted">
         {emptyLabel}
       </div>
     );
@@ -256,12 +256,12 @@ export function HistoryChart({
               disabled={!enabled}
               aria-pressed={active}
               className={
-                "rounded-full px-3 py-1 text-xs transition-colors " +
+                "rounded-full border px-3 py-1 text-xs transition-colors " +
                 (!enabled
-                  ? "cursor-not-allowed border border-neutral-800 text-neutral-700 opacity-30"
+                  ? "cursor-not-allowed border-line text-subtle opacity-50"
                   : active
-                    ? "bg-white text-black"
-                    : "border border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-neutral-200")
+                    ? "border-fg bg-fg text-bg"
+                    : "border-line text-muted hover:bg-surface-hover hover:text-fg")
               }
             >
               {label}
@@ -296,13 +296,13 @@ export function HistoryChart({
                 )}
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="#1a1a1a" vertical={false} />
+            <CartesianGrid stroke="#E6E6E9" vertical={false} />
             <XAxis
               dataKey="date"
               ticks={ticks}
-              tick={{ fontSize: 10, fill: "#525252" }}
+              tick={{ fontSize: 10, fill: "#8B8B90" }}
               tickFormatter={(v: string) => formatYearMonth(v, lang)}
-              stroke="#1a1a1a"
+              stroke="#E6E6E9"
               tickLine={false}
               axisLine={false}
               interval={0}
@@ -318,8 +318,8 @@ export function HistoryChart({
               isAnimationActive={false}
               activeDot={{
                 r: 4,
-                fill: "#ffffff",
-                stroke: "#0a0a0a",
+                fill: "#111113",
+                stroke: "#FFFFFF",
                 strokeWidth: 1.5,
               }}
             />
@@ -328,8 +328,8 @@ export function HistoryChart({
                 x={startMarker.date}
                 y={startMarker.price}
                 r={5}
-                fill="#f87171"
-                stroke="#0a0a0a"
+                fill="#D03A4B"
+                stroke="#FFFFFF"
                 strokeWidth={1.5}
               />
             ) : null}
@@ -338,8 +338,8 @@ export function HistoryChart({
                 x={endMarker.date}
                 y={endMarker.price}
                 r={5}
-                fill="#ffffff"
-                stroke="#0a0a0a"
+                fill="#111113"
+                stroke="#FFFFFF"
                 strokeWidth={1.5}
               />
             ) : null}
@@ -349,32 +349,32 @@ export function HistoryChart({
 
       {/* 결과 박스 / 요약. 두 점 탭 결과가 있으면 그것을, 없으면 범위 요약. */}
       {comparePoints ? (
-        <div className="mt-3 rounded-md bg-neutral-900 px-3 py-2.5">
+        <div className="mt-3 rounded-card border border-line px-3 py-2.5">
           <div className="flex items-center justify-between gap-3">
-            <div className="text-xs text-neutral-500">
+            <div className="text-xs text-muted">
               {formatShortDate(comparePoints.start.date, lang)} →{" "}
               {formatShortDate(comparePoints.end.date, lang)}
             </div>
             <div
               className={
                 "font-mono text-sm " +
-                (comparePoints.pct < 0 ? "text-red-400" : "text-neutral-400")
+                (comparePoints.pct < 0 ? "text-down" : "text-up")
               }
             >
               {formatSignedPct(comparePoints.pct, 1)}
             </div>
           </div>
-          <div className="mt-1 text-[10px] text-neutral-600">
+          <div className="mt-1 text-[10px] text-subtle">
             {formatPrice(comparePoints.start.price, exchange)} →{" "}
             {formatPrice(comparePoints.end.price, exchange)}
           </div>
         </div>
       ) : tapInProgress ? (
-        <div className="mt-3 rounded-md bg-neutral-900 px-3 py-2.5 text-xs text-neutral-500">
+        <div className="mt-3 rounded-card border border-line px-3 py-2.5 text-xs text-muted">
           {tapHintLabel}
         </div>
       ) : summary ? (
-        <div className="mt-3 text-center text-xs text-neutral-500">
+        <div className="mt-3 text-center text-xs text-muted">
           {summaryFormatter(summary.startLabel, summary.endLabel, summary.multiplier)}
         </div>
       ) : null}

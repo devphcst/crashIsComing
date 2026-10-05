@@ -81,7 +81,7 @@ const PRESETS: PresetSpec[] = [
 const LabChart = dynamic(() => import("./LabChart").then((m) => m.LabChart), {
   ssr: false,
   loading: () => (
-    <div className="flex h-64 items-center justify-center text-xs text-neutral-500">
+    <div className="flex h-64 items-center justify-center text-xs text-muted">
       차트 로딩…
     </div>
   ),
@@ -92,7 +92,7 @@ const DcaSimulator = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-32 items-center justify-center text-xs text-neutral-500">
+      <div className="flex h-32 items-center justify-center text-xs text-muted">
         시뮬레이터 로딩…
       </div>
     ),
@@ -225,14 +225,14 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
   return (
     <div className="space-y-6">
       {/* ---- 섹션 1: 컨트롤 + 차트 ---- */}
-      <section className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
+      <section className="space-y-4 rounded-lg border border-line p-5">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-muted">
             종목
             <select
               value={selectedTicker}
               onChange={(e) => setSelectedTicker(e.target.value)}
-              className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg focus:border-fg focus:outline-none"
             >
               {symbols.map((s) => (
                 <option key={s.ticker} value={s.ticker}>
@@ -241,12 +241,12 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
               ))}
             </select>
           </label>
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-muted">
             비교
             <select
               value={compareTicker}
               onChange={(e) => setCompareTicker(e.target.value)}
-              className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg focus:border-fg focus:outline-none"
             >
               <option value="">비교 없음</option>
               {symbols
@@ -269,8 +269,8 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
               className={
                 "rounded-full border px-3 py-1 text-xs transition " +
                 (preset === p.key
-                  ? "border-neutral-300 bg-neutral-100 text-neutral-900"
-                  : "border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
+                  ? "border-fg bg-fg text-bg"
+                  : "border-line text-muted hover:border-fg hover:text-fg")
               }
             >
               {p.label}
@@ -280,28 +280,28 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
 
         {preset === "custom" ? (
           <div className="flex flex-wrap items-end gap-3">
-            <label className="text-xs text-neutral-400">
+            <label className="text-xs text-muted">
               시작
               <input
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="mt-1 block rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
+                className="mt-1 block rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg"
               />
             </label>
-            <label className="text-xs text-neutral-400">
+            <label className="text-xs text-muted">
               끝
               <input
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="mt-1 block rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
+                className="mt-1 block rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg"
               />
             </label>
           </div>
         ) : null}
 
-        <div className="text-[11px] text-neutral-500">
+        <div className="text-[11px] text-muted">
           {primaryPeriodCloses.length.toLocaleString()}개 데이터 포인트
           {range.start ? ` · ${range.start}` : ""}
           {range.end ? ` ~ ${range.end}` : ""}
@@ -329,9 +329,9 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
       <DcaSimulator symbols={symbols} />
 
       {/* ---- 섹션 2: 통계 요약 ---- */}
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">통계 요약</h2>
-        <p className="text-[11px] text-neutral-500">
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">통계 요약</h2>
+        <p className="text-[11px] text-muted">
           선택 기간 재계산. 최소 폭락 낙폭 기준: {primary.minCrashDrawdownPct}%
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -476,9 +476,9 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
 
       {/* ---- 섹션 2b: 비교 지표 ---- */}
       {compare && compareMetrics ? (
-        <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-          <h2 className="text-sm font-medium text-neutral-200">비교 지표</h2>
-          <p className="text-[11px] text-neutral-500">
+        <section className="space-y-3 rounded-lg border border-line p-5">
+          <h2 className="text-sm font-medium text-fg">비교 지표</h2>
+          <p className="text-[11px] text-muted">
             {primary.ticker} vs {compare.ticker} · 동일 기간 기준
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -529,29 +529,29 @@ export function LabClient({ symbols }: { symbols: LabSymbolPayload[] }) {
       />
 
       {/* ---- 섹션 4: 역대 폭락 리스트 ---- */}
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">역대 폭락</h2>
-        <p className="text-[11px] text-neutral-500">
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">역대 폭락</h2>
+        <p className="text-[11px] text-muted">
           {primary.displayName} 전체 기간 · 최소 낙폭 {primary.minCrashDrawdownPct}% 기준
         </p>
         {historicalCrashes.length === 0 ? (
-          <p className="text-xs text-neutral-500">해당 기준 폭락 이력 없음.</p>
+          <p className="text-xs text-muted">해당 기준 폭락 이력 없음.</p>
         ) : (
-          <ul className="space-y-1 text-xs text-neutral-300">
+          <ul className="space-y-1 text-xs text-fg">
             {[...historicalCrashes]
               .sort((a, b) => a.peakDate.localeCompare(b.peakDate))
               .map((c) => (
                 <li
                   key={`${c.peakDate}-${c.troughDate}`}
-                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-neutral-800 py-2 last:border-0"
+                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-line py-2 last:border-0"
                 >
-                  <span className="font-medium text-neutral-100">
+                  <span className="font-medium text-fg">
                     {c.peakDate.slice(0, 7)} → {c.troughDate.slice(0, 7)}
                   </span>
-                  <span className="text-neutral-400">
+                  <span className="text-muted">
                     {formatSignedPct(c.drawdownPct, 1)}
                   </span>
-                  <span className="text-neutral-500">
+                  <span className="text-muted">
                     {c.recovered && c.recoveryMonths !== null
                       ? `회복 ${c.recoveryMonths}개월 (${c.recoveryDate})`
                       : "미회복"}
@@ -583,29 +583,29 @@ function StatCard({
 }) {
   const showCompare = compareValue !== undefined;
   return (
-    <div className="rounded-md border border-neutral-800 bg-neutral-950 px-3 py-3">
-      <div className="text-[10px] uppercase tracking-wide text-neutral-500">
+    <div className="rounded-md border border-line px-3 py-3">
+      <div className="text-[10px] uppercase tracking-wide text-muted">
         {label}
       </div>
       <div className="mt-1 flex items-baseline gap-2">
         {showCompare && primaryTicker ? (
-          <span className="text-[10px] text-neutral-500">{primaryTicker}</span>
+          <span className="text-[10px] text-muted">{primaryTicker}</span>
         ) : null}
-        <span className="text-base font-semibold text-neutral-100">
+        <span className="text-base font-semibold text-fg">
           {value}
         </span>
       </div>
       {showCompare ? (
         <div className="mt-0.5 flex items-baseline gap-2">
           {compareTicker ? (
-            <span className="text-[10px] text-neutral-500">{compareTicker}</span>
+            <span className="text-[10px] text-muted">{compareTicker}</span>
           ) : null}
-          <span className="text-base font-semibold text-orange-400">
+          <span className="text-base font-semibold text-muted">
             {compareValue}
           </span>
         </div>
       ) : null}
-      {sub ? <div className="mt-1 text-[11px] text-neutral-500">{sub}</div> : null}
+      {sub ? <div className="mt-1 text-[11px] text-muted">{sub}</div> : null}
     </div>
   );
 }
@@ -657,15 +657,15 @@ function FilterSection({
   }, [hits]);
 
   return (
-    <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-      <h2 className="text-sm font-medium text-neutral-200">데이터 탐색</h2>
+    <section className="space-y-3 rounded-lg border border-line p-5">
+      <h2 className="text-sm font-medium text-fg">데이터 탐색</h2>
       <div className="grid gap-3 sm:grid-cols-4">
-        <label className="text-xs text-neutral-400 sm:col-span-2">
+        <label className="text-xs text-muted sm:col-span-2">
           필터 종류
           <select
             value={kind}
             onChange={(e) => setKind(e.target.value as FilterKind)}
-            className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
+            className="mt-1 w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg"
           >
             {FILTER_KINDS.map((k) => (
               <option key={k.key} value={k.key}>
@@ -677,48 +677,48 @@ function FilterSection({
 
         {kind === "price_range" ? (
           <>
-            <label className="text-xs text-neutral-400">
+            <label className="text-xs text-muted">
               최소
               <input
                 type="number"
                 value={minStr}
                 step="any"
                 onChange={(e) => setMinStr(e.target.value)}
-                className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
+                className="mt-1 w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg"
               />
             </label>
-            <label className="text-xs text-neutral-400">
+            <label className="text-xs text-muted">
               최대
               <input
                 type="number"
                 value={maxStr}
                 step="any"
                 onChange={(e) => setMaxStr(e.target.value)}
-                className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
+                className="mt-1 w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg"
               />
             </label>
           </>
         ) : (
           <>
-            <label className="text-xs text-neutral-400">
+            <label className="text-xs text-muted">
               조건
               <select
                 value={op}
                 onChange={(e) => setOp(e.target.value as FilterOp)}
-                className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
+                className="mt-1 w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg"
               >
                 <option value="gte">이상 (≥)</option>
                 <option value="lte">이하 (≤)</option>
               </select>
             </label>
-            <label className="text-xs text-neutral-400">
+            <label className="text-xs text-muted">
               값 ({kind === "daily_change" ? "%" : "% 음수"})
               <input
                 type="number"
                 value={value}
                 step="any"
                 onChange={(e) => setValue(e.target.value)}
-                className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
+                className="mt-1 w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg"
               />
             </label>
           </>
@@ -729,12 +729,12 @@ function FilterSection({
         <button
           type="button"
           onClick={submit}
-          className="rounded-md bg-neutral-100 px-4 py-1.5 text-xs font-medium text-neutral-900 hover:bg-white"
+          className="rounded-md bg-fg px-4 py-1.5 text-xs font-medium text-bg hover:bg-surface-hover hover:text-fg"
         >
           검색
         </button>
         {sortedHits !== null ? (
-          <span className="text-xs text-neutral-400">
+          <span className="text-xs text-muted">
             총 {sortedHits.length.toLocaleString()}건
           </span>
         ) : null}
@@ -742,17 +742,17 @@ function FilterSection({
 
       {sortedHits !== null ? (
         sortedHits.length === 0 ? (
-          <p className="text-xs text-neutral-500">해당 조건의 결과 없음.</p>
+          <p className="text-xs text-muted">해당 조건의 결과 없음.</p>
         ) : (
-          <div className="max-h-[300px] overflow-y-auto rounded-md border border-neutral-800">
-            <ul className="divide-y divide-neutral-800 text-xs">
+          <div className="max-h-[300px] overflow-y-auto rounded-md border border-line">
+            <ul className="divide-y divide-line text-xs">
               {sortedHits.map((h) => (
                 <li
                   key={h.date}
                   className="flex items-baseline justify-between gap-4 px-3 py-1.5"
                 >
-                  <span className="text-neutral-300">{h.date}</span>
-                  <span className="flex items-baseline gap-3 text-neutral-400">
+                  <span className="text-fg">{h.date}</span>
+                  <span className="flex items-baseline gap-3 text-muted">
                     {h.auxValue !== undefined ? (
                       <span>
                         {h.auxValue > 0 ? "+" : ""}
@@ -760,7 +760,7 @@ function FilterSection({
                         {h.auxLabel ?? ""}
                       </span>
                     ) : null}
-                    <span className="text-neutral-200">
+                    <span className="text-fg">
                       {formatPrice(h.price, exchange)}
                     </span>
                   </span>

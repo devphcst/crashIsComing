@@ -76,28 +76,28 @@ describe("tierFor — 인버스 (-3배, SQQQ)", () => {
   });
 });
 
-describe("tierClasses — 다크모드에서 강할수록 밝게", () => {
-  it("강 티어는 emerald-500/rose-500 (가장 밝음)", () => {
-    expect(tierClasses["up-strong"]).toContain("emerald-500");
-    expect(tierClasses["down-strong"]).toContain("rose-500");
+describe("tierClasses — 라이트 테마 6단계 (중립 1 포함)", () => {
+  it("강 티어는 solid 메인(2E9E66 / D9404F)", () => {
+    expect(tierClasses["up-strong"]).toContain("#2E9E66");
+    expect(tierClasses["down-strong"]).toContain("#D9404F");
   });
 
-  it("중 티어는 700", () => {
-    expect(tierClasses["up-mid"]).toContain("emerald-700");
-    expect(tierClasses["down-mid"]).toContain("rose-700");
+  it("중 티어는 중간 톤(9ED9B8 / F4A7AF)", () => {
+    expect(tierClasses["up-mid"]).toContain("#9ED9B8");
+    expect(tierClasses["down-mid"]).toContain("#F4A7AF");
   });
 
-  it("약 티어는 900 (가장 어두움)", () => {
-    expect(tierClasses["up-weak"]).toContain("emerald-900");
-    expect(tierClasses["down-weak"]).toContain("rose-900");
+  it("약 티어는 파스텔(E1F4E9 / FCE4E7)", () => {
+    expect(tierClasses["up-weak"]).toContain("#E1F4E9");
+    expect(tierClasses["down-weak"]).toContain("#FCE4E7");
   });
 
-  it("zero는 중립 회색", () => {
-    expect(tierClasses.zero).toContain("neutral-800");
+  it("zero는 surface-hover 토큰", () => {
+    expect(tierClasses.zero).toContain("--surface-hover");
   });
 });
 
-describe("tierHex — OG 이미지용", () => {
+describe("tierHex — OG 이미지용 (라이트 팔레트)", () => {
   it("모든 티어에 bg/text HEX 반환", () => {
     const tiers = [
       "zero",
@@ -115,8 +115,8 @@ describe("tierHex — OG 이미지용", () => {
     }
   });
 
-  it("강 티어는 Tailwind emerald-500/rose-500 HEX와 일치", () => {
-    expect(tierHex("up-strong").bg.toLowerCase()).toBe("#10b981");
-    expect(tierHex("down-strong").bg.toLowerCase()).toBe("#f43f5e");
+  it("강 상승은 #2E9E66, 강 하락은 #D9404F", () => {
+    expect(tierHex("up-strong").bg.toUpperCase()).toBe("#2E9E66");
+    expect(tierHex("down-strong").bg.toUpperCase()).toBe("#D9404F");
   });
 });

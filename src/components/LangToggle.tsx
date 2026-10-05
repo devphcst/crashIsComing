@@ -15,7 +15,7 @@ export function LangToggle({
     <div
       role="group"
       aria-label={ariaLabel}
-      className="inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-900 p-1 text-xs"
+      className="inline-flex items-center gap-1 rounded-full border border-line bg-bg p-1 text-xs"
     >
       {(["ko", "en"] as const).map((l) => (
         <button
@@ -26,8 +26,8 @@ export function LangToggle({
           className={
             "rounded-full px-3 py-1 transition " +
             (lang === l
-              ? "bg-neutral-200 text-neutral-900"
-              : "text-neutral-400 hover:text-neutral-200")
+              ? "bg-fg text-bg"
+              : "text-muted hover:bg-surface-hover hover:text-fg")
           }
         >
           {l.toUpperCase()}

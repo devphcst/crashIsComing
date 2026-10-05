@@ -96,14 +96,20 @@ export type SeasonalityTeaser = {
 
 const LANG_STORAGE_KEY = "tqqq.lang";
 
+/**
+ * 큰 숫자 색 — 라이트 테마.
+ *   - alarm (심한 낙폭): down 토큰
+ *   - warn  (주황 경계): 중간톤(amber 유지하되 더 어두운 톤으로)
+ *   - calm  (정상): fg
+ */
 const colorClassFor = (level: DrawdownLevel): string => {
   switch (level) {
     case "alarm":
-      return "text-red-500";
+      return "text-down";
     case "warn":
-      return "text-amber-400";
+      return "text-[#B96E12]";
     case "calm":
-      return "text-neutral-100";
+      return "text-fg";
   }
 };
 
@@ -174,9 +180,9 @@ export function HeroDrawdown({
       {/* 모바일에서만 sticky: 헤더(브랜드 + 햄버거)만 상단 고정.
           종목 탭은 일반 흐름으로 분리 → 스크롤 시 함께 사라짐.
           데스크톱은 일반 흐름 그대로(lg:relative). */}
-      <div className="sticky top-0 z-30 bg-neutral-950/90 backdrop-blur lg:relative lg:bg-transparent lg:backdrop-blur-none">
+      <div className="sticky top-0 z-30 bg-bg/90 backdrop-blur lg:relative lg:bg-transparent lg:backdrop-blur-none">
         <header className="flex items-center justify-between px-6 pb-3 pt-6 lg:pb-0">
-          <span className="text-sm text-neutral-500">{d.brand}</span>
+          <span className="text-sm text-muted">{d.brand}</span>
           {/* 데스크톱: LangToggle 인라인 */}
           <div className="hidden lg:block">
             <LangToggle
@@ -251,7 +257,7 @@ export function HeroDrawdown({
         <aside className="hidden lg:block" aria-hidden="true" />
       </div>
 
-      <footer className="border-t border-neutral-900 pb-8 pt-6">
+      <footer className="border-t border-line pb-8 pt-6">
         <Disclaimer text={d.disclaimer} />
         {/* visitor 카운터는 모바일·데스크톱 둘 다 hero 안 인라인 텍스트로 통일됨 — 푸터엔 없음. */}
       </footer>
@@ -299,11 +305,11 @@ function HeroNumbers({
             - 데스크톱(lg+): max-w-none, whitespace-normal, px-4 py-1.5, text-3xl
           텍스트 자체는 inner <span> 두 개로 모바일=displayName, 데스크톱=ticker 분기.
           (페이지에 <h1>이 하나만 존재) */}
-      <h1 className="inline-block max-w-full whitespace-nowrap rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1 text-[clamp(0.75rem,3.5vw,1rem)] font-medium tracking-wider text-neutral-200 lg:max-w-none lg:whitespace-normal lg:px-4 lg:py-1.5 lg:text-3xl">
+      <h1 className="inline-block max-w-full whitespace-nowrap rounded-full border border-line bg-transparent px-3 py-1 text-[clamp(0.75rem,3.5vw,1rem)] font-medium tracking-wider text-fg lg:max-w-none lg:whitespace-normal lg:px-4 lg:py-1.5 lg:text-3xl">
         <span className="lg:hidden">{currentDisplayName}</span>
         <span className="hidden lg:inline">{tickerLabel}</span>
       </h1>
-      <span className="text-sm text-neutral-500">{dict.athDrawdown}</span>
+      <span className="text-sm text-muted">{dict.athDrawdown}</span>
       <span
         className={
           "font-mono text-7xl font-bold tracking-tight sm:text-8xl md:text-9xl " +
@@ -334,9 +340,9 @@ function HeroNumbers({
       <div className="mx-auto mt-8 w-full max-w-[300px] px-4 py-6">
         <MarketStatusBanner data={data} dict={dict} lang={lang} />
 
-        <div className="mb-3 mt-6 text-center text-[12px] text-neutral-500">
+        <div className="mb-3 mt-6 text-center text-[12px] text-muted">
           {dict.current}{" "}
-          <span className="font-medium text-white">
+          <span className="font-medium text-fg">
             {formatPrice(data.current.price, data.exchange)}
           </span>
         </div>
@@ -374,13 +380,13 @@ function HeroNumbers({
           공유 버튼: 항상 표시 (SNS 캐시 무효화용 URL 클립보드 복사). */}
       <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
         {visitor.show ? (
-          <span className="text-xs text-neutral-700">
+          <span className="text-xs text-subtle">
             {dict
               .visitorInline(visitor.today || null, visitor.total)
               .map((p, i) => (
                 <span
                   key={i}
-                  className={p.emphasis === "value" ? "text-neutral-500" : ""}
+                  className={p.emphasis === "value" ? "text-muted" : ""}
                 >
                   {p.text}
                 </span>
@@ -419,7 +425,7 @@ function ShareButton({ dict }: { dict: ReturnType<typeof getDict> }) {
       type="button"
       onClick={onClick}
       aria-live="polite"
-      className="inline-flex items-center gap-1 rounded-full border border-[#333] px-2.5 py-1 text-[10px] text-neutral-500 transition-colors hover:bg-neutral-900 hover:text-neutral-300"
+      className="inline-flex items-center gap-1 rounded-full border border-line bg-bg px-2.5 py-1 text-[10px] text-muted transition-colors hover:bg-surface-hover hover:text-fg"
     >
       <svg
         viewBox="0 0 12 12"
@@ -490,16 +496,16 @@ function RefRow({
   const identical = ath.value === oneYear.value && ath.date === oneYear.date;
   if (identical) {
     return (
-      <div className="mt-4 border-t border-[#222] pt-3 text-center text-[11px] text-neutral-500">
+      <div className="mt-4 border-t border-line pt-3 text-center text-[11px] text-muted">
         <span>{ath.label} </span>
-        <span className="font-mono text-neutral-300">{ath.value}</span>
+        <span className="font-mono text-fg">{ath.value}</span>
         <span> · {ath.date}</span>
       </div>
     );
   }
   return (
     <div
-      className="mt-4 grid grid-cols-2 gap-1 border-t border-[#222] pt-3"
+      className="mt-4 grid grid-cols-2 gap-1 border-t border-line pt-3"
       role="list"
     >
       <RefCell label={ath.label} value={ath.value} date={ath.date} />
@@ -527,9 +533,9 @@ function RefCell({
 }) {
   return (
     <div role="listitem" className="text-center">
-      <div className="text-[10px] text-[#666]">{label}</div>
-      <div className="mt-0.5 font-mono text-[13px] text-[#ccc]">{value}</div>
-      <div className="text-[9px] text-[#555]">{date}</div>
+      <div className="text-[10px] text-muted">{label}</div>
+      <div className="mt-0.5 font-mono text-[13px] text-fg">{value}</div>
+      <div className="text-[9px] text-subtle">{date}</div>
     </div>
   );
 }
@@ -551,72 +557,30 @@ function HeatCell({
     return (
       <div
         role="listitem"
-        className="rounded-lg px-3 py-5 text-center"
+        className="rounded-lg border border-line px-3 py-5 text-center"
       >
-        <div className="text-[11px] text-neutral-600">{label}</div>
-        <div className="mt-1 text-[11px] text-neutral-600">{emptyLabel}</div>
+        <div className="text-[11px] text-muted">{label}</div>
+        <div className="mt-1 text-[11px] text-subtle">{emptyLabel}</div>
       </div>
     );
   }
-  const style = heatStyleFor(point.pct);
+  // 라이트 테마: 배경 알파 대신 border + up/down 텍스트 색 단순화.
+  const abs = Math.abs(point.pct);
+  const valueClass =
+    abs < 0.1 ? "text-muted" : point.pct > 0 ? "text-up" : "text-down";
   return (
     <div
       role="listitem"
-      className="rounded-lg px-3 py-5 text-center"
-      style={{ backgroundColor: style.background }}
+      className="rounded-lg border border-line px-3 py-5 text-center"
     >
-      <div className={`text-[11px] ${style.labelClass}`}>{label}</div>
-      <div className={`mt-1 font-mono text-[22px] font-medium ${style.valueClass}`}>
+      <div className="text-[11px] text-muted">{label}</div>
+      <div
+        className={"mt-1 font-mono text-[22px] font-medium " + valueClass}
+      >
         {formatSignedPct(point.pct, 1)}
       </div>
     </div>
   );
-}
-
-/**
- * 히트맵 셀 스타일 계산 — 절대값 크기별 임계 알파, 부호별 색상, 대비별 텍스트 톤.
- * 임계값 (|pct|): <3 · 3~10 · 10~25 · 25~50 · 50~100 · >100 → 0.06/0.15/0.30/0.50/0.65/0.80.
- * <0.1%면 배경 없음, 회색 텍스트.
- * alpha >= 0.4면 진한 배경 대비를 위해 라벨=neutral-200, 값=white.
- */
-function heatStyleFor(pct: number): {
-  background: string;
-  labelClass: string;
-  valueClass: string;
-} {
-  const abs = Math.abs(pct);
-  if (abs < 0.1) {
-    return {
-      background: "transparent",
-      labelClass: "text-neutral-500",
-      valueClass: "text-neutral-500",
-    };
-  }
-  const alpha =
-    abs < 3
-      ? 0.06
-      : abs < 10
-        ? 0.15
-        : abs < 25
-          ? 0.3
-          : abs < 50
-            ? 0.5
-            : abs < 100
-              ? 0.65
-              : 0.8;
-  const positive = pct > 0;
-  const rgb = positive ? "74, 222, 128" : "248, 113, 113";
-  const strong = alpha >= 0.4;
-  const valueBaseClass = strong
-    ? "text-white"
-    : positive
-      ? "text-green-400"
-      : "text-red-400";
-  return {
-    background: `rgba(${rgb}, ${alpha})`,
-    labelClass: strong ? "text-neutral-200" : "text-neutral-500",
-    valueClass: valueBaseClass,
-  };
 }
 
 /**
@@ -638,7 +602,7 @@ function AtDrawdownBlock({
   if (stats.total === 0) {
     return (
       <div className="mt-4 w-full text-center">
-        <span className="text-[11px] font-medium text-neutral-300">
+        <span className="text-[11px] font-medium text-fg">
           {dict.atDrawdownStats.newMax}
         </span>
       </div>
@@ -649,31 +613,30 @@ function AtDrawdownBlock({
     absPct.toFixed(1),
     stats.total,
   );
-  // 회복/더 하락 비율 — 정수 %로 반올림. 라벨과 바가 같은 반올림 값을 공유해 시각적 일치.
   const recoveredPct = Math.round((stats.recoveredHere / stats.total) * 100);
   const fellPct = 100 - recoveredPct;
 
   return (
     <div className="mx-auto mt-4 w-full max-w-[300px]">
-      <div className="mb-[14px] text-center text-[11px] font-medium text-neutral-500">
+      <div className="mb-[14px] text-center text-[11px] font-medium text-muted">
         {prefix}
-        <span className="text-neutral-300">{count}</span>
+        <span className="text-fg">{count}</span>
         {suffix}
       </div>
       <div
-        className="flex h-1 w-full overflow-hidden rounded-sm bg-neutral-900"
+        className="flex h-1 w-full overflow-hidden rounded-sm border border-line bg-bg"
         role="presentation"
         aria-hidden
       >
         {recoveredPct > 0 ? (
           <div
-            className="h-full bg-neutral-200"
+            className="h-full bg-fg"
             style={{ width: `${recoveredPct}%` }}
           />
         ) : null}
         {fellPct > 0 ? (
           <div
-            className="h-full bg-red-400"
+            className="h-full bg-down"
             style={{ width: `${fellPct}%` }}
           />
         ) : null}
@@ -703,16 +666,16 @@ function FearGreedBlock({
   const max = Math.round(snapshot.yearMax);
 
   return (
-    <div className="mx-auto mt-6 w-full max-w-[300px] border-t border-neutral-900 pt-5 text-center">
+    <div className="mx-auto mt-6 w-full max-w-[300px] border-t border-line pt-5 text-center">
       <div className="flex items-center justify-center">
-        <span className="text-[11px] text-neutral-500">{dict.fearGreed.title}</span>
-        <span className="ml-2 text-[14px] font-medium text-neutral-100">
+        <span className="text-[11px] text-muted">{dict.fearGreed.title}</span>
+        <span className="ml-2 text-[14px] font-medium text-fg">
           {score}
         </span>
-        <span className="mx-[6px] text-[11px] text-neutral-600">·</span>
+        <span className="mx-[6px] text-[11px] text-subtle">·</span>
         <span className={`text-[11px] ${colorClass}`}>{label}</span>
       </div>
-      <div className="mt-1 text-[10px] text-neutral-600">
+      <div className="mt-1 text-[10px] text-subtle">
         {dict.fearGreed.range(min, max)}
       </div>
     </div>
@@ -722,15 +685,15 @@ function FearGreedBlock({
 function fearGreedColorClass(rating: FearGreedRating): string {
   switch (rating) {
     case "extreme fear":
-      return "text-red-400";
+      return "text-down";
     case "fear":
-      return "text-orange-400";
+      return "text-[#B96E12]";
     case "neutral":
-      return "text-neutral-400";
+      return "text-muted";
     case "greed":
-      return "text-green-400";
+      return "text-up";
     case "extreme greed":
-      return "text-emerald-400";
+      return "text-up";
   }
 }
 
@@ -773,9 +736,9 @@ function MarketStatusBanner({
   return (
     <div className="flex w-full flex-col items-center gap-1 text-[10px] leading-snug">
       {closureText ? (
-        <span className="text-orange-400">● {closureText}</span>
+        <span className="text-[#B96E12]">● {closureText}</span>
       ) : null}
-      <span className="text-neutral-600">{nextUpdateText}</span>
+      <span className="text-subtle">{nextUpdateText}</span>
     </div>
   );
 }
@@ -783,8 +746,8 @@ function MarketStatusBanner({
 
 function NotReady({ dict }: { dict: ReturnType<typeof getDict> }) {
   return (
-    <div className="flex max-w-xl flex-col items-center gap-3 text-center text-neutral-400">
-      <span className="text-3xl text-neutral-200">{dict.notReady}</span>
+    <div className="flex max-w-xl flex-col items-center gap-3 text-center text-muted">
+      <span className="text-3xl text-fg">{dict.notReady}</span>
       <span className="text-sm">{dict.notReadyHint}</span>
     </div>
   );
@@ -809,17 +772,19 @@ function SeasonalityTeaserBlock({
   teaser: SeasonalityTeaser;
   dict: ReturnType<typeof getDict>;
 }) {
+  // displayName은 사용 안 함(호환 유지용). 사양상 라벨은 TICKER + N월.
+  void displayName;
   const t = dict.seasonality;
   const monthLabel = t.monthLabel(teaser.month);
   const winRate = teaser.count > 0 ? teaser.wins / teaser.count : 0;
 
-  // 승률 기준 색상/배지 분기 — 60%+ 초록, 40% 이하 빨강, 사이는 중립 회색 + 배지.
+  // 승률 기준 색상/배지 분기 — 60%+ up, 40% 이하 down, 사이는 중립 회색 + 배지.
   const countColor =
     winRate >= 0.6
-      ? "text-emerald-400"
+      ? "text-up"
       : winRate <= 0.4
-        ? "text-rose-400"
-        : "text-neutral-300";
+        ? "text-down"
+        : "text-muted";
   const showNoTrend = winRate > 0.4 && winRate < 0.6;
 
   const headline = t.teaser.headline(teaser.count, teaser.wins);
@@ -833,26 +798,26 @@ function SeasonalityTeaserBlock({
   const href = `/seasonality/${ticker}?m=${teaser.month}`;
 
   return (
-    <section className="mx-auto w-full max-w-xl rounded-lg border border-neutral-800 bg-neutral-900/40 px-5 py-4">
-      <div className="text-[11px] uppercase tracking-wide text-neutral-500">
-        {t.teaser.label(displayName, monthLabel)}
+    <section className="mx-auto w-full max-w-xl rounded-card border border-line bg-transparent px-5 py-4">
+      <div className="text-[11px] uppercase tracking-wide text-muted">
+        {t.teaser.label(ticker.toUpperCase(), monthLabel)}
       </div>
       <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <h3 className="text-xl font-medium leading-tight text-neutral-100 sm:text-2xl">
-          <span className="text-neutral-400">{headline.prefix}</span>
+        <h3 className="font-sans text-xl font-medium leading-tight text-fg sm:text-2xl">
+          <span className="text-fg">{headline.prefix}</span>
           <span className={countColor}>{headline.count}</span>
-          <span className="text-neutral-400">{headline.suffix}</span>
+          <span className="text-fg">{headline.suffix}</span>
         </h3>
         {showNoTrend ? (
-          <span className="rounded-full border border-neutral-700 bg-neutral-900 px-2 py-0.5 text-[10px] text-neutral-400">
+          <span className="rounded-full border border-line bg-bg px-2 py-0.5 text-[10px] text-muted">
             {t.teaser.noTrendBadge}
           </span>
         ) : null}
       </div>
-      <div className="mt-1.5 font-mono text-xs text-neutral-500">{sub}</div>
+      <div className="mt-1.5 font-mono text-xs text-muted">{sub}</div>
       <a
         href={href}
-        className="mt-3 inline-block text-xs text-neutral-300 underline-offset-4 hover:text-neutral-100 hover:underline"
+        className="mt-3 inline-block text-xs text-fg underline-offset-4 hover:underline"
       >
         {t.teaser.cta}
       </a>

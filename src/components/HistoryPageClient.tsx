@@ -99,23 +99,23 @@ export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) 
             <div className="w-full max-w-3xl">
               <Link
                 href={backHref}
-                className="text-xs text-neutral-500 hover:text-neutral-300"
+                className="text-xs text-muted hover:text-fg"
               >
                 {d.historyPage.back}
               </Link>
             </div>
 
             <div className="flex w-full max-w-3xl flex-col items-center gap-2 text-center">
-              <h1 className="inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1 text-sm tracking-wider text-neutral-200 lg:px-4 lg:py-1.5 lg:text-base">
-                <span className="font-mono text-xs text-neutral-500">
+              <h1 className="inline-flex items-center gap-2 rounded-full border border-line bg-transparent px-3 py-1 text-sm tracking-wider text-fg lg:px-4 lg:py-1.5 lg:text-base">
+                <span className="font-mono text-xs text-muted">
                   {ticker.toUpperCase()}
                 </span>
                 <span>{displayName}</span>
               </h1>
-              <div className="text-2xl text-neutral-100 lg:text-3xl">
+              <div className="font-sans text-2xl text-fg lg:text-3xl">
                 {d.historyPage.title(years)}
               </div>
-              <div className="text-xs text-neutral-500">
+              <div className="text-xs text-muted">
                 {firstDate && lastDate
                   ? d.historyPage.dateRange(firstDate, lastDate)
                   : null}
@@ -136,11 +136,11 @@ export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) 
             </div>
 
             <div className="w-full max-w-3xl">
-              <h2 className="mb-3 text-sm font-medium text-neutral-300">
+              <h2 className="mb-3 text-sm font-medium text-fg">
                 {d.historyPage.crashesHeader}
               </h2>
               {crashes.length === 0 ? (
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-muted">
                   {d.historyPage.crashesEmpty}
                 </p>
               ) : (
@@ -161,7 +161,7 @@ export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) 
             <div className="w-full max-w-3xl pt-4">
               <Link
                 href={backHref}
-                className="text-xs text-neutral-500 hover:text-neutral-300"
+                className="text-xs text-muted hover:text-fg"
               >
                 {d.historyPage.back}
               </Link>
@@ -172,7 +172,7 @@ export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) 
         <aside className="hidden lg:block" aria-hidden="true" />
       </div>
 
-      <footer className="border-t border-neutral-900 pb-8 pt-6">
+      <footer className="border-t border-line pb-8 pt-6">
         <Disclaimer text={d.disclaimer} />
       </footer>
     </main>
@@ -196,14 +196,14 @@ function CrashCard({
   const rangeLabel = dict.historyPage.crashRange(crash.peakDate, rangeEnd);
 
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
+    <div className="rounded-card border border-line bg-transparent p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <div className="text-sm text-neutral-100">{dpText}</div>
-        <div className="font-mono text-lg text-red-400">
+        <div className="text-sm text-fg">{dpText}</div>
+        <div className="font-mono text-lg text-down">
           {formatPct(crash.drawdownPct, 1)}
         </div>
       </div>
-      <div className="mt-1 text-[11px] text-neutral-500">{rangeLabel}</div>
+      <div className="mt-1 text-[11px] text-muted">{rangeLabel}</div>
 
       <div className="mt-2 h-12 w-full">
         <Sparkline
@@ -214,22 +214,22 @@ function CrashCard({
         />
       </div>
 
-      <dl className="mt-3 grid grid-cols-2 gap-1 text-[11px] text-neutral-500">
+      <dl className="mt-3 grid grid-cols-2 gap-1 text-[11px] text-muted">
         <div>
-          <dt className="text-neutral-600">{dict.historyPage.crashDrawdownLabel}</dt>
-          <dd className="font-mono text-neutral-300">
+          <dt className="text-subtle">{dict.historyPage.crashDrawdownLabel}</dt>
+          <dd className="font-mono text-fg">
             {formatPrice(crash.peakPrice, exchange)} → {formatPrice(crash.troughPrice, exchange)}
           </dd>
         </div>
         <div>
-          <dt className="text-neutral-600">
+          <dt className="text-subtle">
             {crash.recovered
               ? dict.historyPage.crashRecoveredLabel
               : crash.recoveryDate
                 ? dict.historyPage.crashUnrecovered
                 : dict.historyPage.crashOngoingLabel}
           </dt>
-          <dd className="text-neutral-300">
+          <dd className="text-fg">
             {crash.recoveryMonths !== null
               ? dict.historyPage.crashRecoveryMonths(crash.recoveryMonths)
               : "—"}
@@ -296,12 +296,12 @@ function Sparkline({
       <polyline
         points={points}
         fill="none"
-        stroke="#666666"
+        stroke="var(--fg)"
         strokeWidth="1"
         vectorEffect="non-scaling-stroke"
       />
       {troughX !== null && troughY !== null ? (
-        <circle cx={troughX} cy={troughY} r="1.6" fill="#f87171" />
+        <circle cx={troughX} cy={troughY} r="1.6" fill="var(--down)" />
       ) : null}
     </svg>
   );

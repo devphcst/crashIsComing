@@ -45,19 +45,18 @@ export function MainSymbolTabs({
               key={m.ticker}
               href={hrefFor(m.ticker)}
               className={
-                "shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs transition-colors " +
+                "shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors " +
                 (active
-                  ? "bg-neutral-100 font-medium text-neutral-900"
-                  : "border border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-neutral-200")
+                  ? "border-fg bg-fg font-medium text-bg"
+                  : "border-line text-muted hover:bg-surface-hover hover:text-fg")
               }
               aria-current={active ? "page" : undefined}
             >
-              {/* 모바일: ticker만 (가로 한 줄에 압축). 데스크톱: displayName + 거래소 라벨.
-                  모바일 라벨은 시각 잡음이라 생략. */}
+              {/* 모바일: ticker만 (가로 한 줄에 압축). 데스크톱: displayName + 거래소 라벨. */}
               <span className="lg:hidden">{m.ticker.toUpperCase()}</span>
               <span className="hidden lg:inline">
                 {m.displayName}
-                <span className="ml-1.5 font-mono text-[10px] text-neutral-500">
+                <span className="ml-1.5 font-mono text-[10px] text-subtle">
                   {getExchange(m) === "KRX" ? "KR" : "US"}
                 </span>
               </span>

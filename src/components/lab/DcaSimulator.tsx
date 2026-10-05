@@ -24,13 +24,13 @@ import type { LabSymbolPayload } from "./LabClient";
 
 const MAX_SELECT = 5;
 
-/** 종목 라인 색 — 최대 5개 선택 대응. */
+/** 종목 라인 색 — 최대 5개 선택 대응. 라이트 테마용 톤. */
 const TICKER_COLORS = [
-  "#e5e5e5",
-  "#fb923c",
-  "#60a5fa",
-  "#4ade80",
-  "#c084fc",
+  "#111113",
+  "#D03A4B",
+  "#1F8A55",
+  "#2563EB",
+  "#7C3AED",
 ] as const;
 
 type FreqKind = Exclude<Frequency["kind"], "once">;
@@ -256,12 +256,12 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
   }, [chartRows]);
 
   return (
-    <section className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
+    <section className="space-y-4 rounded-lg border border-line p-5">
       <div>
-        <h2 className="text-sm font-medium text-neutral-200">
+        <h2 className="text-sm font-medium text-fg">
           투자 시뮬레이터
         </h2>
-        <p className="mt-1 text-[11px] text-neutral-500">
+        <p className="mt-1 text-[11px] text-muted">
           적립식/거치식 전략 검증 · 환율 무시 · 매수일 휴장 시 다음 거래일 이월
         </p>
       </div>
@@ -278,8 +278,8 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
               className={
                 "rounded-full border px-3 py-1 text-xs transition " +
                 (active
-                  ? "border-neutral-300 bg-neutral-100 text-neutral-900"
-                  : "border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
+                  ? "border-fg bg-fg text-bg"
+                  : "border-line text-muted hover:border-fg hover:text-fg")
               }
             >
               {s === "dca" ? "적립식 (DCA)" : "거치식 (Lump-sum)"}
@@ -290,25 +290,25 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
 
       {/* ---- 인풋 ---- */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="text-xs text-neutral-400">
+        <label className="text-xs text-muted">
           시작일
           <input
             type="date"
             value={start}
             onChange={(e) => setStart(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg focus:border-fg focus:outline-none"
           />
         </label>
-        <label className="text-xs text-neutral-400">
+        <label className="text-xs text-muted">
           종료일
           <input
             type="date"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg focus:border-fg focus:outline-none"
           />
         </label>
-        <label className="text-xs text-neutral-400">
+        <label className="text-xs text-muted">
           {strategy === "lumpSum" ? "투자 금액 ($)" : "매수 금액 ($)"}
           <input
             type="number"
@@ -317,16 +317,16 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             onFocus={(e) => e.currentTarget.select()}
-            className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg focus:border-fg focus:outline-none"
           />
         </label>
         {strategy === "dca" ? (
-          <label className="text-xs text-neutral-400 sm:col-span-2 lg:col-span-1">
+          <label className="text-xs text-muted sm:col-span-2 lg:col-span-1">
             매수 주기
             <select
               value={freqKind}
               onChange={(e) => setFreqKind(e.target.value as FreqKind)}
-              className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+              className="mt-1 block w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg focus:border-fg focus:outline-none"
             >
               {(["daily", "weekly", "monthly", "quarterly"] as FreqKind[]).map(
                 (k) => (
@@ -339,14 +339,14 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
           </label>
         ) : null}
         {strategy === "dca" && freqKind === "weekly" ? (
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-muted">
             요일
             <select
               value={weekday}
               onChange={(e) =>
                 setWeekday(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)
               }
-              className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+              className="mt-1 block w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg focus:border-fg focus:outline-none"
             >
               {[1, 2, 3, 4, 5].map((d) => (
                 <option key={d} value={d}>
@@ -357,7 +357,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
           </label>
         ) : null}
         {strategy === "dca" && freqKind === "monthly" ? (
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-muted">
             매월 며칠
             <input
               type="number"
@@ -367,7 +367,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
               value={monthDay}
               onChange={(e) => setMonthDay(e.target.value)}
               onFocus={(e) => e.currentTarget.select()}
-              className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+              className="mt-1 block w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg focus:border-fg focus:outline-none"
             />
           </label>
         ) : null}
@@ -376,9 +376,9 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
       {/* 기간 프리셋 — 시작일 + N으로 종료일 세팅. 데이터 끝을 넘으면 dataLast로 클립. */}
       {start ? (
         <div>
-          <div className="text-xs text-neutral-400">
+          <div className="text-xs text-muted">
             기간 프리셋{" "}
-            <span className="text-neutral-600">(시작일 + N → 종료일)</span>
+            <span className="text-subtle">(시작일 + N → 종료일)</span>
           </div>
           <div className="mt-1 flex flex-wrap gap-2">
             {DURATION_PRESETS.map((p) => {
@@ -394,8 +394,8 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                   className={
                     "rounded-full border px-3 py-1 text-xs transition " +
                     (active
-                      ? "border-neutral-300 bg-neutral-100 text-neutral-900"
-                      : "border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
+                      ? "border-fg bg-fg text-bg"
+                      : "border-line text-muted hover:border-fg hover:text-fg")
                   }
                 >
                   {p.label}
@@ -408,7 +408,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
 
       {/* 종목 다중 선택 */}
       <div>
-        <div className="text-xs text-neutral-400">
+        <div className="text-xs text-muted">
           종목 (최대 {MAX_SELECT}개)
         </div>
         <div className="mt-1 flex flex-wrap gap-2">
@@ -424,10 +424,10 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                 className={
                   "rounded-full border px-3 py-1 text-xs transition " +
                   (active
-                    ? "border-neutral-300 bg-neutral-100 text-neutral-900"
+                    ? "border-fg bg-fg text-bg"
                     : disabled
-                      ? "cursor-not-allowed border-neutral-800 text-neutral-700"
-                      : "border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
+                      ? "cursor-not-allowed border-line text-subtle"
+                      : "border-line text-muted hover:border-fg hover:text-fg")
                 }
               >
                 {s.ticker}
@@ -439,7 +439,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
 
       {/* 오늘 환율 — USDKRW 최신 종가를 자동 프리필. 사용자가 편집 가능. */}
       <div>
-        <label className="block text-xs text-neutral-400">
+        <label className="block text-xs text-muted">
           오늘 환율 (원/$)
           <input
             type="number"
@@ -448,11 +448,11 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
             value={krwRate}
             onChange={(e) => setKrwRate(e.target.value)}
             placeholder="예: 1380"
-            className="mt-1 block w-40 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+            className="mt-1 block w-40 rounded-md border border-line bg-bg px-3 py-2 text-sm text-fg focus:border-fg focus:outline-none"
           />
         </label>
         {autoRate ? (
-          <div className="mt-1 flex items-center gap-2 text-[11px] text-neutral-500">
+          <div className="mt-1 flex items-center gap-2 text-[11px] text-muted">
             <span>
               USDKRW 종가 {autoRate.date} 기준 (₩
               {Math.round(autoRate.price * 100) / 100})
@@ -464,14 +464,14 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                 onClick={() =>
                   setKrwRate(String(Math.round(autoRate.price * 100) / 100))
                 }
-                className="text-neutral-400 underline decoration-neutral-700 underline-offset-2 hover:text-neutral-200"
+                className="text-muted underline decoration-line underline-offset-2 hover:text-fg"
               >
                 자동값 복원
               </button>
             ) : null}
           </div>
         ) : (
-          <p className="mt-1 text-[11px] text-neutral-500">
+          <p className="mt-1 text-[11px] text-muted">
             USDKRW 심볼 미등록 — admin에서 백필 후 자동 로드됨
           </p>
         )}
@@ -483,20 +483,20 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
           onClick={handleRun}
           disabled={!canRun}
           className={
-            "rounded-md border px-4 py-2 text-sm transition disabled:cursor-not-allowed disabled:border-neutral-800 disabled:text-neutral-600 " +
+            "rounded-md border px-4 py-2 text-sm transition disabled:cursor-not-allowed disabled:border-line disabled:text-subtle " +
             (isDirty
-              ? "border-orange-400 bg-neutral-950 text-orange-300 hover:border-orange-300"
-              : "border-neutral-700 bg-neutral-950 text-neutral-100 hover:border-neutral-500")
+              ? "border-down text-down hover:border-fg hover:text-fg"
+              : "border-line text-fg hover:border-fg")
           }
         >
           {isDirty ? "다시 실행" : "실행"}
         </button>
         {!canRun ? (
-          <span className="text-[11px] text-neutral-500">
+          <span className="text-[11px] text-muted">
             종목·기간·금액 확인 필요
           </span>
         ) : isDirty ? (
-          <span className="text-[11px] text-orange-300">
+          <span className="text-[11px] text-down">
             인풋 변경됨 — 결과가 최신 아님
           </span>
         ) : null}
@@ -516,7 +516,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
           };
           return (
             <>
-          <div className="border-t border-neutral-800 pt-4">
+          <div className="border-t border-line pt-4">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <ResultCard
                 label="총 투자"
@@ -561,7 +561,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                     : "—"
                 }
                 colorFn={(t) =>
-                  results[t] && results[t].profit < 0 ? "text-red-400" : ""
+                  results[t] && results[t].profit < 0 ? "text-down" : ""
                 }
                 subRender={(t) =>
                   results[t] ? toKrwSub(results[t].profit, t) : undefined
@@ -574,7 +574,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                   results[t] ? formatSignedPct(results[t].returnPct, 1) : "—"
                 }
                 colorFn={(t) =>
-                  results[t] && results[t].returnPct < 0 ? "text-red-400" : ""
+                  results[t] && results[t].returnPct < 0 ? "text-down" : ""
                 }
               />
               <ResultCard
@@ -589,7 +589,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                   results[t] &&
                   results[t].cagrPct !== null &&
                   results[t].cagrPct! < 0
-                    ? "text-red-400"
+                    ? "text-down"
                     : ""
                 }
               />
@@ -601,7 +601,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                     ? formatSignedPct(results[t].maxDrawdownPct, 1)
                     : "—"
                 }
-                colorFn={() => "text-red-400"}
+                colorFn={() => "text-down"}
               />
               <ResultCard
                 label="낙폭 시점"
@@ -622,31 +622,31 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                   >
                     <CartesianGrid
                       strokeDasharray="2 4"
-                      stroke="#262626"
+                      stroke="#E6E6E9"
                     />
                     <XAxis
                       dataKey="date"
                       ticks={chartTicks}
-                      tick={{ fill: "#737373", fontSize: 11 }}
-                      tickLine={{ stroke: "#404040" }}
-                      axisLine={{ stroke: "#404040" }}
+                      tick={{ fill: "#8B8B90", fontSize: 11 }}
+                      tickLine={{ stroke: "#E6E6E9" }}
+                      axisLine={{ stroke: "#E6E6E9" }}
                       minTickGap={20}
                     />
                     <YAxis
-                      tick={{ fill: "#737373", fontSize: 11 }}
-                      tickLine={{ stroke: "#404040" }}
-                      axisLine={{ stroke: "#404040" }}
+                      tick={{ fill: "#8B8B90", fontSize: 11 }}
+                      tickLine={{ stroke: "#E6E6E9" }}
+                      axisLine={{ stroke: "#E6E6E9" }}
                       domain={["auto", "auto"]}
                       tickFormatter={(v: number) => `$${Math.round(v)}`}
                       width={64}
                     />
                     <Tooltip
                       contentStyle={{
-                        background: "#0a0a0a",
-                        border: "1px solid #404040",
+                        background: "#FFFFFF",
+                        border: "1px solid #E6E6E9",
                         fontSize: 12,
                       }}
-                      labelStyle={{ color: "#a3a3a3" }}
+                      labelStyle={{ color: "#8B8B90" }}
                     />
                     {runStamp.tickers.map((t, i) => (
                       <Line
@@ -676,7 +676,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-4 text-[11px] text-neutral-500">
+              <div className="mt-2 flex flex-wrap items-center gap-4 text-[11px] text-muted">
                 {runStamp.tickers.map((t, i) => (
                   <span key={t} className="flex items-center gap-1.5">
                     <span
@@ -703,17 +703,17 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                     className={
                       "rounded-full border px-3 py-1 text-xs transition " +
                       (activeTab === t
-                        ? "border-neutral-300 bg-neutral-100 text-neutral-900"
-                        : "border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
+                        ? "border-fg bg-fg text-bg"
+                        : "border-line text-muted hover:border-fg hover:text-fg")
                     }
                   >
                     {t} ({results[t]?.trades.length ?? 0}회)
                   </button>
                 ))}
               </div>
-              <div className="max-h-[400px] overflow-y-auto rounded-md border border-neutral-800 bg-neutral-950/40">
+              <div className="max-h-[400px] overflow-y-auto rounded-md border border-line">
                 <table className="w-full text-xs">
-                  <thead className="sticky top-0 border-b border-neutral-800 bg-neutral-950 text-neutral-500">
+                  <thead className="sticky top-0 border-b border-line bg-bg text-muted">
                     <tr>
                       <th className="px-3 py-2 text-left">날짜</th>
                       <th className="px-3 py-2 text-right">종가</th>
@@ -723,13 +723,13 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                       <th className="px-3 py-2 text-right">누적 평가</th>
                     </tr>
                   </thead>
-                  <tbody className="text-neutral-300">
+                  <tbody className="text-fg">
                     {(results[activeTab]?.trades ?? []).map((tr) => (
                       <tr
                         key={tr.date}
-                        className="border-b border-neutral-800/60 last:border-0"
+                        className="border-b border-line last:border-0"
                       >
-                        <td className="px-3 py-1.5 text-neutral-400">
+                        <td className="px-3 py-1.5 text-muted">
                           {tr.date}
                         </td>
                         <td className="px-3 py-1.5 text-right">
@@ -759,7 +759,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                       <tr>
                         <td
                           colSpan={6}
-                          className="px-3 py-6 text-center text-neutral-500"
+                          className="px-3 py-6 text-center text-muted"
                         >
                           매수 없음 (기간·주기 확인)
                         </td>
@@ -774,7 +774,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
           );
         })()
       ) : (
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[11px] text-muted">
           인풋을 지정한 뒤 "실행"을 누르면 결과가 여기에 표시됩니다.
         </p>
       )}
@@ -797,8 +797,8 @@ function ResultCard({
   subRender?: (t: string) => string | undefined;
 }) {
   return (
-    <div className="rounded-md border border-neutral-800 bg-neutral-950 px-3 py-3">
-      <div className="text-[10px] uppercase tracking-wide text-neutral-500">
+    <div className="rounded-md border border-line px-3 py-3">
+      <div className="text-[10px] uppercase tracking-wide text-muted">
         {label}
       </div>
       <div className="mt-1 space-y-1">
@@ -807,19 +807,19 @@ function ResultCard({
           return (
             <div key={t} className="flex flex-col items-end">
               <div className="flex w-full items-baseline gap-2">
-                <span className="text-[10px] text-neutral-500">{t}</span>
+                <span className="text-[10px] text-muted">{t}</span>
                 <span
                   className={
                     "ml-auto text-sm font-semibold " +
                     (colorFn?.(t) ||
-                      (i === 0 ? "text-neutral-100" : "text-neutral-300"))
+                      (i === 0 ? "text-fg" : "text-muted"))
                   }
                 >
                   {render(t)}
                 </span>
               </div>
               {sub ? (
-                <span className="text-[10px] text-neutral-500">{sub}</span>
+                <span className="text-[10px] text-muted">{sub}</span>
               ) : null}
             </div>
           );

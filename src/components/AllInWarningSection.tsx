@@ -6,13 +6,13 @@ export function AllInWarningSection({ lang }: { lang: Lang }) {
   return (
     <section
       id="all-in-warning"
-      className="border-t border-neutral-900 px-6 py-16"
+      className="border-t border-line px-6 py-16"
     >
       <div className="mx-auto max-w-3xl space-y-4">
-        <h2 className="text-lg font-semibold text-neutral-200">
+        <h2 className="font-sans text-lg font-semibold text-fg">
           {d.allInWarning.title}
         </h2>
-        <div className="space-y-4 text-sm leading-7 text-neutral-400">
+        <div className="space-y-4 text-sm leading-7 text-muted">
           {d.allInWarning.paragraphs.map((p, i) => (
             <p key={i}>{p}</p>
           ))}

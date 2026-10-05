@@ -34,9 +34,9 @@ export function SiteHeader({
 }) {
   return (
     <>
-      <div className="sticky top-0 z-30 bg-neutral-950/90 backdrop-blur lg:relative lg:bg-transparent lg:backdrop-blur-none">
+      <div className="sticky top-0 z-30 bg-bg/90 backdrop-blur lg:relative lg:bg-transparent lg:backdrop-blur-none">
         <header className="flex items-center justify-between px-6 pb-3 pt-6 lg:pb-0">
-          <span className="text-sm text-neutral-500">{dict.brand}</span>
+          <span className="text-sm text-muted">{dict.brand}</span>
           <div className="hidden lg:block">
             <LangToggle
               lang={lang}

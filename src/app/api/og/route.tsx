@@ -103,9 +103,10 @@ const fmtBigPct = (pct: number | null): string => {
   return "0.0%";
 };
 
+/** 라이트 테마: 하락은 down(#D03A4B), 상승/0은 fg(#111113). null은 muted. */
 const colorForPct = (pct: number | null): string => {
-  if (pct === null || !Number.isFinite(pct)) return "#ffffff";
-  return pct < 0 ? "#f87171" : "#ffffff";
+  if (pct === null || !Number.isFinite(pct)) return "#8B8B90";
+  return pct < 0 ? "#D03A4B" : "#111113";
 };
 
 /** "YYYY년 M월 D일 종가 기준" (ko) / "as of {Mon D, YYYY} close" (en). */
@@ -164,8 +165,8 @@ export async function GET(req: Request) {
             width: "100%",
             height: "100%",
             display: "flex",
-            background: "#000000",
-            color: "#e5e5e5",
+            background: "#FFFFFF",
+            color: "#111113",
             fontFamily: "Pretendard",
           }}
         >
@@ -180,8 +181,8 @@ export async function GET(req: Request) {
               gap: 4,
             }}
           >
-            <div style={{ fontSize: 24, color: "#888888" }}>{copy.brand}</div>
-            <div style={{ fontSize: 16, color: "#555555" }}>{copy.domain}</div>
+            <div style={{ fontSize: 24, color: "#8B8B90" }}>{copy.brand}</div>
+            <div style={{ fontSize: 16, color: "#B4B4B8" }}>{copy.domain}</div>
           </div>
 
           {/* 가운데 — 종목명 / ATH 라벨 / 큰 숫자. 절대 정중앙. */}
@@ -203,7 +204,7 @@ export async function GET(req: Request) {
               style={{
                 fontSize: 36,
                 fontWeight: 500,
-                color: "#aaaaaa",
+                color: "#111113",
                 letterSpacing: 1,
                 maxWidth: 1000,
                 textAlign: "center",
@@ -211,7 +212,7 @@ export async function GET(req: Request) {
             >
               {meta.displayName}
             </div>
-            <div style={{ fontSize: 20, color: "#666666" }}>
+            <div style={{ fontSize: 20, color: "#8B8B90" }}>
               {copy.athLabel}
             </div>
             <div
@@ -235,7 +236,7 @@ export async function GET(req: Request) {
               right: 60,
               display: "flex",
               fontSize: 18,
-              color: "#555555",
+              color: "#B4B4B8",
             }}
           >
             {asOfText}

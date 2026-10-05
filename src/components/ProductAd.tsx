@@ -37,7 +37,7 @@ function AdImage({
   if (!SIDEBAR_AD.imageSrc || errored) {
     return (
       <div
-        className={`${base} flex items-center justify-center bg-neutral-800/40 text-xs text-neutral-600`}
+        className={`${base} flex items-center justify-center border border-line text-xs text-subtle`}
       >
         {fallbackLabel}
       </div>
@@ -62,19 +62,19 @@ function AdImage({
 export function ProductAdSidebar({ lang }: { lang: Lang }) {
   const d = SIDEBAR_AD.desktop[lang];
   return (
-    <aside className='rounded-xl border border-neutral-800 bg-neutral-900/40 p-4'>
-      <div className='text-xs uppercase tracking-wider text-neutral-500'>
+    <aside className='rounded-xl border border-line p-4'>
+      <div className='text-xs uppercase tracking-wider text-muted'>
         {d.label}
       </div>
-      <p className='mb-3 mt-1 text-sm font-medium leading-snug text-neutral-100'>
+      <p className='mb-3 mt-1 text-sm font-medium leading-snug text-fg'>
         {d.tagline}
       </p>
       <AdImage alt={d.productName} fallbackLabel={d.imageFallback} />
       <div className='mt-3 space-y-1'>
-        <div className='text-sm font-medium text-neutral-100'>
+        <div className='text-sm font-medium text-fg'>
           {d.productName}
         </div>
-        <p className='whitespace-pre-line text-xs leading-relaxed text-neutral-400'>
+        <p className='whitespace-pre-line text-xs leading-relaxed text-muted'>
           {d.description}
         </p>
       </div>
@@ -82,7 +82,7 @@ export function ProductAdSidebar({ lang }: { lang: Lang }) {
         href={SIDEBAR_AD.storeUrl}
         target='_blank'
         rel={linkRel}
-        className='mt-4 block w-full rounded-md bg-neutral-100 px-3 py-2 text-center text-xs font-medium text-neutral-900 hover:bg-white'
+        className='mt-4 block w-full rounded-md bg-fg px-3 py-2 text-center text-xs font-medium text-bg hover:opacity-80'
       >
         {d.ctaLabel}
       </a>
@@ -108,8 +108,8 @@ export function ProductAdBanner({ lang }: { lang: Lang }) {
   const t = SIDEBAR_AD.mobile[lang];
   return (
     // md 미만(모바일)은 우측 세로 책갈피(ProductAdBookmark)가 대신 노출된다.
-    <aside className='mx-6 my-6 hidden space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 md:block lg:hidden'>
-      <div className='whitespace-pre-line text-[14px] font-medium uppercase tracking-wider leading-tight text-neutral-500'>
+    <aside className='mx-6 my-6 hidden space-y-3 rounded-xl border border-line p-4 md:block lg:hidden'>
+      <div className='whitespace-pre-line text-[14px] font-medium uppercase tracking-wider leading-tight text-muted'>
         {t.label}
       </div>
 
@@ -119,16 +119,16 @@ export function ProductAdBanner({ lang }: { lang: Lang }) {
         </div>
 
         <div className='flex min-w-0 flex-1 flex-col justify-center gap-1 pt-0.5'>
-          <div className='overflow-hidden whitespace-nowrap text-[14px] font-semibold leading-snug text-neutral-100'>
+          <div className='overflow-hidden whitespace-nowrap text-[14px] font-semibold leading-snug text-fg'>
             {t.body}
           </div>
-          <div className='truncate text-[16px] text-white-400'>
+          <div className='truncate text-[16px] text-fg'>
             {t.productName}
           </div>
         </div>
       </div>
 
-      <p className='whitespace-pre-line text-xs leading-relaxed text-neutral-400'>
+      <p className='whitespace-pre-line text-xs leading-relaxed text-muted'>
         {t.description}
       </p>
 
@@ -136,7 +136,7 @@ export function ProductAdBanner({ lang }: { lang: Lang }) {
         href={SIDEBAR_AD.storeUrl}
         target='_blank'
         rel={linkRel}
-        className='block w-full rounded-md bg-neutral-100 px-3 py-2.5 text-center text-sm font-medium text-neutral-900 transition-colors hover:bg-white'
+        className='block w-full rounded-md bg-fg px-3 py-2.5 text-center text-sm font-medium text-bg transition-colors hover:opacity-80'
       >
         {t.cta}
       </a>
@@ -259,7 +259,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
         aria-label={t.productName}
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        className='fixed z-40 flex cursor-pointer items-center justify-start shadow-md outline-none focus:outline-none md:hidden'
+        className='fixed z-40 flex cursor-pointer items-center justify-start outline-none focus:outline-none md:hidden'
         style={{
           top: '50%',
           right: -20,
@@ -267,8 +267,8 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
           height: 48,
           paddingLeft: 6,
           borderRadius: 12,
-          background: 'rgba(23, 23, 23, 0.75)',
-          border: '0.5px solid rgba(255, 255, 255, 0.15)',
+          background: 'rgba(255, 255, 255, 0.85)',
+          border: '0.5px solid rgba(17, 17, 19, 0.12)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
           WebkitTapHighlightColor: 'transparent',
@@ -288,7 +288,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
             bottom: 5,
             left: 7,
             fontSize: 8,
-            color: '#525252',
+            color: '#B4B4B8',
             letterSpacing: '0.05em',
             pointerEvents: 'none',
           }}
@@ -305,7 +305,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
             onClick={() => setOpen(false)}
             className='fixed inset-0 z-40 md:hidden'
             style={{
-              background: 'rgba(0, 0, 0, 0.6)',
+              background: 'rgba(17, 17, 19, 0.4)',
               opacity: entered ? 1 : 0,
               transition: 'opacity 300ms ease-out',
             }}
@@ -319,14 +319,12 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
               aria-labelledby={titleId}
               className='pointer-events-auto w-full'
               style={{
-                background: '#0f0f0f',
-                border: '0.5px solid #333',
+                background: '#FFFFFF',
+                border: '0.5px solid #E6E6E9',
                 borderRadius: 16,
                 padding: '24px 20px',
                 maxHeight: '85vh',
                 overflowY: 'auto',
-                boxShadow:
-                  '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
                 transform: entered
                   ? 'translateX(0)'
                   : 'translateX(120%)',
@@ -340,7 +338,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
               {/* 상단: 라벨 + X 버튼 */}
               <div className='flex items-start justify-between gap-3'>
                 <div
-                  style={{ fontSize: 11, color: '#737373' }}
+                  style={{ fontSize: 11, color: '#8B8B90' }}
                   className='uppercase tracking-wider'
                 >
                   {t.label}
@@ -350,7 +348,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
                   type='button'
                   aria-label='닫기'
                   onClick={() => setOpen(false)}
-                  className='-mr-1 -mt-1 flex h-6 w-6 items-center justify-center text-neutral-400 outline-none hover:text-neutral-100 focus:outline-none'
+                  className='-mr-1 -mt-1 flex h-6 w-6 items-center justify-center text-muted outline-none hover:text-fg focus:outline-none'
                   style={{ WebkitTapHighlightColor: 'transparent' }}
                 >
                   <svg
@@ -377,7 +375,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
                 style={{
                   fontSize: 14,
                   fontWeight: 500,
-                  color: '#e5e5e5',
+                  color: '#111113',
                   lineHeight: 1.4,
                 }}
               >
@@ -387,7 +385,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
               {/* 브랜드 */}
               <p
                 className='mt-1'
-                style={{ fontSize: 13, color: '#d4d4d4' }}
+                style={{ fontSize: 13, color: '#111113' }}
               >
                 {t.productName}
               </p>
@@ -405,7 +403,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
                 className='mt-4 whitespace-pre-line'
                 style={{
                   fontSize: 12,
-                  color: '#a3a3a3',
+                  color: '#8B8B90',
                   lineHeight: 1.6,
                 }}
               >
@@ -417,7 +415,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
                 href={STORE_HOME_URL}
                 target='_blank'
                 rel={linkRel}
-                className='mt-5 block w-full rounded-md bg-neutral-100 text-center text-sm font-medium text-neutral-900 transition-colors hover:bg-white'
+                className='mt-5 block w-full rounded-md bg-fg text-center text-sm font-medium text-bg transition-colors hover:opacity-80'
                 style={{ padding: '12px' }}
               >
                 {t.cta}

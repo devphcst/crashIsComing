@@ -53,22 +53,22 @@ export default async function LabPage() {
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
       <header className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-100">실험실</h1>
-          <p className="mt-1 text-xs text-neutral-500">
+          <h1 className="text-xl font-semibold text-fg">실험실</h1>
+          <p className="mt-1 text-xs text-muted">
             관리자 전용 데이터 탐색 도구. 사용자에게 노출되지 않음.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/admin"
-            className="rounded-md border border-neutral-700 px-3 py-1 text-xs text-neutral-400 hover:text-neutral-200"
+            className="rounded-md border border-line px-3 py-1 text-xs text-muted hover:text-fg"
           >
             관리자로 ↗
           </Link>
           <form action={logoutAction}>
             <button
               type="submit"
-              className="rounded-md border border-neutral-700 px-3 py-1 text-xs text-neutral-400 hover:text-neutral-200"
+              className="rounded-md border border-line px-3 py-1 text-xs text-muted hover:text-fg"
             >
               로그아웃
             </button>
@@ -77,7 +77,7 @@ export default async function LabPage() {
       </header>
 
       {payloads.length === 0 ? (
-        <div className="rounded-md border border-neutral-800 bg-neutral-900/40 px-4 py-8 text-center text-sm text-neutral-500">
+        <div className="rounded-md border border-line px-4 py-8 text-center text-sm text-muted">
           등록된 종목이 없습니다.
         </div>
       ) : (

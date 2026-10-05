@@ -78,12 +78,13 @@ type Props = {
   labels: Labels;
 };
 
-const LINE_COLOR = "#f87171";
-const AREA_FILL = "rgba(239, 68, 68, 0.15)";
-const AXIS_COLOR = "rgba(255, 255, 255, 0.12)";
-const LABEL_COLOR = "#a3a3a3";
-const SUB_LABEL_COLOR = "#737373";
-const MONTHS_BOX_BG = "#0a0a0a";
+// 라이트 테마 — 라인 fg, 하락 영역은 down 10% 투명도, 축/그리드 line, 라벨 muted.
+const LINE_COLOR = "#111113";
+const AREA_FILL = "rgba(208, 58, 75, 0.10)";
+const AXIS_COLOR = "#E6E6E9";
+const LABEL_COLOR = "#8B8B90";
+const SUB_LABEL_COLOR = "#B4B4B8";
+const MONTHS_BOX_BG = "#FFFFFF";
 
 export function CrashChart({ year, title, mdd, months, seed, labels }: Props) {
   const pts = useMemo(() => buildPath(mdd, seed), [mdd, seed]);
@@ -104,19 +105,19 @@ export function CrashChart({ year, title, mdd, months, seed, labels }: Props) {
   const aria = labels.chartAriaLabel(year, mdd, months);
 
   return (
-    <article className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
+    <article className="rounded-card border border-line bg-transparent p-4">
       <div className="mb-1.5">
-        <span className="text-sm font-medium text-neutral-200">{year}</span>
-        <span className="ml-2 text-xs text-neutral-500">{title}</span>
+        <span className="text-sm font-medium text-fg">{year}</span>
+        <span className="ml-2 text-xs text-muted">{title}</span>
       </div>
       <div className="mb-2 flex gap-4">
         <span className="text-xs">
-          <span className="text-neutral-500">{labels.maxDrawdown} </span>
-          <span className="font-medium text-red-400">{mdd}%</span>
+          <span className="text-muted">{labels.maxDrawdown} </span>
+          <span className="font-medium text-down">{mdd}%</span>
         </span>
         <span className="text-xs">
-          <span className="text-neutral-500">{labels.recovery} </span>
-          <span className="font-medium text-neutral-200">
+          <span className="text-muted">{labels.recovery} </span>
+          <span className="font-medium text-fg">
             {labels.monthsUnit(months)}
           </span>
         </span>

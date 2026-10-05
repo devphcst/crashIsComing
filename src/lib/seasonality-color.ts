@@ -70,20 +70,20 @@ export const tierFor = (ret: number, leverage: number): ColorTier => {
 };
 
 /**
- * Tailwind 클래스 매핑.
- * - 배경 색: 농도 (강할수록 밝게)
- * - 텍스트: 가독성 (강한 밴드는 텍스트를 검게/하얗게로 대비 확보)
+ * 라이트 테마 수익률 타일 6단계 — 배경/글자 쌍.
+ * 강한 밴드는 선명하게, 약한 밴드는 파스텔 톤으로.
  *
- * JIT가 purge 못 찾는 걸 막기 위해 모든 클래스 리터럴로 적음 — 템플릿 조합 금지.
+ * JIT가 purge 못 찾는 걸 막기 위해 모든 클래스는 arbitrary 리터럴로 적는다.
+ * 템플릿 조합 금지.
  */
 export const tierClasses: Record<ColorTier, string> = {
-  zero: "bg-neutral-800 text-neutral-300",
-  "up-weak": "bg-emerald-900/60 text-emerald-200",
-  "up-mid": "bg-emerald-700 text-emerald-50",
-  "up-strong": "bg-emerald-500 text-emerald-950",
-  "down-weak": "bg-rose-900/60 text-rose-200",
-  "down-mid": "bg-rose-700 text-rose-50",
-  "down-strong": "bg-rose-500 text-rose-950",
+  zero: "bg-[var(--surface-hover)] text-[var(--fg)]",
+  "up-weak": "bg-[#E1F4E9] text-[#1E6B43]",
+  "up-mid": "bg-[#9ED9B8] text-[#0F4A2C]",
+  "up-strong": "bg-[#2E9E66] text-white",
+  "down-weak": "bg-[#FCE4E7] text-[#9A2436]",
+  "down-mid": "bg-[#F4A7AF] text-[#5A1018]",
+  "down-strong": "bg-[#D9404F] text-white",
 };
 
 /**
@@ -105,24 +105,23 @@ export const legendTiers = (
 };
 
 /**
- * OG 이미지용 — Tailwind 못 쓰므로 실제 색 HEX 반환.
- * emerald/rose의 500/700/900 공식 Tailwind 색 값.
+ * OG 이미지용 — Tailwind 못 쓰므로 실제 색 HEX 반환. 라이트 테마 팔레트.
  */
 export const tierHex = (tier: ColorTier): { bg: string; text: string } => {
   switch (tier) {
     case "zero":
-      return { bg: "#262626", text: "#d4d4d4" }; // neutral-800 / 300
+      return { bg: "#FAFAFA", text: "#111113" };
     case "up-weak":
-      return { bg: "#064e3b", text: "#a7f3d0" }; // emerald-900 / 200
+      return { bg: "#E1F4E9", text: "#1E6B43" };
     case "up-mid":
-      return { bg: "#047857", text: "#ecfdf5" }; // emerald-700 / 50
+      return { bg: "#9ED9B8", text: "#0F4A2C" };
     case "up-strong":
-      return { bg: "#10b981", text: "#022c22" }; // emerald-500 / 950
+      return { bg: "#2E9E66", text: "#FFFFFF" };
     case "down-weak":
-      return { bg: "#881337", text: "#fecdd3" }; // rose-900 / 200
+      return { bg: "#FCE4E7", text: "#9A2436" };
     case "down-mid":
-      return { bg: "#be123c", text: "#fff1f2" }; // rose-700 / 50
+      return { bg: "#F4A7AF", text: "#5A1018" };
     case "down-strong":
-      return { bg: "#f43f5e", text: "#4c0519" }; // rose-500 / 950
+      return { bg: "#D9404F", text: "#FFFFFF" };
   }
 };

@@ -159,12 +159,12 @@ export function LabChart({
   // 그라디언트 stroke — 두 점 사이 구간 강조. RechartsBreakdown과 같은 방식:
   // 단일 Line + linearGradient에 sharp stop 두 개로 [회색][강조][회색] 3구간.
   const gradientId = useId().replace(/:/g, "-");
-  const BASE_STROKE = "#888888";
+  const BASE_STROKE = "#8B8B90";
   const highlightColor = !comparePoints
     ? BASE_STROKE
     : comparePoints.pct < 0
-      ? "#f87171"
-      : "#e5e5e5";
+      ? "#D03A4B"
+      : "#111113";
 
   const segmentPct = useMemo(() => {
     if (!comparePoints || rows.length < 2) return null;
@@ -179,7 +179,7 @@ export function LabChart({
 
   if (rows.length < 2) {
     return (
-      <div className="flex h-64 items-center justify-center text-xs text-neutral-500">
+      <div className="flex h-64 items-center justify-center text-xs text-muted">
         선택 기간에 표시할 데이터가 부족합니다.
       </div>
     );
@@ -247,44 +247,44 @@ export function LabChart({
                 )}
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="2 4" stroke="#262626" />
+            <CartesianGrid strokeDasharray="2 4" stroke="#E6E6E9" />
             <XAxis
               dataKey="date"
               ticks={ticks}
-              tick={{ fill: "#737373", fontSize: 11 }}
-              tickLine={{ stroke: "#404040" }}
-              axisLine={{ stroke: "#404040" }}
+              tick={{ fill: "#8B8B90", fontSize: 11 }}
+              tickLine={{ stroke: "#E6E6E9" }}
+              axisLine={{ stroke: "#E6E6E9" }}
               minTickGap={20}
             />
             <YAxis
-              tick={{ fill: "#737373", fontSize: 11 }}
-              tickLine={{ stroke: "#404040" }}
-              axisLine={{ stroke: "#404040" }}
+              tick={{ fill: "#8B8B90", fontSize: 11 }}
+              tickLine={{ stroke: "#E6E6E9" }}
+              axisLine={{ stroke: "#E6E6E9" }}
               domain={["auto", "auto"]}
               tickFormatter={yTickFormatter}
               width={showCompare ? 44 : 64}
             />
             <Tooltip
               contentStyle={{
-                background: "#0a0a0a",
-                border: "1px solid #404040",
+                background: "#FFFFFF",
+                border: "1px solid #E6E6E9",
                 fontSize: 12,
               }}
-              labelStyle={{ color: "#a3a3a3" }}
+              labelStyle={{ color: "#8B8B90" }}
               content={({ active, payload, label }) => {
                 if (!active || !payload || payload.length === 0) return null;
                 const row = payload[0].payload as MergedRow;
                 return (
-                  <div className="rounded border border-neutral-700 bg-neutral-950 p-2 text-xs">
-                    <div className="text-neutral-400">{label as string}</div>
+                  <div className="rounded border border-line bg-bg p-2 text-xs">
+                    <div className="text-muted">{label as string}</div>
                     {row.primaryPrice !== undefined ? (
                       <div className="mt-1 flex items-baseline gap-2">
                         <span
                           className="inline-block h-2 w-2 rounded-full"
-                          style={{ background: "#e5e5e5" }}
+                          style={{ background: "#111113" }}
                         />
-                        <span className="text-neutral-200">{primary.name}</span>
-                        <span className="ml-auto text-neutral-100">
+                        <span className="text-fg">{primary.name}</span>
+                        <span className="ml-auto text-fg">
                           {showCompare && row.primaryNorm !== undefined
                             ? `${row.primaryNorm.toFixed(1)} · ${formatPrice(row.primaryPrice, primary.exchange)}`
                             : formatPrice(row.primaryPrice, primary.exchange)}
@@ -295,10 +295,10 @@ export function LabChart({
                       <div className="mt-1 flex items-baseline gap-2">
                         <span
                           className="inline-block h-2 w-2 rounded-full"
-                          style={{ background: "#fb923c" }}
+                          style={{ background: "#D03A4B" }}
                         />
-                        <span className="text-neutral-200">{compare!.name}</span>
-                        <span className="ml-auto text-neutral-100">
+                        <span className="text-fg">{compare!.name}</span>
+                        <span className="ml-auto text-fg">
                           {row.compareNorm !== undefined
                             ? `${row.compareNorm.toFixed(1)} · ${formatPrice(row.comparePrice, compare!.exchange)}`
                             : formatPrice(row.comparePrice, compare!.exchange)}
@@ -319,8 +319,8 @@ export function LabChart({
               connectNulls
               activeDot={{
                 r: dotRadius,
-                fill: "#ffffff",
-                stroke: "#0a0a0a",
+                fill: "#111113",
+                stroke: "#FFFFFF",
                 strokeWidth: 1.5,
               }}
             />
@@ -328,7 +328,7 @@ export function LabChart({
               <Line
                 type="monotone"
                 dataKey="compareNorm"
-                stroke="#fb923c"
+                stroke="#D03A4B"
                 strokeWidth={1.5}
                 dot={false}
                 isAnimationActive={false}
@@ -340,8 +340,8 @@ export function LabChart({
                 x={startMarker.date}
                 y={markerY(startMarker)}
                 r={dotRadius + 1}
-                fill="#f87171"
-                stroke="#0a0a0a"
+                fill="#D03A4B"
+                stroke="#FFFFFF"
                 strokeWidth={1.5}
                 ifOverflow="hidden"
               />
@@ -351,8 +351,8 @@ export function LabChart({
                 x={endMarker.date}
                 y={markerY(endMarker)}
                 r={dotRadius + 1}
-                fill="#ffffff"
-                stroke="#0a0a0a"
+                fill="#111113"
+                stroke="#FFFFFF"
                 strokeWidth={1.5}
                 ifOverflow="hidden"
               />
@@ -363,38 +363,38 @@ export function LabChart({
 
       {/* 두 점 결과 박스 / 탭 안내 — 초기 상태에서는 렌더 안 함. */}
       {comparePoints ? (
-        <div className="mt-3 rounded-md bg-neutral-900 px-3 py-2.5">
+        <div className="mt-3 rounded-md border border-line px-3 py-2.5">
           <div className="flex items-center justify-between gap-3">
-            <div className="text-xs text-neutral-500">
+            <div className="text-xs text-muted">
               {comparePoints.start.date} → {comparePoints.end.date}
             </div>
             <div
               className={
                 "font-mono text-sm " +
                 (comparePoints.pct < 0
-                  ? "text-red-400"
-                  : "text-neutral-300")
+                  ? "text-down"
+                  : "text-fg")
               }
             >
               {formatSignedPct(comparePoints.pct, 1)}
             </div>
           </div>
-          <div className="mt-1 text-[10px] text-neutral-600">
+          <div className="mt-1 text-[10px] text-subtle">
             {formatPrice(comparePoints.start.price, primary.exchange)} →{" "}
             {formatPrice(comparePoints.end.price, primary.exchange)}
           </div>
         </div>
       ) : tapInProgress ? (
-        <div className="mt-3 rounded-md bg-neutral-900 px-3 py-2.5 text-xs text-neutral-500">
+        <div className="mt-3 rounded-md border border-line px-3 py-2.5 text-xs text-muted">
           두 번째 점을 탭해 구간 변화율을 확인하세요. (세 번째 탭 = 시작점 이동)
         </div>
       ) : null}
 
-      <div className="mt-2 flex flex-wrap items-center gap-4 text-[11px] text-neutral-500">
+      <div className="mt-2 flex flex-wrap items-center gap-4 text-[11px] text-muted">
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2 w-2 rounded-full"
-            style={{ background: "#e5e5e5" }}
+            style={{ background: "#111113" }}
           />
           {primary.name}
         </span>
@@ -402,7 +402,7 @@ export function LabChart({
           <span className="flex items-center gap-1.5">
             <span
               className="inline-block h-2 w-2 rounded-full"
-              style={{ background: "#fb923c" }}
+              style={{ background: "#D03A4B" }}
             />
             {compare!.name}
           </span>

@@ -56,7 +56,7 @@ export function MainSymbolTabs({
               <span className="lg:hidden">{m.ticker.toUpperCase()}</span>
               <span className="hidden lg:inline">
                 {m.displayName}
-                <span className="ml-1.5 font-mono text-[10px] text-subtle">
+                <span className="ml-1.5 text-[10px] text-subtle">
                   {getExchange(m) === "KRX" ? "KR" : "US"}
                 </span>
               </span>

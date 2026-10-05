@@ -22,7 +22,7 @@ export default async function OgImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#FFFFFF",
+          background: "#F4F4F6",
           color: "#111113",
           fontFamily: "system-ui, -apple-system, Segoe UI, Helvetica, Arial",
           padding: 64,
@@ -31,7 +31,6 @@ export default async function OgImage() {
         <div
           style={{
             display: "flex",
-            border: "1px solid #E6E6E9",
             background: "#FFFFFF",
             color: "#111113",
             padding: "12px 28px",

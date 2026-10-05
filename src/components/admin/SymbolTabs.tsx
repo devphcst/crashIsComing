@@ -44,14 +44,14 @@ export function SymbolTabs({
             {m.displayName}
             <span
               className={
-                "ml-1.5 font-mono text-[10px] " +
+                "ml-1.5 text-[10px] " +
                 (active ? "text-muted" : "text-muted")
               }
             >
               {getExchange(m) === "KRX" ? "KR" : "US"}
             </span>
             {hidden ? (
-              <span className="ml-1 font-mono text-[10px] text-subtle">
+              <span className="ml-1 text-[10px] text-subtle">
                 ({t.hiddenBadge})
               </span>
             ) : null}

@@ -735,7 +735,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                         <td className="px-3 py-1.5 text-right">
                           {formatPrice(tr.price, runStamp.exchange[activeTab])}
                         </td>
-                        <td className="px-3 py-1.5 text-right font-mono">
+                        <td className="px-3 py-1.5 text-right">
                           {tr.shares.toFixed(4)}
                         </td>
                         <td className="px-3 py-1.5 text-right">
@@ -744,7 +744,7 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                             runStamp.exchange[activeTab],
                           )}
                         </td>
-                        <td className="px-3 py-1.5 text-right font-mono">
+                        <td className="px-3 py-1.5 text-right">
                           {tr.cumShares.toFixed(4)}
                         </td>
                         <td className="px-3 py-1.5 text-right">

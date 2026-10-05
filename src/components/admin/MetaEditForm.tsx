@@ -140,7 +140,7 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
         <label className="block text-xs text-muted">
           <span className="flex items-center justify-between">
             <span>{t.orangeLabel}</span>
-            <span className="font-mono text-sm text-muted">
+            <span className="text-sm text-muted">
               {orange}%
             </span>
           </span>
@@ -159,7 +159,7 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
         <label className="block text-xs text-muted">
           <span className="flex items-center justify-between">
             <span>{t.redLabel}</span>
-            <span className="font-mono text-sm text-down">{red}%</span>
+            <span className="text-sm text-down">{red}%</span>
           </span>
           <input
             type="range"
@@ -179,7 +179,7 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
       <label className="block text-xs text-muted">
         <span className="flex items-center justify-between">
           <span>{t.similarRangeLabel}</span>
-          <span className="font-mono text-sm text-fg">
+          <span className="text-sm text-fg">
             ±{similarPp}%p
           </span>
         </span>
@@ -201,7 +201,7 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
       <label className="block text-xs text-muted">
         <span className="flex items-center justify-between">
           <span>{t.minCrashLabel}</span>
-          <span className="font-mono text-sm text-fg">
+          <span className="text-sm text-fg">
             {minCrash}%
           </span>
         </span>

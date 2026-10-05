@@ -19,6 +19,7 @@ import type { FearGreedSnapshot } from "./ingest/cnn-fear-greed";
 import { getProvider } from "./providers";
 import { getExchange, isHidden, type SymbolMeta } from "./symbols";
 import { computeAtDrawdownStats } from "./at-drawdown";
+import { extractCrashes } from "./crashes";
 import { getSeasonality } from "./seasonality";
 import type { HeroData, SeasonalityTeaser } from "@/components/HeroDrawdown";
 
@@ -86,6 +87,28 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
       Math.abs(athDrawdownPct),
     );
 
+    // 역대 폭락 요약 — 전체 종가에서 30% 이상 drawdown 에피소드만.
+    // 샘플 0건이면 null (상장 짧은 종목).
+    const crashes = extractCrashes(closes, { minDrawdownPct: 30 });
+    let crashSummary: {
+      avgDrawdownPct: number;
+      maxDrawdownPct: number;
+      maxYear: number;
+      count: number;
+    } | null = null;
+    if (crashes.length > 0) {
+      const sum = crashes.reduce((acc, c) => acc + c.drawdownPct, 0);
+      const worst = crashes.reduce((a, b) =>
+        a.drawdownPct < b.drawdownPct ? a : b,
+      );
+      crashSummary = {
+        avgDrawdownPct: sum / crashes.length,
+        maxDrawdownPct: worst.drawdownPct,
+        maxYear: Number(worst.troughDate.slice(0, 4)),
+        count: crashes.length,
+      };
+    }
+
     return {
       ready: true,
       exchange,
@@ -108,6 +131,7 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
       },
       recentCloses,
       atDdStats,
+      crashSummary,
     };
   } catch (err) {
     console.error(`loadHeroData(${ticker}) failed:`, err);

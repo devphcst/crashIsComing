@@ -370,7 +370,7 @@ export function LabChart({
             </div>
             <div
               className={
-                "font-mono text-sm " +
+                "text-sm " +
                 (comparePoints.pct < 0
                   ? "text-down"
                   : "text-fg")

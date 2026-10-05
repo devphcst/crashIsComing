@@ -115,7 +115,7 @@ export async function GET(req: Request) {
             width: "100%",
             height: "100%",
             display: "flex",
-            background: "#FFFFFF",
+            background: "#F4F4F6",
             color: "#111113",
             fontFamily: "Pretendard",
           }}

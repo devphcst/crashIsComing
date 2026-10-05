@@ -91,7 +91,7 @@ export function CsvImportForm({ ticker }: { ticker: string }) {
             <div className="mt-2 grid gap-3 md:grid-cols-2">
               <div>
                 <p className="text-muted">상위 5</p>
-                <ul className="mt-1 space-y-0.5 font-mono text-[11px]">
+                <ul className="mt-1 space-y-0.5 text-[11px]">
                   {preview.head.map((c) => (
                     <li key={c.date}>
                       {c.date} · {c.price}
@@ -101,7 +101,7 @@ export function CsvImportForm({ ticker }: { ticker: string }) {
               </div>
               <div>
                 <p className="text-muted">하위 5</p>
-                <ul className="mt-1 space-y-0.5 font-mono text-[11px]">
+                <ul className="mt-1 space-y-0.5 text-[11px]">
                   {preview.tail.map((c) => (
                     <li key={c.date}>
                       {c.date} · {c.price}

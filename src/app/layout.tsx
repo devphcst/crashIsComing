@@ -51,7 +51,7 @@ export const metadata: Metadata = {
 
 // viewport-fit=cover: iOS 노치/홈 인디케이터 영역까지 배경 확장 → safe-area-inset로 컨텐츠 보호.
 export const viewport: Viewport = {
-  themeColor: "#FFFFFF",
+  themeColor: "#F4F4F6",
   viewportFit: "cover",
 };
 
@@ -62,7 +62,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className="font-mono antialiased">
+      <body className="font-sans antialiased [font-variant-numeric:tabular-nums]">
         {children}
         <PwaGuide />
         <AnalyticsWrapper />

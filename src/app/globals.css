@@ -2,19 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Pretendard — 한글/영문 공용 sans. 시스템 설치 폰트 우선, 없으면 CDN webfont 폴백.
+ * 전체 번들을 self-host하면 payload가 커지므로 CDN(cdn.jsdelivr.net/gh/orioncactus/pretendard)
+ * 서브셋 variable font를 쓴다. 폰트 로딩 실패 시 Apple SD Gothic Neo / BlinkMacSystemFont 폴백.
+ */
+@font-face {
+  font-family: "Pretendard";
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/woff2/PretendardVariable.woff2")
+    format("woff2-variations");
+}
+
 :root {
   color-scheme: light;
 
-  /* 디자인 토큰 — 라이트 테마. 다크 토글 없음. */
-  --bg: #FFFFFF;
+  /* === 디자인 토큰 (라이트 테마, 벤토 그리드) === */
+  --bg: #F4F4F6;         /* 페이지 배경 (회색) */
+  --card: #FFFFFF;       /* 카드 배경 */
+  --fg: #111113;         /* 본문 */
+  --muted: #8B8B90;      /* 보조 라벨 */
+  --subtle: #B4B4B8;     /* 비활성/placeholder */
+  --line: #E6E6E9;       /* 미묘 보더 (카드 내부 분리선 등) */
+  --track: #F0F0F2;      /* 프로그레스/게이지 트랙 */
+  --up: #16A34A;
+  --up-chip-bg: #EAF7EF;
+  --down: #E5484D;
+  --down-chip-bg: #FDECEE;
   --surface-hover: #FAFAFA;
-  --fg: #111113;
-  --muted: #8B8B90;
-  --subtle: #B4B4B8;
-  --line: #E6E6E9;
-  --up: #1F8A55;
-  --down: #D03A4B;
-  --radius-card: 8px;
+  --radius-card: 18px;
   --radius-tile: 6px;
 }
 
@@ -23,6 +40,8 @@ body {
   background: var(--bg);
   color: var(--fg);
   min-height: 100%;
+  font-feature-settings: "ss01", "cv11";
+  font-variant-numeric: tabular-nums;
 }
 
 /* 모바일 햄버거 메뉴 anchor 클릭 시 sticky 헤더에 가리지 않도록. */
@@ -43,7 +62,7 @@ body {
   display: none;
 }
 
-/* 메인 페이지 3단 레이아웃. */
+/* 메인 페이지 3단 레이아웃 (히스토리 페이지에서만 사용). */
 .three-col-grid {
   grid-template-columns: 1fr;
 }

@@ -117,7 +117,7 @@ export default async function AdminPage({
       {!kvOn ? (
         <div className="rounded-md border border-line px-4 py-3 text-xs text-muted">
           <strong className="text-fg">로컬 개발 모드:</strong>{" "}
-          KV 환경변수가 비어 있어 <code className="font-mono">.dev-store.json</code> 파일에 저장됩니다.
+          KV 환경변수가 비어 있어 <code className="">.dev-store.json</code> 파일에 저장됩니다.
           운영(Vercel)에서는 KV가 자동 주입되어 이 파일은 사용되지 않습니다.
         </div>
       ) : null}

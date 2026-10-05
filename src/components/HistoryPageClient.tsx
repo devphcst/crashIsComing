@@ -107,7 +107,7 @@ export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) 
 
             <div className="flex w-full max-w-3xl flex-col items-center gap-2 text-center">
               <h1 className="inline-flex items-center gap-2 rounded-full border border-line bg-transparent px-3 py-1 text-sm tracking-wider text-fg lg:px-4 lg:py-1.5 lg:text-base">
-                <span className="font-mono text-xs text-muted">
+                <span className="text-xs text-muted">
                   {ticker.toUpperCase()}
                 </span>
                 <span>{displayName}</span>
@@ -199,7 +199,7 @@ function CrashCard({
     <div className="rounded-card border border-line bg-transparent p-4">
       <div className="flex items-baseline justify-between gap-3">
         <div className="text-sm text-fg">{dpText}</div>
-        <div className="font-mono text-lg text-down">
+        <div className="text-lg text-down">
           {formatPct(crash.drawdownPct, 1)}
         </div>
       </div>
@@ -217,7 +217,7 @@ function CrashCard({
       <dl className="mt-3 grid grid-cols-2 gap-1 text-[11px] text-muted">
         <div>
           <dt className="text-subtle">{dict.historyPage.crashDrawdownLabel}</dt>
-          <dd className="font-mono text-fg">
+          <dd className="text-fg">
             {formatPrice(crash.peakPrice, exchange)} → {formatPrice(crash.troughPrice, exchange)}
           </dd>
         </div>

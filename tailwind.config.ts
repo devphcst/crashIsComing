@@ -11,12 +11,16 @@ const config: Config = {
     extend: {
       colors: {
         bg: "var(--bg)",
+        card: "var(--card)",
         fg: "var(--fg)",
         muted: "var(--muted)",
         subtle: "var(--subtle)",
         line: "var(--line)",
+        track: "var(--track)",
         up: "var(--up)",
+        "up-chip": "var(--up-chip-bg)",
         down: "var(--down)",
+        "down-chip": "var(--down-chip-bg)",
         "surface-hover": "var(--surface-hover)",
       },
       borderRadius: {
@@ -24,20 +28,25 @@ const config: Config = {
         tile: "var(--radius-tile)",
       },
       fontFamily: {
-        mono: [
-          "ui-monospace",
-          "SFMono-Regular",
-          "Menlo",
-          "Monaco",
-          "Consolas",
-          "monospace",
-        ],
-        // 페이지 제목용 sans — 플랫폼 시스템 폰트 사용.
+        // sans 전역 사용 — Pretendard 우선, 시스템 폴백.
+        // mono alias는 sans와 동일하게 매핑 (기존 font-mono class도 sans로 렌더).
         sans: [
+          "Pretendard",
           "-apple-system",
           "BlinkMacSystemFont",
+          "Apple SD Gothic Neo",
           "Segoe UI",
+          "Roboto",
+          "Helvetica",
+          "Arial",
+          "sans-serif",
+        ],
+        mono: [
           "Pretendard",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Apple SD Gothic Neo",
+          "Segoe UI",
           "Roboto",
           "Helvetica",
           "Arial",

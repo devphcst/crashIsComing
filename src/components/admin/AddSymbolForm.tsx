@@ -120,7 +120,7 @@ export function AddSymbolForm({ currentSymbol }: { currentSymbol: string }) {
           <label className="block text-xs text-muted">
             <span className="flex items-center justify-between">
               <span>{t.orangeLabel}</span>
-              <span className="font-mono text-sm text-muted">
+              <span className="text-sm text-muted">
                 {orange}%
               </span>
             </span>
@@ -139,7 +139,7 @@ export function AddSymbolForm({ currentSymbol }: { currentSymbol: string }) {
           <label className="block text-xs text-muted">
             <span className="flex items-center justify-between">
               <span>{t.redLabel}</span>
-              <span className="font-mono text-sm text-down">{red}%</span>
+              <span className="text-sm text-down">{red}%</span>
             </span>
             <input
               type="range"

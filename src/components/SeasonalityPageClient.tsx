@@ -145,7 +145,7 @@ export function SeasonalityPageClient({
           <button
             type="button"
             onClick={handleShare}
-            className="shrink-0 rounded-md border border-line bg-bg px-2.5 py-1 text-[11px] text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            className="shrink-0 rounded-md bg-card px-2.5 py-1 text-[11px] text-muted transition-colors hover:bg-surface-hover hover:text-fg"
           >
             {copied ? t.shareCopied : t.shareButton}
           </button>
@@ -169,7 +169,7 @@ export function SeasonalityPageClient({
             </div>
           ) : null}
           {totalYears > 0 && totalYears < SMALL_SAMPLE_YEARS ? (
-            <span className="mt-1 inline-block self-start rounded-md border border-line bg-bg px-2 py-0.5 text-[11px] text-muted">
+            <span className="mt-1 inline-block self-start rounded-md bg-card px-2 py-0.5 text-[11px] text-muted">
               {t.smallSample(totalYears)}
             </span>
           ) : null}
@@ -334,12 +334,12 @@ function StatCard({
   return (
     <div
       title={tooltip}
-      className="rounded-card border border-line bg-transparent px-3 py-3"
+      className="rounded-card bg-card px-3 py-3"
     >
       <div className="text-[11px] uppercase tracking-wide text-muted">
         {label}
       </div>
-      <div className={"mt-1 font-mono text-xl " + valueClass}>{value}</div>
+      <div className={"mt-1 text-xl " + valueClass}>{value}</div>
       {sub ? (
         <div className="mt-0.5 text-[11px] text-muted">{sub}</div>
       ) : null}
@@ -364,8 +364,8 @@ function YearCell({
         tierClasses[tier]
       }
     >
-      <div className="font-mono text-[11px] opacity-80">{yearLabel}</div>
-      <div className="mt-0.5 font-mono text-sm font-medium">
+      <div className="text-[11px] opacity-80">{yearLabel}</div>
+      <div className="mt-0.5 text-sm font-medium">
         {fmtRet(ret.ret)}
       </div>
     </div>
@@ -404,17 +404,17 @@ function FullHeatmap({
   const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
   return (
-    <div className="mt-3 overflow-x-auto">
+    <div className="mt-3 overflow-x-auto rounded-card bg-card p-3">
       <table className="w-full border-separate border-spacing-0.5 text-[10px]">
         <thead>
           <tr>
-            <th className="sticky left-0 bg-bg px-1 py-1 text-left text-muted">
+            <th className="sticky left-0 bg-card px-1 py-1 text-left text-muted">
               &nbsp;
             </th>
             {months.map((m) => (
               <th
                 key={m}
-                className="px-1 py-1 text-center font-mono text-muted"
+                className="px-1 py-1 text-center text-muted"
               >
                 {t.monthShort(m)}
               </th>
@@ -424,7 +424,7 @@ function FullHeatmap({
         <tbody>
           {years.map((y) => (
             <tr key={y}>
-              <td className="sticky left-0 bg-bg px-1 py-1 font-mono text-muted">
+              <td className="sticky left-0 bg-card px-1 py-1 text-muted">
                 {t.yearLabel(y)}
               </td>
               {months.map((m) => {
@@ -444,7 +444,7 @@ function FullHeatmap({
                   <td
                     key={m}
                     className={
-                      "rounded px-1 py-1 text-center font-mono tabular-nums " +
+                      "rounded px-1 py-1 text-center tabular-nums " +
                       tierClasses[tier]
                     }
                   >
@@ -455,7 +455,7 @@ function FullHeatmap({
             </tr>
           ))}
           <tr>
-            <td className="sticky left-0 bg-bg px-1 py-1 font-mono text-muted">
+            <td className="sticky left-0 bg-card px-1 py-1 text-muted">
               {t.heatmapAvgRow}
             </td>
             {months.map((m) => {
@@ -475,7 +475,7 @@ function FullHeatmap({
                 <td
                   key={m}
                   className={
-                    "rounded px-1 py-1 text-center font-mono tabular-nums " +
+                    "rounded px-1 py-1 text-center tabular-nums " +
                     tierClasses[tier]
                   }
                 >

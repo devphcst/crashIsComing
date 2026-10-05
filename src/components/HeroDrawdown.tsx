@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
@@ -15,7 +15,7 @@ import { MobileMenu } from "./MobileMenu";
 import { ProductAdMobile } from "./ProductAd";
 import { SIDEBAR_AD } from "@/constants/ads";
 import type { Exchange, SymbolMeta } from "@/lib/symbols";
-import { DEFAULT_SYMBOL, getExchange } from "@/lib/symbols";
+import { DEFAULT_SYMBOL } from "@/lib/symbols";
 import type { FearGreedSnapshot } from "@/lib/ingest/cnn-fear-greed";
 
 /**
@@ -139,27 +139,34 @@ export function HeroDrawdown({
 
   const d = getDict(lang);
 
+  // 현재 종목 메타 — HeroCard 라벨에서 displayName 사용.
+  const currentMeta = tabs.find((m) => m.ticker === current);
+  const currentDisplayName = currentMeta?.displayName ?? current.toUpperCase();
+
   return (
     <main className="flex min-h-screen flex-col bg-bg">
-      {/* 헤더 — 좌 브랜드, 우 햄버거 (언어는 메뉴 안으로 이동) */}
-      <div className="sticky top-0 z-30 bg-bg/90 backdrop-blur">
-        <header className="mx-auto flex w-full max-w-[480px] items-center justify-between px-5 pb-3 pt-5">
+      {/* 전역 wrapper — 헤더/탭/카드/푸터 전부 같은 max-w, mx-auto, px-inline 안에서 정렬. */}
+      <div className="mx-auto w-full max-w-[480px] px-4">
+        {/* 헤더 — 좌 브랜드, 우 햄버거 (언어는 메뉴 안으로 이동) */}
+        <header className="flex items-center justify-between pb-3 pt-5">
           <span className="text-[15px] font-bold tracking-tight text-fg">
             {d.brand}
           </span>
           <MobileMenu lang={lang} onChangeLang={handleLang} dict={d} />
         </header>
 
-        {/* 티커 필 — 가로 스크롤, 2개 이상일 때만 */}
+        {/* 티커 필 — 가로 스크롤, 2개 이상일 때만. wrapper와 같은 inline-edge 공유. */}
         {tabs.length > 1 ? (
           <TickerPills tabs={tabs} current={current} />
         ) : null}
-      </div>
 
-      <div className="mx-auto w-full max-w-[480px] px-5 pb-10 pt-3">
         {data.ready ? (
-          <div className="flex flex-col gap-2">
-            <HeroCard data={data} />
+          <div className="flex flex-col gap-2 pb-10 pt-3">
+            <HeroCard
+              data={data}
+              ticker={current}
+              displayName={currentDisplayName}
+            />
             <BentoGrid
               data={data}
               fearGreed={fearGreed}
@@ -177,7 +184,7 @@ export function HeroDrawdown({
       </div>
 
       <footer className="mt-auto border-t border-line">
-        <div className="mx-auto flex w-full max-w-[480px] flex-col items-center gap-2 px-5 pb-8 pt-6">
+        <div className="mx-auto flex w-full max-w-[480px] flex-col items-center gap-2 px-4 pb-8 pt-6">
           <Disclaimer text={d.disclaimer} />
           {visitor.show ? (
             <VisitorLine
@@ -207,16 +214,27 @@ function TickerPills({
   tabs: SymbolMeta[];
   current: string;
 }) {
+  const activeRef = useRef<HTMLAnchorElement>(null);
+
+  // 활성 탭이 뷰포트 밖이면 중앙으로 즉시 스크롤.
+  // block: 'nearest' — 수직 스크롤 변동 없이 가로 스크롤만.
+  useEffect(() => {
+    const el = activeRef.current;
+    if (!el) return;
+    el.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [current]);
+
   return (
-    <nav
-      aria-label="종목"
-      className="scrollbar-hide overflow-x-auto overscroll-x-contain px-5 pb-2"
-    >
-      <div className="mx-auto flex w-max max-w-[480px] gap-1.5">
+    <nav aria-label="종목" className="pb-2">
+      <div
+        className="scrollbar-hide flex gap-1.5 overflow-x-auto overscroll-x-contain"
+        style={{ scrollSnapType: "x mandatory" }}
+      >
         {tabs.map((m) => {
           const active = m.ticker === current;
           return (
             <Link
+              ref={active ? activeRef : undefined}
               key={m.ticker}
               href={hrefFor(m.ticker)}
               aria-current={active ? "page" : undefined}
@@ -226,21 +244,9 @@ function TickerPills({
                   ? "bg-fg text-card"
                   : "bg-card text-muted hover:bg-surface-hover")
               }
-              style={{ padding: "7px 14px" }}
+              style={{ padding: "7px 14px", scrollSnapAlign: "center" }}
             >
-              {/* 모바일: ticker만. 데스크톱: displayName + 거래소. */}
-              <span className="lg:hidden">{m.ticker.toUpperCase()}</span>
-              <span className="hidden lg:inline">
-                {m.displayName}
-                <span
-                  className={
-                    "ml-1.5 text-[10px] " +
-                    (active ? "text-card/70" : "text-subtle")
-                  }
-                >
-                  {getExchange(m) === "KRX" ? "KR" : "US"}
-                </span>
-              </span>
+              {m.ticker.toUpperCase()}
             </Link>
           );
         })}
@@ -253,12 +259,39 @@ function TickerPills({
  * 히어로 카드 — "전고점 대비" + 오늘 chip + 큰 숫자 + 스파크라인 + 캡션
  * ============================================================================ */
 
-function HeroCard({ data }: { data: Extract<HeroData, { ready: true }> }) {
+/**
+ * displayName에서 종목 설명(괄호 안)을 뽑아 "TQQQ · 나스닥 3배 레버리지" 형태로.
+ *   - "TQQQ (나스닥 3배 레버리지)" → "TQQQ · 나스닥 3배 레버리지"
+ *   - "SOXL" (설명 없음)         → "SOXL"
+ *   - "TQQQ"처럼 displayName == ticker이면 티커만.
+ */
+const symbolDescriptor = (ticker: string, displayName: string): string => {
+  const upper = ticker.toUpperCase();
+  const m = displayName.match(/^(.+?)\s*\((.+)\)\s*$/);
+  if (m) return `${upper} · ${m[2]}`;
+  if (displayName.toUpperCase() === upper) return upper;
+  return `${upper} · ${displayName}`;
+};
+
+function HeroCard({
+  data,
+  ticker,
+  displayName,
+}: {
+  data: Extract<HeroData, { ready: true }>;
+  ticker: string;
+  displayName: string;
+}) {
   const todayPct = data.breakdown.oneDay?.pct ?? null;
   return (
     <section className="rounded-card bg-card p-4">
-      {/* 상단 행: 좌 라벨 + 우 "오늘 X%" 칩 */}
-      <div className="flex items-center justify-between">
+      {/* 종목 라벨 — "TQQQ · 나스닥 3배 레버리지" */}
+      <div className="text-[12px] font-semibold text-muted">
+        {symbolDescriptor(ticker, displayName)}
+      </div>
+
+      {/* "전고점 대비" + "오늘 X%" 칩 */}
+      <div className="mt-1 flex items-center justify-between">
         <span className="text-[13px] font-semibold text-muted">
           전고점 대비
         </span>
@@ -321,7 +354,14 @@ function TodayChip({ pct }: { pct: number | null }) {
   );
 }
 
-/** 1년 종가 스파크라인 — ATH 점선 + 마지막 점. */
+/**
+ * 1년 종가 스파크라인.
+ *   - y 스케일 상단에 여유: domain max = max(prices, ath) * 1.03
+ *   - 가격 라인/영역은 x 0~W 전체 사용 (라벨 공간 때문에 비우지 않음)
+ *   - ATH 가로 점선 + 우측 상단에 "전고점 $xxx" 라벨 (점선 바로 위, text-anchor:end)
+ *   - overflow:visible — 라벨이 viewBox 밖으로 나가도 잘리지 않음
+ *   - 좌우 PAD 4px — 마지막 점(r=3.5)이 끝에서 잘리지 않도록
+ */
 function YearSparkline({
   closes,
   athPrice,
@@ -333,33 +373,31 @@ function YearSparkline({
 }) {
   if (closes.length < 2) return <div className="h-[70px] w-full" />;
 
-  // viewBox 좌표계: 0~W(가로) × 0~H(세로).
   const W = 400;
   const H = 70;
-  const PAD_RIGHT = 72; // "전고점 $xxx" 라벨 공간
+  const PAD_X = 4; // 좌우 point radius 보호
+  const PAD_TOP = 18; // 상단 ATH 라벨 공간
 
   const prices = closes.map((c) => c.price);
-  const minP = Math.min(...prices, athPrice);
-  const maxP = Math.max(...prices, athPrice);
+  const rawMax = Math.max(...prices, athPrice);
+  const minP = Math.min(...prices);
+  const maxP = rawMax * 1.03; // 상단 3% headroom
   const range = Math.max(1e-6, maxP - minP);
 
-  // x: 0 ~ (W - PAD_RIGHT), y: H - ((p - min) / range) * H.
-  const effW = W - PAD_RIGHT;
-  const points = closes.map((c, i) => {
-    const x = (i / (closes.length - 1)) * effW;
-    const y = H - ((c.price - minP) / range) * H;
-    return { x, y };
-  });
+  const plotH = H - PAD_TOP;
+  const plotW = W - PAD_X * 2;
+  const yOf = (p: number) => PAD_TOP + plotH - ((p - minP) / range) * plotH;
+  const xOf = (i: number) => PAD_X + (i / (closes.length - 1)) * plotW;
+
+  const points = closes.map((c, i) => ({ x: xOf(i), y: yOf(c.price) }));
   const pathD =
     "M" +
-    points
-      .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-      .join(" L");
+    points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" L");
   const areaD =
     pathD +
     ` L${points[points.length - 1].x.toFixed(1)},${H} L${points[0].x.toFixed(1)},${H} Z`;
 
-  const athY = H - ((athPrice - minP) / range) * H;
+  const athY = yOf(athPrice);
   const last = points[points.length - 1];
 
   return (
@@ -367,9 +405,10 @@ function YearSparkline({
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       className="h-[70px] w-full"
+      style={{ overflow: "visible" }}
       aria-hidden
     >
-      {/* 하락 영역 (전고점 비교라 전체를 "fill" — 라이트 fg 5% 투명) */}
+      {/* 하락 영역 */}
       <path d={areaD} fill="rgba(17,17,19,0.05)" />
       {/* 메인 라인 */}
       <path
@@ -379,23 +418,25 @@ function YearSparkline({
         strokeWidth={2}
         vectorEffect="non-scaling-stroke"
       />
-      {/* ATH 가로 점선 */}
+      {/* ATH 가로 점선 — 좌 0 ~ 우 W 전폭 */}
       <line
         x1={0}
         y1={athY}
-        x2={effW}
+        x2={W}
         y2={athY}
         stroke="#B4B4B8"
         strokeWidth={1}
         strokeDasharray="3 3"
         vectorEffect="non-scaling-stroke"
       />
+      {/* 라벨 — 점선 바로 위 우측 정렬 */}
       <text
-        x={effW + 4}
-        y={athY + 3.5}
+        x={W}
+        y={athY - 6}
         fontSize={10}
         fill="#8B8B90"
         style={{ fontWeight: 600 }}
+        textAnchor="end"
       >
         전고점 {formatPrice(athPrice, exchange)}
       </text>
@@ -420,8 +461,9 @@ function BentoGrid({
   teaser: SeasonalityTeaser | null;
   ticker: string;
 }) {
+  // items-stretch가 grid 기본이지만 명시 — 같은 행 카드 높이 일치.
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 items-stretch gap-2">
       <RecoveryCard data={data} />
       <FearGreedCard snapshot={fearGreed} />
       <CrashAvgCard summary={data.crashSummary} />
@@ -439,6 +481,10 @@ function CardShell({
   href?: string;
   children: React.ReactNode;
 }) {
+  // flex flex-col h-full — 그리드 셀 stretch 받아 카드가 전체 높이 채움.
+  // 내부 내용은 flex column 상단 정렬(기본), 라벨→값→캡션 순서 유지.
+  const className =
+    "flex h-full flex-col rounded-card bg-card p-4 transition-colors";
   const inner = (
     <>
       <div className="text-[12px] font-semibold text-muted">{label}</div>
@@ -447,15 +493,12 @@ function CardShell({
   );
   if (href) {
     return (
-      <Link
-        href={href}
-        className="block rounded-card bg-card p-4 transition-colors hover:bg-surface-hover"
-      >
+      <Link href={href} className={className + " hover:bg-surface-hover"}>
         {inner}
       </Link>
     );
   }
-  return <section className="rounded-card bg-card p-4">{inner}</section>;
+  return <section className={className}>{inner}</section>;
 }
 
 /** 1. 전고점 회복까지 — "+X%" + 진행바 + "${ath}까지" 캡션 */
@@ -505,18 +548,14 @@ function FearGreedCard({ snapshot }: { snapshot: FearGreedSnapshot | null }) {
 }
 
 /**
- * 반원 게이지 — 5구간 색, 중앙에 숫자, 양끝 "공포"/"탐욕".
- * SVG viewBox 200×110. 트랙은 180도 호(path), 값 구간별로 색 세그먼트.
+ * 반원 게이지 — pathLength 100 방식.
+ *   - 트랙과 값 path가 같은 arc. 값은 stroke-dasharray "{value} 100"로 비율 표현.
+ *   - value < 1이면 값 path 생략 (linecap 점만 남는 걸 방지).
+ *   - 구간색: 0-25 #E5484D, 25-45 #F59E0B, 45-55 #A1A1AA, 55-75 #84CC16, 75-100 #16A34A.
+ *   - max-width 160px, 아래 "공포 / 탐욕" 라벨 양끝.
  */
 function SemicircleGauge({ value }: { value: number }) {
   const clamped = Math.max(0, Math.min(100, value));
-  // 호 중심 (100, 100), 반지름 80 — 2시~10시 방향 반원.
-  const cx = 100;
-  const cy = 100;
-  const r = 80;
-  const start = Math.PI; // 180도 (왼쪽)
-  const end = 0; // 0도 (오른쪽)
-  // 구간: 0-25, 25-45, 45-55, 55-75, 75-100.
   const bands: { from: number; to: number; color: string }[] = [
     { from: 0, to: 25, color: "#E5484D" },
     { from: 25, to: 45, color: "#F59E0B" },
@@ -524,56 +563,50 @@ function SemicircleGauge({ value }: { value: number }) {
     { from: 55, to: 75, color: "#84CC16" },
     { from: 75, to: 100, color: "#16A34A" },
   ];
-  const point = (pct: number): { x: number; y: number } => {
-    const t = pct / 100;
-    const angle = start + (end - start) * t;
-    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
-  };
-  const arcPath = (from: number, to: number): string => {
-    const a = point(from);
-    const b = point(to);
-    const largeArc = to - from > 50 ? 1 : 0;
-    return `M${a.x.toFixed(2)},${a.y.toFixed(2)} A${r},${r} 0 ${largeArc} 1 ${b.x.toFixed(2)},${b.y.toFixed(2)}`;
-  };
-  const activeBand = bands.find((b) => clamped >= b.from && clamped <= b.to);
+  const activeBand =
+    bands.find((b) => clamped >= b.from && clamped <= b.to) ?? bands[2];
+  const arcD = "M10 60 A50 50 0 0 1 110 60";
   return (
-    <div className="flex flex-col items-center">
+    <div className="mx-auto w-full" style={{ maxWidth: 160 }}>
       <svg
-        viewBox="0 0 200 110"
-        className="w-full"
+        viewBox="0 0 120 70"
+        width="100%"
+        style={{ display: "block", margin: "8px auto 0" }}
         aria-label={`공포탐욕지수 ${clamped}`}
       >
-        {/* 트랙 (풀 반원) */}
+        {/* 트랙 */}
         <path
-          d={arcPath(0, 100)}
+          d={arcD}
+          pathLength={100}
           fill="none"
           stroke="var(--track)"
           strokeWidth={10}
           strokeLinecap="round"
         />
-        {/* 현재 값까지 색 호 (활성 band 색) */}
-        {clamped > 0 ? (
+        {/* 값 호 — value<1이면 생략 (linecap만 남는 걸 방지) */}
+        {clamped >= 1 ? (
           <path
-            d={arcPath(0, clamped)}
+            d={arcD}
+            pathLength={100}
             fill="none"
-            stroke={activeBand?.color ?? "#A1A1AA"}
+            stroke={activeBand.color}
             strokeWidth={10}
             strokeLinecap="round"
+            strokeDasharray={`${clamped} 100`}
           />
         ) : null}
-        {/* 중앙 숫자 */}
         <text
-          x={100}
-          y={95}
+          x={60}
+          y={56}
           textAnchor="middle"
-          fontSize={20}
+          fontSize={22}
           fontWeight={700}
           fill="#111113"
         >
           {clamped}
         </text>
       </svg>
-      <div className="mt-1 flex w-full justify-between text-[10px] font-semibold text-muted">
+      <div className="mt-1 flex justify-between text-[10px] font-semibold text-muted">
         <span>공포</span>
         <span>탐욕</span>
       </div>

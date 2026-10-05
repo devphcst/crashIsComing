@@ -1,18 +1,21 @@
+/**
+ * 음수 부호는 ASCII hyphen "-" 대신 U+2212 "−"로 통일 — 사이트 전역 숫자 표기 규약.
+ * toFixed는 ASCII "-"로 출력하므로 수동 교체.
+ */
 export const formatPct = (n: number, digits = 1): string => {
   if (!isFinite(n)) return "—";
   const rounded = Number(n.toFixed(digits));
   if (rounded === 0) return `0.${"0".repeat(digits)}%`;
-  return `${rounded.toFixed(digits)}%`;
+  const abs = Math.abs(rounded).toFixed(digits);
+  return rounded < 0 ? `−${abs}%` : `${abs}%`;
 };
 
 export const formatSignedPct = (n: number, digits = 1): string => {
   if (!isFinite(n)) return "—";
   const rounded = Number(n.toFixed(digits));
   if (rounded === 0) return `0.${"0".repeat(digits)}%`;
-  // 음수면 toFixed가 그대로 −부호 포함, 양수일 때만 +로 시작
-  return rounded > 0
-    ? `+${rounded.toFixed(digits)}%`
-    : `${rounded.toFixed(digits)}%`;
+  const abs = Math.abs(rounded).toFixed(digits);
+  return rounded > 0 ? `+${abs}%` : `−${abs}%`;
 };
 
 /**

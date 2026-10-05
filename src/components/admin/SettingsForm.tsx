@@ -14,7 +14,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
+      className="rounded-md border border-line bg-bg px-4 py-2 text-sm font-medium text-fg hover:bg-surface-hover disabled:opacity-50"
     >
       {pending ? "..." : t.saveSettings}
     </button>
@@ -37,29 +37,29 @@ export function SettingsForm({
           type="checkbox"
           name="showVisitorCount"
           defaultChecked={settings.showVisitorCount}
-          className="mt-1 h-4 w-4 cursor-pointer accent-neutral-100"
+          className="mt-1 h-4 w-4 cursor-pointer accent-fg"
         />
         <span className="space-y-1">
-          <span className="block text-sm text-neutral-200">
+          <span className="block text-sm text-fg">
             {t.showVisitorCount}
           </span>
-          <span className="block text-xs text-neutral-500">
+          <span className="block text-xs text-muted">
             {t.showVisitorCountHint}
           </span>
         </span>
       </label>
 
-      <p className="text-xs text-neutral-400">
+      <p className="text-xs text-muted">
         {t.visitorCountCurrent(visitorCount.toLocaleString())}
       </p>
 
       <div className="flex items-center gap-3">
         <SubmitButton />
         {state.ok && state.message ? (
-          <span className="text-xs text-emerald-400">{state.message}</span>
+          <span className="text-xs text-up">{state.message}</span>
         ) : null}
         {!state.ok && state.message ? (
-          <span className="text-xs text-red-400">{state.message}</span>
+          <span className="text-xs text-down">{state.message}</span>
         ) : null}
       </div>
     </form>

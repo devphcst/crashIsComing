@@ -12,7 +12,7 @@ function SubmitButton({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
+      className="rounded-md border border-line bg-bg px-4 py-2 text-sm font-medium text-fg hover:bg-surface-hover disabled:opacity-50"
     >
       {pending ? "..." : label}
     </button>
@@ -38,17 +38,17 @@ export function ClosePriceForm({
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="ticker" value={ticker} />
       <div className="grid grid-cols-2 gap-3">
-        <label className="block text-xs text-neutral-400">
+        <label className="block text-xs text-muted">
           날짜
           <input
             type="date"
             name="date"
             required
             defaultValue={defaultDate}
-            className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
+            className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg focus:border-fg focus:outline-none"
           />
         </label>
-        <label className="block text-xs text-neutral-400">
+        <label className="block text-xs text-muted">
           종가 ({currencyLabel})
           <input
             type="number"
@@ -56,14 +56,14 @@ export function ClosePriceForm({
             required
             step={step}
             min="0"
-            className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
+            className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg focus:border-fg focus:outline-none"
           />
         </label>
       </div>
 
       {state.warning ? (
         <>
-          <p className="rounded-md bg-amber-900/40 px-3 py-2 text-xs text-amber-300">
+          <p className="rounded-md border border-line px-3 py-2 text-xs text-muted">
             {state.warning}
           </p>
           <input type="hidden" name="confirmAbnormal" value="true" />
@@ -75,10 +75,10 @@ export function ClosePriceForm({
           label={state.needsConfirm ? "확인하고 저장" : "저장"}
         />
         {state.ok && state.message ? (
-          <span className="text-xs text-emerald-400">{state.message}</span>
+          <span className="text-xs text-up">{state.message}</span>
         ) : null}
         {!state.ok && state.message && !state.warning ? (
-          <span className="text-xs text-red-400">{state.message}</span>
+          <span className="text-xs text-down">{state.message}</span>
         ) : null}
       </div>
     </form>

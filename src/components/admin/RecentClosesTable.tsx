@@ -24,7 +24,7 @@ export function RecentClosesTable({
 }) {
   const [showAll, setShowAll] = useState(false);
   if (!closes.length) {
-    return <p className="text-xs text-neutral-500">아직 입력된 종가가 없습니다.</p>;
+    return <p className="text-xs text-muted">아직 입력된 종가가 없습니다.</p>;
   }
   const reversed = [...closes].reverse();
   const visible = showAll ? reversed : reversed.slice(0, DEFAULT_LIMIT);
@@ -33,7 +33,7 @@ export function RecentClosesTable({
   return (
     <div className="space-y-2">
       <table className="w-full text-xs">
-        <thead className="text-neutral-500">
+        <thead className="text-muted">
           <tr>
             <th className="py-1 text-left">날짜</th>
             <th className="py-1 text-right">종가</th>
@@ -41,9 +41,9 @@ export function RecentClosesTable({
         </thead>
         <tbody>
           {visible.map((c) => (
-            <tr key={c.date} className="border-t border-neutral-800">
-              <td className="py-1 text-neutral-300">{c.date}</td>
-              <td className="py-1 text-right text-neutral-100">
+            <tr key={c.date} className="border-t border-line">
+              <td className="py-1 text-fg">{c.date}</td>
+              <td className="py-1 text-right text-fg">
                 {formatPrice(c.price, exchange)}
               </td>
             </tr>
@@ -51,7 +51,7 @@ export function RecentClosesTable({
         </tbody>
       </table>
       {hasMore ? (
-        <div className="flex items-center justify-between text-[11px] text-neutral-500">
+        <div className="flex items-center justify-between text-[11px] text-muted">
           <span>
             {showAll
               ? `전체 ${closes.length}건`
@@ -60,7 +60,7 @@ export function RecentClosesTable({
           <button
             type="button"
             onClick={() => setShowAll((v) => !v)}
-            className="rounded border border-neutral-700 px-2 py-0.5 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+            className="rounded border border-line px-2 py-0.5 text-muted hover:border-fg hover:text-fg"
           >
             {showAll ? "최근 10건만" : "전체 보기"}
           </button>

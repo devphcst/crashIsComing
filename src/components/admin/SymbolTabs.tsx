@@ -22,7 +22,7 @@ export function SymbolTabs({
   return (
     <nav
       aria-label={t.tabsAria}
-      className="flex flex-wrap items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/40 p-2"
+      className="flex flex-wrap items-center gap-2 rounded-lg border border-line p-2"
     >
       {metas.map((m) => {
         const active = m.ticker === current;
@@ -34,10 +34,10 @@ export function SymbolTabs({
             className={
               "rounded-md px-3 py-1.5 text-sm transition-colors " +
               (active
-                ? "bg-neutral-100 font-medium text-neutral-900"
+                ? "border border-fg font-medium text-fg"
                 : hidden
-                  ? "border border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-neutral-400"
-                  : "border border-neutral-700 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100")
+                  ? "border border-line text-subtle hover:border-fg hover:text-muted"
+                  : "border border-line text-muted hover:border-fg hover:text-fg")
             }
             aria-current={active ? "page" : undefined}
           >
@@ -45,13 +45,13 @@ export function SymbolTabs({
             <span
               className={
                 "ml-1.5 font-mono text-[10px] " +
-                (active ? "text-neutral-500" : "text-neutral-500")
+                (active ? "text-muted" : "text-muted")
               }
             >
               {getExchange(m) === "KRX" ? "KR" : "US"}
             </span>
             {hidden ? (
-              <span className="ml-1 font-mono text-[10px] text-neutral-600">
+              <span className="ml-1 font-mono text-[10px] text-subtle">
                 ({t.hiddenBadge})
               </span>
             ) : null}
@@ -64,8 +64,8 @@ export function SymbolTabs({
           className={
             "rounded-md px-3 py-1.5 text-sm transition-colors " +
             (addOpen
-              ? "bg-emerald-900/40 text-emerald-200 hover:bg-emerald-900/60"
-              : "border border-dashed border-neutral-600 text-neutral-300 hover:border-neutral-400 hover:text-neutral-100")
+              ? "border border-up text-up hover:bg-surface-hover"
+              : "border border-dashed border-line text-muted hover:border-fg hover:text-fg")
           }
         >
           {addOpen ? t.cancelAdd : t.addButton}

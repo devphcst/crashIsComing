@@ -22,7 +22,7 @@ export function SeedUsdkrwButton() {
             setState(r);
           })
         }
-        className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-xs text-neutral-100 transition hover:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-md border border-line bg-bg px-3 py-1.5 text-xs text-fg transition hover:border-fg hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? "가져오는 중…" : "USDKRW 등록·백필"}
       </button>
@@ -30,7 +30,7 @@ export function SeedUsdkrwButton() {
         <span
           className={
             "text-xs " +
-            (state.ok ? "text-emerald-400" : "text-red-400")
+            (state.ok ? "text-up" : "text-down")
           }
         >
           {state.message}

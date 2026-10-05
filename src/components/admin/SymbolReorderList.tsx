@@ -27,7 +27,7 @@ import type { SymbolMeta } from "@/lib/symbols";
  * 디자인
  *   - 세로 카드 스택, 각 카드 좌측에 드래그 핸들(≡)
  *   - 핸들에만 드래그 리스너 부여 → 카드 다른 영역 만져도 모바일 스크롤 정상
- *   - 드래그 중인 카드는 opacity·shadow·ring으로 시각 피드백
+ *   - 드래그 중인 카드는 opacity·ring으로 시각 피드백
  *   - `touch-none`으로 핸들에서 브라우저 기본 터치(스크롤/확대) 차단
  *   - `activationConstraint: { distance: 5 }`로 5px 이상 움직여야 드래그 시작 (탭과 구분)
  *
@@ -59,8 +59,8 @@ function SortableItem({ meta }: { meta: SymbolMeta }) {
       ref={setNodeRef}
       style={style}
       className={
-        "flex items-center gap-3 rounded-md border border-neutral-800 bg-neutral-900/40 p-3 " +
-        (isDragging ? "shadow-xl ring-1 ring-neutral-600" : "")
+        "flex items-center gap-3 rounded-md border border-line p-3 " +
+        (isDragging ? "ring-1 ring-fg" : "")
       }
     >
       <button
@@ -68,11 +68,11 @@ function SortableItem({ meta }: { meta: SymbolMeta }) {
         {...attributes}
         {...listeners}
         aria-label={`${meta.displayName} 드래그하여 순서 변경`}
-        className="cursor-grab touch-none select-none px-1 text-base leading-none text-neutral-500 transition-colors hover:text-neutral-200 active:cursor-grabbing"
+        className="cursor-grab touch-none select-none px-1 text-base leading-none text-muted transition-colors hover:text-fg active:cursor-grabbing"
       >
         ≡
       </button>
-      <span className="text-sm text-neutral-200">{meta.displayName}</span>
+      <span className="text-sm text-fg">{meta.displayName}</span>
     </div>
   );
 }

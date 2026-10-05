@@ -15,7 +15,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
+      className="rounded-md border border-line bg-bg px-4 py-2 text-sm font-medium text-fg hover:bg-surface-hover disabled:opacity-50"
     >
       {pending ? "..." : "시드 저장"}
     </button>
@@ -39,26 +39,26 @@ export function SeedHighsForm({
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="ticker" value={ticker} />
-      <div className="space-y-2 rounded-md border border-neutral-800 bg-neutral-950/40 p-3 text-xs leading-relaxed text-neutral-400">
+      <div className="space-y-2 rounded-md border border-line p-3 text-xs leading-relaxed text-muted">
         <p>{t.seedExplain}</p>
-        <p className="text-neutral-500">{t.seedHowto}</p>
+        <p className="text-muted">{t.seedHowto}</p>
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-xs uppercase tracking-wide text-neutral-500">
+        <legend className="text-xs uppercase tracking-wide text-muted">
           {t.seedFieldAth}
         </legend>
         <div className="grid grid-cols-2 gap-3">
-          <label className="block text-xs text-neutral-400">
+          <label className="block text-xs text-muted">
             날짜
             <input
               type="date"
               name="athDate"
               defaultValue={current?.ath?.date ?? ""}
-              className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100"
+              className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg"
             />
           </label>
-          <label className="block text-xs text-neutral-400">
+          <label className="block text-xs text-muted">
             가격 ({currencyLabel})
             <input
               type="number"
@@ -66,27 +66,27 @@ export function SeedHighsForm({
               step={step}
               min="0"
               defaultValue={current?.ath?.price ?? ""}
-              className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100"
+              className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg"
             />
           </label>
         </div>
       </fieldset>
 
       <fieldset className="space-y-2">
-        <legend className="text-xs uppercase tracking-wide text-neutral-500">
+        <legend className="text-xs uppercase tracking-wide text-muted">
           {t.seedFieldOneYear}
         </legend>
         <div className="grid grid-cols-2 gap-3">
-          <label className="block text-xs text-neutral-400">
+          <label className="block text-xs text-muted">
             날짜
             <input
               type="date"
               name="oneYearDate"
               defaultValue={current?.oneYearHigh?.date ?? ""}
-              className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100"
+              className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg"
             />
           </label>
-          <label className="block text-xs text-neutral-400">
+          <label className="block text-xs text-muted">
             가격 ({currencyLabel})
             <input
               type="number"
@@ -94,7 +94,7 @@ export function SeedHighsForm({
               step={step}
               min="0"
               defaultValue={current?.oneYearHigh?.price ?? ""}
-              className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100"
+              className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg"
             />
           </label>
         </div>
@@ -103,10 +103,10 @@ export function SeedHighsForm({
       <div className="flex items-center justify-between">
         <SubmitButton />
         {state.ok && state.message ? (
-          <span className="text-xs text-emerald-400">{state.message}</span>
+          <span className="text-xs text-up">{state.message}</span>
         ) : null}
         {!state.ok && state.message ? (
-          <span className="text-xs text-red-400">{state.message}</span>
+          <span className="text-xs text-down">{state.message}</span>
         ) : null}
       </div>
     </form>

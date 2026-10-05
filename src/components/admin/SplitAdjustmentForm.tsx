@@ -24,7 +24,7 @@ function Button({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
+      className="rounded-md border border-line bg-bg px-4 py-2 text-sm font-medium text-fg hover:bg-surface-hover disabled:opacity-50"
     >
       {pending ? "..." : label}
     </button>
@@ -52,7 +52,7 @@ export function SplitAdjustmentForm({
       <form action={previewAction} className="space-y-3">
         <input type="hidden" name="ticker" value={ticker} />
         <div className="grid grid-cols-2 gap-3">
-          <label className="block text-xs text-neutral-400">
+          <label className="block text-xs text-muted">
             비율 (예: 2:1 분할 → 2)
             <input
               type="number"
@@ -60,33 +60,33 @@ export function SplitAdjustmentForm({
               required
               step="0.01"
               min="0"
-              className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100"
+              className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg"
             />
           </label>
-          <label className="block text-xs text-neutral-400">
+          <label className="block text-xs text-muted">
             발효일
             <input
               type="date"
               name="effectiveDate"
               required
-              className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100"
+              className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg"
             />
           </label>
         </div>
         <Button label="미리보기" />
         {!previewState.ok && "message" in previewState && previewState.message ? (
-          <span className="ml-3 text-xs text-red-400">{previewState.message}</span>
+          <span className="ml-3 text-xs text-down">{previewState.message}</span>
         ) : null}
       </form>
 
       {isPreview(previewState) ? (
-        <div className="space-y-3 rounded-md border border-amber-700/40 bg-amber-950/20 p-4">
-          <p className="text-sm text-amber-200">
+        <div className="space-y-3 rounded-md border border-line p-4">
+          <p className="text-sm text-fg">
             발효일 이전 <strong>{previewState.affectedCount}건</strong>이 보정됩니다.
           </p>
           {previewState.preview.length ? (
             <table className="w-full text-xs">
-              <thead className="text-neutral-500">
+              <thead className="text-muted">
                 <tr>
                   <th className="py-1 text-left">날짜</th>
                   <th className="py-1 text-right">현재</th>
@@ -95,10 +95,10 @@ export function SplitAdjustmentForm({
               </thead>
               <tbody>
                 {previewState.preview.map((p) => (
-                  <tr key={p.date} className="border-t border-amber-800/30">
+                  <tr key={p.date} className="border-t border-line">
                     <td className="py-1">{p.date}</td>
                     <td className="py-1 text-right">{formatPrice(p.before, exchange)}</td>
-                    <td className="py-1 text-right text-amber-200">
+                    <td className="py-1 text-right text-fg">
                       {formatPrice(p.after, exchange)}
                     </td>
                   </tr>
@@ -122,10 +122,10 @@ export function SplitAdjustmentForm({
             <input type="hidden" name="confirm" value="true" />
             <Button label="확인하고 적용" />
             {applyState.ok && applyState.message ? (
-              <span className="text-xs text-emerald-400">{applyState.message}</span>
+              <span className="text-xs text-up">{applyState.message}</span>
             ) : null}
             {!applyState.ok && applyState.message ? (
-              <span className="text-xs text-red-400">{applyState.message}</span>
+              <span className="text-xs text-down">{applyState.message}</span>
             ) : null}
           </form>
         </div>

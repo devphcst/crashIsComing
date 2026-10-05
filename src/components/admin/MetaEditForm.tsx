@@ -31,7 +31,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
+      className="rounded-md border border-line bg-bg px-4 py-2 text-sm font-medium text-fg hover:bg-surface-hover disabled:opacity-50"
     >
       {pending ? "..." : t.metaSubmit}
     </button>
@@ -54,7 +54,7 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
       {/* oldTicker — 서버 액션이 어떤 종목 row를 수정하는지 식별. 변경 불가. */}
       <input type="hidden" name="ticker" value={meta.ticker} />
 
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs text-muted">
         {t.tickerLabel}
         <input
           type="text"
@@ -67,52 +67,52 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
           readOnly={tickerLocked}
           disabled={tickerLocked}
           className={
-            "mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none " +
+            "mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg focus:border-fg focus:outline-none " +
             (tickerLocked ? "opacity-60" : "")
           }
         />
         {tickerLocked ? (
-          <span className="mt-1 block text-[10px] text-neutral-500">
+          <span className="mt-1 block text-[10px] text-muted">
             기본 종목의 ticker는 변경할 수 없습니다.
           </span>
         ) : tickerChanged ? (
-          <span className="mt-1 block text-[10px] text-amber-400">
+          <span className="mt-1 block text-[10px] text-muted">
             ticker 변경 시 종가/시드/분할 로그 등 모든 KV 키가 새 ticker로 이전됩니다.
           </span>
         ) : (
-          <span className="mt-1 block text-[10px] text-neutral-500">
+          <span className="mt-1 block text-[10px] text-muted">
             {t.tickerHint}
           </span>
         )}
       </label>
 
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs text-muted">
         {t.displayNameLabel}
         <input
           type="text"
           name="displayName"
           required
           defaultValue={meta.displayName}
-          className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
+          className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg focus:border-fg focus:outline-none"
         />
       </label>
 
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs text-muted">
         {t.exchangeLabel}
         <select
           name="exchange"
           defaultValue={getExchange(meta)}
-          className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
+          className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg focus:border-fg focus:outline-none"
         >
           <option value="NYSE">NYSE (미국)</option>
           <option value="KRX">KRX (한국)</option>
         </select>
-        <span className="mt-1 block text-[10px] text-neutral-500">
+        <span className="mt-1 block text-[10px] text-muted">
           {t.exchangeHint}
         </span>
       </label>
 
-      <label className="flex items-start gap-2 text-xs text-neutral-400">
+      <label className="flex items-start gap-2 text-xs text-muted">
         <input
           type="checkbox"
           name="hidden"
@@ -120,11 +120,11 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
           // DEFAULT_SYMBOL은 메인 페이지(`/`) 콘텐츠라 숨기면 사이트 자체가 깨짐.
           // 기본 종목 ticker 변경을 막은 것과 같은 이유로 hidden 토글도 비활성.
           disabled={meta.ticker === DEFAULT_SYMBOL}
-          className="mt-0.5 accent-neutral-200"
+          className="mt-0.5 accent-fg"
         />
         <span>
-          <span className="block text-neutral-200">{t.hiddenLabel}</span>
-          <span className="mt-0.5 block text-[10px] text-neutral-500">
+          <span className="block text-fg">{t.hiddenLabel}</span>
+          <span className="mt-0.5 block text-[10px] text-muted">
             {meta.ticker === DEFAULT_SYMBOL
               ? "기본 종목은 숨길 수 없습니다."
               : t.hiddenHint}
@@ -132,15 +132,15 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
         </span>
       </label>
 
-      <fieldset className="space-y-3 rounded-md border border-neutral-800 p-3">
-        <legend className="px-1 text-[10px] uppercase tracking-wide text-neutral-500">
+      <fieldset className="space-y-3 rounded-md border border-line p-3">
+        <legend className="px-1 text-[10px] uppercase tracking-wide text-muted">
           색상 임계값
         </legend>
 
-        <label className="block text-xs text-neutral-400">
+        <label className="block text-xs text-muted">
           <span className="flex items-center justify-between">
             <span>{t.orangeLabel}</span>
-            <span className="font-mono text-sm text-amber-400">
+            <span className="font-mono text-sm text-muted">
               {orange}%
             </span>
           </span>
@@ -152,14 +152,14 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
             step="1"
             value={orange}
             onChange={(e) => setOrange(Number(e.target.value))}
-            className="mt-1 w-full accent-amber-500"
+            className="mt-1 w-full accent-fg"
           />
         </label>
 
-        <label className="block text-xs text-neutral-400">
+        <label className="block text-xs text-muted">
           <span className="flex items-center justify-between">
             <span>{t.redLabel}</span>
-            <span className="font-mono text-sm text-red-400">{red}%</span>
+            <span className="font-mono text-sm text-down">{red}%</span>
           </span>
           <input
             type="range"
@@ -169,17 +169,17 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
             step="1"
             value={red}
             onChange={(e) => setRed(Number(e.target.value))}
-            className="mt-1 w-full accent-red-500"
+            className="mt-1 w-full accent-down"
           />
         </label>
 
-        <p className="text-[10px] text-neutral-500">{t.thresholdHint}</p>
+        <p className="text-[10px] text-muted">{t.thresholdHint}</p>
       </fieldset>
 
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs text-muted">
         <span className="flex items-center justify-between">
           <span>{t.similarRangeLabel}</span>
-          <span className="font-mono text-sm text-neutral-200">
+          <span className="font-mono text-sm text-fg">
             ±{similarPp}%p
           </span>
         </span>
@@ -191,17 +191,17 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
           step="0.5"
           value={similarPp}
           onChange={(e) => setSimilarPp(Number(e.target.value))}
-          className="mt-1 w-full accent-neutral-300"
+          className="mt-1 w-full accent-fg"
         />
-        <span className="mt-1 block text-[10px] text-neutral-500">
+        <span className="mt-1 block text-[10px] text-muted">
           {t.similarRangeHint} (기본 {DEFAULT_SIMILAR_RANGE_PPBP})
         </span>
       </label>
 
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs text-muted">
         <span className="flex items-center justify-between">
           <span>{t.minCrashLabel}</span>
-          <span className="font-mono text-sm text-neutral-200">
+          <span className="font-mono text-sm text-fg">
             {minCrash}%
           </span>
         </span>
@@ -213,14 +213,14 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
           step="1"
           value={minCrash}
           onChange={(e) => setMinCrash(Number(e.target.value))}
-          className="mt-1 w-full accent-neutral-300"
+          className="mt-1 w-full accent-fg"
         />
-        <span className="mt-1 block text-[10px] text-neutral-500">
+        <span className="mt-1 block text-[10px] text-muted">
           {t.minCrashHint} (기본 {DEFAULT_MIN_CRASH_DRAWDOWN_PCT})
         </span>
       </label>
 
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs text-muted">
         {t.leverageLabel}
         <input
           type="number"
@@ -230,9 +230,9 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
           max={LEVERAGE_MAX}
           defaultValue={meta.leverage ?? ""}
           placeholder={String(defaultLeverageFor(meta.ticker))}
-          className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-neutral-100 focus:border-neutral-500 focus:outline-none"
+          className="mt-1 w-full rounded-md border border-line bg-bg px-2 py-1.5 text-fg focus:border-fg focus:outline-none"
         />
-        <span className="mt-1 block text-[10px] text-neutral-500">
+        <span className="mt-1 block text-[10px] text-muted">
           {t.leverageHint} (기본 {defaultLeverageFor(meta.ticker)}, 비워두면 ticker 매핑 사용)
         </span>
       </label>
@@ -242,7 +242,7 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
         {state.message ? (
           <span
             className={
-              "text-xs " + (state.ok ? "text-emerald-400" : "text-red-400")
+              "text-xs " + (state.ok ? "text-up" : "text-down")
             }
           >
             {state.message}

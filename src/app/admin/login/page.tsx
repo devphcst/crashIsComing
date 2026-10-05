@@ -30,25 +30,25 @@ export default function LoginPage({
     <main className="flex min-h-screen items-center justify-center px-6">
       <form
         action={login}
-        className="w-full max-w-sm space-y-4 rounded-lg border border-neutral-800 bg-neutral-900/40 p-6"
+        className="w-full max-w-sm space-y-4 rounded-lg border border-line p-6"
       >
-        <h1 className="text-lg font-semibold text-neutral-100">관리자 로그인</h1>
-        <label className="block text-sm text-neutral-400">
+        <h1 className="text-lg font-semibold text-fg">관리자 로그인</h1>
+        <label className="block text-sm text-muted">
           관리자 토큰
           <input
             type="password"
             name="token"
             autoFocus
             required
-            className="mt-1 w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-neutral-100 focus:border-neutral-500 focus:outline-none"
+            className="mt-1 w-full rounded-md border border-line bg-bg px-3 py-2 text-fg focus:border-fg focus:outline-none"
           />
         </label>
         {hasError ? (
-          <p className="text-sm text-red-400">토큰이 올바르지 않습니다.</p>
+          <p className="text-sm text-down">토큰이 올바르지 않습니다.</p>
         ) : null}
         <button
           type="submit"
-          className="w-full rounded-md bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-900 hover:bg-white"
+          className="w-full rounded-md border border-line bg-bg px-3 py-2 text-sm font-medium text-fg hover:bg-surface-hover"
         >
           확인
         </button>

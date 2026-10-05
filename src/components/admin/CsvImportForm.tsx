@@ -69,7 +69,7 @@ export function CsvImportForm({ ticker }: { ticker: string }) {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <input type="hidden" name="ticker" value={ticker} />
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs text-muted">
         Investing.com CSV 파일 (여러 개 선택 가능)
         <input
           type="file"
@@ -77,20 +77,20 @@ export function CsvImportForm({ ticker }: { ticker: string }) {
           accept=".csv,text/csv"
           multiple
           onChange={onFileChange}
-          className="mt-1 block w-full rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-100 file:mr-2 file:rounded file:border-0 file:bg-neutral-800 file:px-2 file:py-1 file:text-xs file:text-neutral-200 hover:file:bg-neutral-700"
+          className="mt-1 block w-full rounded-md border border-line bg-bg px-2 py-1.5 text-xs text-fg file:mr-2 file:rounded file:border-0 file:bg-surface-hover file:px-2 file:py-1 file:text-xs file:text-fg hover:file:bg-surface-hover"
         />
       </label>
 
       {preview ? (
-        <div className="rounded-md border border-neutral-800 bg-neutral-950/40 p-3 text-xs text-neutral-400">
-          <p className="text-neutral-300">
+        <div className="rounded-md border border-line p-3 text-xs text-muted">
+          <p className="text-fg">
             파일 {preview.files}개 · 파싱 {preview.totalRows.toLocaleString()}행
             {preview.errorCount > 0 ? ` · 오류 ${preview.errorCount}행 무시` : ""}
           </p>
           {preview.totalRows > 0 ? (
             <div className="mt-2 grid gap-3 md:grid-cols-2">
               <div>
-                <p className="text-neutral-500">상위 5</p>
+                <p className="text-muted">상위 5</p>
                 <ul className="mt-1 space-y-0.5 font-mono text-[11px]">
                   {preview.head.map((c) => (
                     <li key={c.date}>
@@ -100,7 +100,7 @@ export function CsvImportForm({ ticker }: { ticker: string }) {
                 </ul>
               </div>
               <div>
-                <p className="text-neutral-500">하위 5</p>
+                <p className="text-muted">하위 5</p>
                 <ul className="mt-1 space-y-0.5 font-mono text-[11px]">
                   {preview.tail.map((c) => (
                     <li key={c.date}>
@@ -118,15 +118,15 @@ export function CsvImportForm({ ticker }: { ticker: string }) {
         <button
           type="submit"
           disabled={pending || selectedFiles.length === 0 || !preview || preview.totalRows === 0}
-          className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-white disabled:opacity-50"
+          className="rounded-md border border-line bg-bg px-4 py-2 text-sm font-medium text-fg hover:bg-surface-hover disabled:opacity-50"
         >
           {pending ? "가져오는 중..." : "가져오기"}
         </button>
         {state.ok && state.message ? (
-          <span className="text-xs text-emerald-400">{state.message}</span>
+          <span className="text-xs text-up">{state.message}</span>
         ) : null}
         {!state.ok && state.message ? (
-          <span className="text-xs text-red-400">{state.message}</span>
+          <span className="text-xs text-down">{state.message}</span>
         ) : null}
       </div>
     </form>

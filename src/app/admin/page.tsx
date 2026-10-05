@@ -87,26 +87,26 @@ export default async function AdminPage({
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-10">
       <header className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-neutral-100">관리자</h1>
+        <h1 className="text-xl font-semibold text-fg">관리자</h1>
         <div className="flex items-center gap-2">
           <Link
             href="/"
             target="_blank"
             rel="noopener"
-            className="rounded-md border border-neutral-700 px-3 py-1 text-xs text-neutral-400 hover:text-neutral-200"
+            className="rounded-md border border-line px-3 py-1 text-xs text-muted hover:text-fg"
           >
             {t.viewMain} ↗
           </Link>
           <Link
             href="/lab"
-            className="rounded-md border border-neutral-700 px-3 py-1 text-xs text-neutral-400 hover:text-neutral-200"
+            className="rounded-md border border-line px-3 py-1 text-xs text-muted hover:text-fg"
           >
             실험실 ↗
           </Link>
           <form action={logoutAction}>
             <button
               type="submit"
-              className="rounded-md border border-neutral-700 px-3 py-1 text-xs text-neutral-400 hover:text-neutral-200"
+              className="rounded-md border border-line px-3 py-1 text-xs text-muted hover:text-fg"
             >
               로그아웃
             </button>
@@ -115,8 +115,8 @@ export default async function AdminPage({
       </header>
 
       {!kvOn ? (
-        <div className="rounded-md border border-neutral-700 bg-neutral-900/60 px-4 py-3 text-xs text-neutral-400">
-          <strong className="text-neutral-200">로컬 개발 모드:</strong>{" "}
+        <div className="rounded-md border border-line px-4 py-3 text-xs text-muted">
+          <strong className="text-fg">로컬 개발 모드:</strong>{" "}
           KV 환경변수가 비어 있어 <code className="font-mono">.dev-store.json</code> 파일에 저장됩니다.
           운영(Vercel)에서는 KV가 자동 주입되어 이 파일은 사용되지 않습니다.
         </div>
@@ -132,8 +132,8 @@ export default async function AdminPage({
         exchange={getExchange(currentMeta)}
       />
 
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">
           {t.symbols.metaSectionTitle} — {currentMeta.displayName}
         </h2>
         {/* key={ticker}: 탭 전환 시 컴포넌트 강제 remount하여 useState/defaultValue가
@@ -142,8 +142,8 @@ export default async function AdminPage({
         <MetaEditForm key={currentSymbol} meta={currentMeta} />
       </section>
 
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">종가 추가</h2>
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">종가 추가</h2>
         <ClosePriceForm
           key={currentSymbol}
           defaultDate={todayISO()}
@@ -152,8 +152,8 @@ export default async function AdminPage({
         />
       </section>
 
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">
           시드값 (초기 ATH / 1년 고점)
         </h2>
         <SeedHighsForm
@@ -164,18 +164,18 @@ export default async function AdminPage({
         />
       </section>
 
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">CSV 일괄 가져오기</h2>
-        <p className="text-xs text-neutral-500">
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">CSV 일괄 가져오기</h2>
+        <p className="text-xs text-muted">
           Investing.com 다운로드 형식(한글 헤더, UTF-8) CSV 파일들을 업로드하면 기존 종가와 병합됩니다.
           중복 날짜는 CSV 값이 우선. 가져오기 후 새 최고 종가가 시드 ATH를 넘으면 자동 갱신됩니다.
         </p>
         <CsvImportForm key={currentSymbol} ticker={currentSymbol} />
       </section>
 
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">분할 일괄 보정</h2>
-        <p className="text-xs text-neutral-500">
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">분할 일괄 보정</h2>
+        <p className="text-xs text-muted">
           분할 발효일 이전 종가와 시드값을 일괄 갱신합니다. 적용 후 작업 로그가
           기록됩니다.
         </p>
@@ -185,8 +185,8 @@ export default async function AdminPage({
           exchange={getExchange(currentMeta)}
         />
         {adjustments.length ? (
-          <div className="mt-4 space-y-1 text-xs text-neutral-500">
-            <p className="text-neutral-400">최근 보정 로그:</p>
+          <div className="mt-4 space-y-1 text-xs text-muted">
+            <p className="text-muted">최근 보정 로그:</p>
             {adjustments.map((a) => (
               <p key={a.appliedAt}>
                 {a.effectiveDate} · ratio {a.ratio} · {a.affectedCount}건 · {a.appliedAt}
@@ -196,8 +196,8 @@ export default async function AdminPage({
         ) : null}
       </section>
 
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">최근 입력 10건</h2>
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">최근 입력 10건</h2>
         <RecentClosesTable closes={closes} exchange={getExchange(currentMeta)} />
       </section>
 
@@ -211,26 +211,26 @@ export default async function AdminPage({
       {/* 종목 표시 순서 — 페이지 전역 관리. 드래그 핸들(≡)로 카드 위·아래 이동.
           상단 종목 선택 탭은 클릭 라우팅용으로 분리, 여기는 순수 순서 관리. */}
       {metas.length > 1 ? (
-        <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-          <h2 className="text-sm font-medium text-neutral-200">종목 순서</h2>
-          <p className="text-xs text-neutral-500">
+        <section className="space-y-3 rounded-lg border border-line p-5">
+          <h2 className="text-sm font-medium text-fg">종목 순서</h2>
+          <p className="text-xs text-muted">
             드래그 핸들(≡)을 잡고 위·아래로 끌어 종목 표시 순서를 변경합니다. 메인 페이지 탭과 admin 상단 탭에 즉시 반영됩니다.
           </p>
           <SymbolReorderList metas={metas} />
         </section>
       ) : null}
 
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">외부 데이터</h2>
-        <p className="text-xs text-neutral-500">
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">외부 데이터</h2>
+        <p className="text-xs text-muted">
           USD/KRW 환율 심볼 등록 및 TwelveData 과거 시계열 백필 (최대 5000
           거래일). Lab 전용 hidden 심볼.
         </p>
         <SeedUsdkrwButton />
       </section>
 
-      <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <h2 className="text-sm font-medium text-neutral-200">{t.siteSettings}</h2>
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">{t.siteSettings}</h2>
         <SettingsForm settings={settings} visitorCount={visitorCount} />
       </section>
     </main>

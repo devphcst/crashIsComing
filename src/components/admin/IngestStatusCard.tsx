@@ -25,11 +25,11 @@ export function IngestStatusCard({
 }) {
   const failing = (status?.consecutiveFailures ?? 0) > 0;
   const containerCls = failing
-    ? "border-red-700/60 bg-red-950/40"
-    : "border-emerald-800/40 bg-emerald-950/20";
+    ? "border-down"
+    : "border-line";
   const badgeCls = failing
-    ? "bg-red-900/60 text-red-200"
-    : "bg-emerald-900/60 text-emerald-200";
+    ? "border border-down text-down"
+    : "border border-up text-up";
 
   // 14일 성공률 — recentResults 기반 슬라이딩 윈도우
   const sr = calcSuccessRate(status?.recentResults, 14);
@@ -37,18 +37,18 @@ export function IngestStatusCard({
   return (
     <section className={`space-y-2 rounded-lg border ${containerCls} p-5`}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-neutral-100">{t.title}</h2>
+        <h2 className="text-sm font-medium text-fg">{t.title}</h2>
         <span className={`rounded-full px-2 py-0.5 text-xs ${badgeCls}`}>
           {failing
             ? t.consecutiveFailures(status!.consecutiveFailures)
             : t.healthy}
         </span>
       </div>
-      <p className="text-xs text-neutral-500">{t.providerLabel(provider)}</p>
+      <p className="text-xs text-muted">{t.providerLabel(provider)}</p>
       {!status || (!status.lastSuccess && !status.lastError) ? (
-        <p className="text-xs text-neutral-400">{t.noActivity}</p>
+        <p className="text-xs text-muted">{t.noActivity}</p>
       ) : (
-        <div className="space-y-1 text-xs text-neutral-300">
+        <div className="space-y-1 text-xs text-fg">
           {status.lastSuccess ? (
             <p>
               {t.lastSuccess(
@@ -59,7 +59,7 @@ export function IngestStatusCard({
             </p>
           ) : null}
           {status.lastError ? (
-            <p className={failing ? "text-red-300" : "text-neutral-400"}>
+            <p className={failing ? "text-down" : "text-muted"}>
               {t.lastError(fmtTs(status.lastError.ts), status.lastError.message)}
             </p>
           ) : null}
@@ -67,12 +67,12 @@ export function IngestStatusCard({
           <p
             className={
               sr.rate === null
-                ? "text-neutral-500"
+                ? "text-muted"
                 : sr.rate >= 0.95
-                  ? "text-emerald-300"
+                  ? "text-up"
                   : sr.rate >= 0.9
-                    ? "text-amber-300"
-                    : "text-red-300"
+                    ? "text-muted"
+                    : "text-down"
             }
           >
             {sr.rate === null

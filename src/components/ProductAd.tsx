@@ -268,7 +268,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
           paddingLeft: 6,
           borderRadius: 12,
           background: 'rgba(255, 255, 255, 0.85)',
-          border: '0.5px solid rgba(17, 17, 19, 0.12)',
+          border: '0.5px solid rgba(25, 31, 40, 0.12)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
           WebkitTapHighlightColor: 'transparent',
@@ -288,7 +288,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
             bottom: 5,
             left: 7,
             fontSize: 8,
-            color: '#B4B4B8',
+            color: 'var(--subtle)',
             letterSpacing: '0.05em',
             pointerEvents: 'none',
           }}
@@ -305,7 +305,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
             onClick={() => setOpen(false)}
             className='fixed inset-0 z-40 md:hidden'
             style={{
-              background: 'rgba(17, 17, 19, 0.4)',
+              background: 'rgba(25, 31, 40, 0.4)',
               opacity: entered ? 1 : 0,
               transition: 'opacity 300ms ease-out',
             }}
@@ -319,8 +319,8 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
               aria-labelledby={titleId}
               className='pointer-events-auto w-full'
               style={{
-                background: '#FFFFFF',
-                border: '0.5px solid #E6E6E9',
+                background: 'var(--card)',
+                border: '0.5px solid var(--line)',
                 borderRadius: 16,
                 padding: '24px 20px',
                 maxHeight: '85vh',
@@ -338,7 +338,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
               {/* 상단: 라벨 + X 버튼 */}
               <div className='flex items-start justify-between gap-3'>
                 <div
-                  style={{ fontSize: 11, color: '#8B8B90' }}
+                  style={{ fontSize: 11, color: 'var(--muted)' }}
                   className='uppercase tracking-wider'
                 >
                   {t.label}
@@ -375,7 +375,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
                 style={{
                   fontSize: 14,
                   fontWeight: 500,
-                  color: '#111113',
+                  color: 'var(--fg)',
                   lineHeight: 1.4,
                 }}
               >
@@ -385,7 +385,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
               {/* 브랜드 */}
               <p
                 className='mt-1'
-                style={{ fontSize: 13, color: '#111113' }}
+                style={{ fontSize: 13, color: 'var(--fg)' }}
               >
                 {t.productName}
               </p>
@@ -403,7 +403,7 @@ export function ProductAdMobile({ lang }: { lang: Lang }) {
                 className='mt-4 whitespace-pre-line'
                 style={{
                   fontSize: 12,
-                  color: '#8B8B90',
+                  color: 'var(--muted)',
                   lineHeight: 1.6,
                 }}
               >

@@ -22,8 +22,8 @@ export default async function OgImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#F4F4F6",
-          color: "#111113",
+          background: "#F2F4F8",
+          color: "#191F28",
           fontFamily: "system-ui, -apple-system, Segoe UI, Helvetica, Arial",
           padding: 64,
         }}
@@ -32,7 +32,7 @@ export default async function OgImage() {
           style={{
             display: "flex",
             background: "#FFFFFF",
-            color: "#111113",
+            color: "#191F28",
             padding: "12px 28px",
             borderRadius: 999,
             fontSize: 36,
@@ -46,7 +46,7 @@ export default async function OgImage() {
         <div
           style={{
             display: "flex",
-            color: "#8B8B90",
+            color: "#6B7684",
             fontSize: 28,
             marginBottom: 16,
           }}
@@ -58,7 +58,7 @@ export default async function OgImage() {
             display: "flex",
             fontSize: 220,
             fontWeight: 800,
-            color: "#D03A4B",
+            color: "#F04452",
             letterSpacing: -6,
             lineHeight: 1,
           }}
@@ -69,7 +69,7 @@ export default async function OgImage() {
           style={{
             display: "flex",
             marginTop: 56,
-            color: "#8B8B90",
+            color: "#6B7684",
             fontSize: 28,
             letterSpacing: 2,
           }}

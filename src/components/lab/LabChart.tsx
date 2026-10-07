@@ -159,12 +159,12 @@ export function LabChart({
   // 그라디언트 stroke — 두 점 사이 구간 강조. RechartsBreakdown과 같은 방식:
   // 단일 Line + linearGradient에 sharp stop 두 개로 [회색][강조][회색] 3구간.
   const gradientId = useId().replace(/:/g, "-");
-  const BASE_STROKE = "#8B8B90";
+  const BASE_STROKE = "var(--muted)";
   const highlightColor = !comparePoints
     ? BASE_STROKE
     : comparePoints.pct < 0
-      ? "#D03A4B"
-      : "#111113";
+      ? "var(--down)"
+      : "var(--fg)";
 
   const segmentPct = useMemo(() => {
     if (!comparePoints || rows.length < 2) return null;
@@ -247,30 +247,30 @@ export function LabChart({
                 )}
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="2 4" stroke="#E6E6E9" />
+            <CartesianGrid strokeDasharray="2 4" stroke="var(--line)" />
             <XAxis
               dataKey="date"
               ticks={ticks}
-              tick={{ fill: "#8B8B90", fontSize: 11 }}
-              tickLine={{ stroke: "#E6E6E9" }}
-              axisLine={{ stroke: "#E6E6E9" }}
+              tick={{ fill: "var(--muted)", fontSize: 11 }}
+              tickLine={{ stroke: "var(--line)" }}
+              axisLine={{ stroke: "var(--line)" }}
               minTickGap={20}
             />
             <YAxis
-              tick={{ fill: "#8B8B90", fontSize: 11 }}
-              tickLine={{ stroke: "#E6E6E9" }}
-              axisLine={{ stroke: "#E6E6E9" }}
+              tick={{ fill: "var(--muted)", fontSize: 11 }}
+              tickLine={{ stroke: "var(--line)" }}
+              axisLine={{ stroke: "var(--line)" }}
               domain={["auto", "auto"]}
               tickFormatter={yTickFormatter}
               width={showCompare ? 44 : 64}
             />
             <Tooltip
               contentStyle={{
-                background: "#FFFFFF",
-                border: "1px solid #E6E6E9",
+                background: "var(--card)",
+                border: "1px solid var(--line)",
                 fontSize: 12,
               }}
-              labelStyle={{ color: "#8B8B90" }}
+              labelStyle={{ color: "var(--muted)" }}
               content={({ active, payload, label }) => {
                 if (!active || !payload || payload.length === 0) return null;
                 const row = payload[0].payload as MergedRow;
@@ -281,7 +281,7 @@ export function LabChart({
                       <div className="mt-1 flex items-baseline gap-2">
                         <span
                           className="inline-block h-2 w-2 rounded-full"
-                          style={{ background: "#111113" }}
+                          style={{ background: "var(--fg)" }}
                         />
                         <span className="text-fg">{primary.name}</span>
                         <span className="ml-auto text-fg">
@@ -295,7 +295,7 @@ export function LabChart({
                       <div className="mt-1 flex items-baseline gap-2">
                         <span
                           className="inline-block h-2 w-2 rounded-full"
-                          style={{ background: "#D03A4B" }}
+                          style={{ background: "var(--down)" }}
                         />
                         <span className="text-fg">{compare!.name}</span>
                         <span className="ml-auto text-fg">
@@ -319,8 +319,8 @@ export function LabChart({
               connectNulls
               activeDot={{
                 r: dotRadius,
-                fill: "#111113",
-                stroke: "#FFFFFF",
+                fill: "var(--fg)",
+                stroke: "var(--card)",
                 strokeWidth: 1.5,
               }}
             />
@@ -328,7 +328,7 @@ export function LabChart({
               <Line
                 type="monotone"
                 dataKey="compareNorm"
-                stroke="#D03A4B"
+                stroke="var(--down)"
                 strokeWidth={1.5}
                 dot={false}
                 isAnimationActive={false}
@@ -340,8 +340,8 @@ export function LabChart({
                 x={startMarker.date}
                 y={markerY(startMarker)}
                 r={dotRadius + 1}
-                fill="#D03A4B"
-                stroke="#FFFFFF"
+                fill="var(--down)"
+                stroke="var(--card)"
                 strokeWidth={1.5}
                 ifOverflow="hidden"
               />
@@ -351,8 +351,8 @@ export function LabChart({
                 x={endMarker.date}
                 y={markerY(endMarker)}
                 r={dotRadius + 1}
-                fill="#111113"
-                stroke="#FFFFFF"
+                fill="var(--fg)"
+                stroke="var(--card)"
                 strokeWidth={1.5}
                 ifOverflow="hidden"
               />
@@ -394,7 +394,7 @@ export function LabChart({
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2 w-2 rounded-full"
-            style={{ background: "#111113" }}
+            style={{ background: "var(--fg)" }}
           />
           {primary.name}
         </span>
@@ -402,7 +402,7 @@ export function LabChart({
           <span className="flex items-center gap-1.5">
             <span
               className="inline-block h-2 w-2 rounded-full"
-              style={{ background: "#D03A4B" }}
+              style={{ background: "var(--down)" }}
             />
             {compare!.name}
           </span>

@@ -110,7 +110,7 @@ export const legendTiers = (
 export const tierHex = (tier: ColorTier): { bg: string; text: string } => {
   switch (tier) {
     case "zero":
-      return { bg: "#FAFAFA", text: "#111113" };
+      return { bg: "#F2F4F8", text: "#191F28" };
     case "up-weak":
       return { bg: "#E1F4E9", text: "#1E6B43" };
     case "up-mid":

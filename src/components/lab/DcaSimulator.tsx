@@ -24,12 +24,13 @@ import type { LabSymbolPayload } from "./LabClient";
 
 const MAX_SELECT = 5;
 
-/** 종목 라인 색 — 최대 5개 선택 대응. 라이트 테마용 톤. */
+/** 종목 라인 색 — 최대 5개 선택 대응. 라이트 테마용 톤.
+ *  Recharts stroke prop은 var()를 안전하게 받아들이므로 fg/down/up/accent는 토큰 사용. */
 const TICKER_COLORS = [
-  "#111113",
-  "#D03A4B",
-  "#1F8A55",
-  "#2563EB",
+  "var(--fg)",
+  "var(--down)",
+  "var(--up)",
+  "var(--accent)",
   "#7C3AED",
 ] as const;
 
@@ -622,31 +623,31 @@ export function DcaSimulator({ symbols }: { symbols: LabSymbolPayload[] }) {
                   >
                     <CartesianGrid
                       strokeDasharray="2 4"
-                      stroke="#E6E6E9"
+                      stroke="var(--line)"
                     />
                     <XAxis
                       dataKey="date"
                       ticks={chartTicks}
-                      tick={{ fill: "#8B8B90", fontSize: 11 }}
-                      tickLine={{ stroke: "#E6E6E9" }}
-                      axisLine={{ stroke: "#E6E6E9" }}
+                      tick={{ fill: "var(--muted)", fontSize: 11 }}
+                      tickLine={{ stroke: "var(--line)" }}
+                      axisLine={{ stroke: "var(--line)" }}
                       minTickGap={20}
                     />
                     <YAxis
-                      tick={{ fill: "#8B8B90", fontSize: 11 }}
-                      tickLine={{ stroke: "#E6E6E9" }}
-                      axisLine={{ stroke: "#E6E6E9" }}
+                      tick={{ fill: "var(--muted)", fontSize: 11 }}
+                      tickLine={{ stroke: "var(--line)" }}
+                      axisLine={{ stroke: "var(--line)" }}
                       domain={["auto", "auto"]}
                       tickFormatter={(v: number) => `$${Math.round(v)}`}
                       width={64}
                     />
                     <Tooltip
                       contentStyle={{
-                        background: "#FFFFFF",
-                        border: "1px solid #E6E6E9",
+                        background: "var(--card)",
+                        border: "1px solid var(--line)",
                         fontSize: 12,
                       }}
-                      labelStyle={{ color: "#8B8B90" }}
+                      labelStyle={{ color: "var(--muted)" }}
                     />
                     {runStamp.tickers.map((t, i) => (
                       <Line

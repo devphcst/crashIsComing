@@ -85,12 +85,12 @@ export async function GET(req: Request) {
     const hasData = returns.length > 0;
     const meanLabel = hasData && stats ? fmtRet(stats.mean) : "—";
     const meanColor = !hasData
-      ? "#8B8B90"
+      ? "#6B7684"
       : stats && stats.mean > 0
-        ? "#1F8A55"
+        ? "#1E9E6A"
         : stats && stats.mean < 0
-          ? "#D03A4B"
-          : "#111113";
+          ? "#F04452"
+          : "#191F28";
     const subLabel =
       hasData && stats
         ? `${stats.count}년 중 ${stats.wins}번 상승 · 승률 ${formatPct(stats.winRate * 100, 0)}`
@@ -115,8 +115,8 @@ export async function GET(req: Request) {
             width: "100%",
             height: "100%",
             display: "flex",
-            background: "#F4F4F6",
-            color: "#111113",
+            background: "#F2F4F8",
+            color: "#191F28",
             fontFamily: "Pretendard",
           }}
         >
@@ -131,10 +131,10 @@ export async function GET(req: Request) {
               gap: 2,
             }}
           >
-            <span style={{ fontSize: 22, color: "#8B8B90" }}>
+            <span style={{ fontSize: 22, color: "#6B7684" }}>
               폭락장은 온다
             </span>
-            <span style={{ fontSize: 14, color: "#B4B4B8" }}>
+            <span style={{ fontSize: 14, color: "#8B95A1" }}>
               crash-is-coming
             </span>
           </div>
@@ -151,10 +151,10 @@ export async function GET(req: Request) {
               gap: 2,
             }}
           >
-            <span style={{ fontSize: 22, color: "#111113" }}>
+            <span style={{ fontSize: 22, color: "#191F28" }}>
               {meta.displayName}
             </span>
-            <span style={{ fontSize: 16, color: "#8B8B90" }}>
+            <span style={{ fontSize: 16, color: "#6B7684" }}>
               {monthLabel} 계절성
             </span>
           </div>
@@ -170,7 +170,7 @@ export async function GET(req: Request) {
               gap: 6,
             }}
           >
-            <span style={{ fontSize: 20, color: "#8B8B90" }}>
+            <span style={{ fontSize: 20, color: "#6B7684" }}>
               {`${monthLabel} 평균 수익률`}
             </span>
             <span
@@ -183,8 +183,8 @@ export async function GET(req: Request) {
             >
               {meanLabel}
             </span>
-            <span style={{ fontSize: 18, color: "#8B8B90" }}>{subLabel}</span>
-            <span style={{ fontSize: 14, color: "#B4B4B8", marginTop: 10 }}>
+            <span style={{ fontSize: 18, color: "#6B7684" }}>{subLabel}</span>
+            <span style={{ fontSize: 14, color: "#8B95A1", marginTop: 10 }}>
               {`밴드 ±${band.lo}% / ±${band.hi}% · ${leverage}배`}
             </span>
           </div>
@@ -201,7 +201,7 @@ export async function GET(req: Request) {
               gap: 8,
             }}
           >
-            <span style={{ fontSize: 14, color: "#8B8B90" }}>
+            <span style={{ fontSize: 14, color: "#6B7684" }}>
               {`최근 ${gridItems.length}년`}
             </span>
             <div
@@ -249,7 +249,7 @@ export async function GET(req: Request) {
               right: 60,
               display: "flex",
               fontSize: 16,
-              color: "#B4B4B8",
+              color: "#8B95A1",
             }}
           >
             {asOfText}

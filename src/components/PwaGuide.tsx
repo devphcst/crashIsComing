@@ -163,7 +163,7 @@ function ShareIcon() {
       height="24"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#8B8B90"
+      stroke="var(--muted)"
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -185,7 +185,7 @@ function MoreIcon() {
       height="24"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#8B8B90"
+      stroke="var(--muted)"
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -193,9 +193,9 @@ function MoreIcon() {
       className="shrink-0"
     >
       <circle cx="12" cy="12" r="9" />
-      <circle cx="8" cy="12" r="0.6" fill="#8B8B90" />
-      <circle cx="12" cy="12" r="0.6" fill="#8B8B90" />
-      <circle cx="16" cy="12" r="0.6" fill="#8B8B90" />
+      <circle cx="8" cy="12" r="0.6" fill="var(--muted)" />
+      <circle cx="12" cy="12" r="0.6" fill="var(--muted)" />
+      <circle cx="16" cy="12" r="0.6" fill="var(--muted)" />
     </svg>
   );
 }
@@ -208,7 +208,7 @@ function PlusIcon() {
       height="24"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#8B8B90"
+      stroke="var(--muted)"
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"

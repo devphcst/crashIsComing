@@ -78,13 +78,14 @@ type Props = {
   labels: Labels;
 };
 
-// 라이트 테마 — 라인 fg, 하락 영역은 down 10% 투명도, 축/그리드 line, 라벨 muted.
-const LINE_COLOR = "#111113";
-const AREA_FILL = "rgba(208, 58, 75, 0.10)";
-const AXIS_COLOR = "#E6E6E9";
-const LABEL_COLOR = "#8B8B90";
-const SUB_LABEL_COLOR = "#B4B4B8";
-const MONTHS_BOX_BG = "#FFFFFF";
+// 라이트/다크 공통 — CSS 변수로 테마 자동 반영. 영역 fill만 리터럴
+// (var() + rgba 믹스가 안전하지 않아 down 색의 10% 알파를 리터럴로 유지).
+const LINE_COLOR = "var(--fg)";
+const AREA_FILL = "rgba(240, 68, 82, 0.10)";
+const AXIS_COLOR = "var(--line)";
+const LABEL_COLOR = "var(--muted)";
+const SUB_LABEL_COLOR = "var(--subtle)";
+const MONTHS_BOX_BG = "var(--card)";
 
 export function CrashChart({ year, title, mdd, months, seed, labels }: Props) {
   const pts = useMemo(() => buildPath(mdd, seed), [mdd, seed]);

@@ -189,12 +189,12 @@ export function HistoryChart({
   const tapInProgress = !!tappedStart && !tappedEnd;
 
   const gradientId = useId().replace(/:/g, "-");
-  const BASE_STROKE = "#111113"; // --fg
+  const BASE_STROKE = "var(--fg)";
   const highlightColor = !comparePoints
     ? BASE_STROKE
     : comparePoints.pct < 0
-      ? "#D03A4B"
-      : "#1F8A55";
+      ? "var(--down)"
+      : "var(--up)";
   const segmentPct = useMemo(() => {
     if (!comparePoints || rendered.length < 2) return null;
     const startIdx = rendered.findIndex(
@@ -296,13 +296,13 @@ export function HistoryChart({
                 )}
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="#E6E6E9" vertical={false} />
+            <CartesianGrid stroke="var(--line)" vertical={false} />
             <XAxis
               dataKey="date"
               ticks={ticks}
-              tick={{ fontSize: 10, fill: "#8B8B90" }}
+              tick={{ fontSize: 10, fill: "var(--muted)" }}
               tickFormatter={(v: string) => formatYearMonth(v, lang)}
-              stroke="#E6E6E9"
+              stroke="var(--line)"
               tickLine={false}
               axisLine={false}
               interval={0}
@@ -318,8 +318,8 @@ export function HistoryChart({
               isAnimationActive={false}
               activeDot={{
                 r: 4,
-                fill: "#111113",
-                stroke: "#FFFFFF",
+                fill: "var(--fg)",
+                stroke: "var(--card)",
                 strokeWidth: 1.5,
               }}
             />
@@ -328,8 +328,8 @@ export function HistoryChart({
                 x={startMarker.date}
                 y={startMarker.price}
                 r={5}
-                fill="#D03A4B"
-                stroke="#FFFFFF"
+                fill="var(--down)"
+                stroke="var(--card)"
                 strokeWidth={1.5}
               />
             ) : null}
@@ -338,8 +338,8 @@ export function HistoryChart({
                 x={endMarker.date}
                 y={endMarker.price}
                 r={5}
-                fill="#111113"
-                stroke="#FFFFFF"
+                fill="var(--fg)"
+                stroke="var(--card)"
                 strokeWidth={1.5}
               />
             ) : null}

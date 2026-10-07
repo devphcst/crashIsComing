@@ -4,8 +4,6 @@
 
 /*
  * Pretendard — 한글/영문 공용 sans. 시스템 설치 폰트 우선, 없으면 CDN webfont 폴백.
- * 전체 번들을 self-host하면 payload가 커지므로 CDN(cdn.jsdelivr.net/gh/orioncactus/pretendard)
- * 서브셋 variable font를 쓴다. 폰트 로딩 실패 시 Apple SD Gothic Neo / BlinkMacSystemFont 폴백.
  */
 @font-face {
   font-family: "Pretendard";
@@ -15,24 +13,52 @@
     format("woff2-variations");
 }
 
+/*
+ * === 디자인 토큰 (쿨 화이트 + 블루 포인트) ===
+ * prefers-color-scheme에 반응하는 CSS 변수. Tailwind class(bg-bg, text-fg, text-muted,
+ * border-line, text-accent, text-up, text-down …)는 전부 이 변수를 참조한다.
+ */
 :root {
   color-scheme: light;
 
-  /* === 디자인 토큰 (라이트 테마, 벤토 그리드) === */
-  --bg: #F4F4F6;         /* 페이지 배경 (회색) */
-  --card: #FFFFFF;       /* 카드 배경 */
-  --fg: #111113;         /* 본문 */
-  --muted: #8B8B90;      /* 보조 라벨 */
-  --subtle: #B4B4B8;     /* 비활성/placeholder */
-  --line: #E6E6E9;       /* 미묘 보더 (카드 내부 분리선 등) */
-  --track: #F0F0F2;      /* 프로그레스/게이지 트랙 */
-  --up: #16A34A;
-  --up-chip-bg: #EAF7EF;
-  --down: #E5484D;
+  --bg: #F2F4F8;             /* 페이지 배경 */
+  --card: #FFFFFF;           /* 카드 배경 */
+  --fg: #191F28;             /* 본문 */
+  --muted: #6B7684;          /* 라벨/보조 */
+  --subtle: #8B95A1;         /* 흐린 */
+  --line: #E6E6E9;           /* 미묘 보더 (내부 분리선) */
+  --line-link: #D6E6FD;      /* 클릭 가능 카드 보더 */
+  --track: #F0F0F2;          /* 프로그레스/게이지 트랙 */
+  --accent: #3182F6;         /* 블루 포인트 */
+  --accent-bg: #F7FAFF;      /* 링크 카드 hover 배경 */
+  --up: #1E9E6A;             /* 상승·신고가 */
+  --up-chip-bg: #E6F6EF;
+  --down: #F04452;           /* 하락·드로다운 */
   --down-chip-bg: #FDECEE;
-  --surface-hover: #FAFAFA;
+  --surface-hover: #FAFAFA;  /* 비링크 카드 hover */
   --radius-card: 18px;
   --radius-tile: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0E0F13;
+    --card: #1A1C22;
+    --fg: #F2F3F5;
+    --muted: #A1A7B3;
+    --subtle: #6B7684;
+    --line: #2A2E36;
+    --line-link: #2E4A7A;
+    --track: #272B33;
+    --accent: #4C9AFF;
+    --accent-bg: rgba(76, 154, 255, 0.10);
+    --up: #34D399;
+    --up-chip-bg: rgba(52, 211, 153, 0.14);
+    --down: #FF5A5F;
+    --down-chip-bg: rgba(255, 90, 95, 0.14);
+    --surface-hover: #22252B;
+  }
 }
 
 html,

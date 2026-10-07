@@ -273,6 +273,32 @@ const symbolDescriptor = (ticker: string, displayName: string): string => {
   return `${upper} · ${displayName}`;
 };
 
+/**
+ * 신고가(ATH 재도달) 판정.
+ *   drawdown ≥ -0.05% 이면 신고가로 간주 — 반올림 "0.0%" 케이스 포함,
+ *   아주 작은 floating 오차 흡수.
+ */
+const ATH_EPSILON_PCT = -0.05;
+const isAtAth = (drawdownPct: number): boolean =>
+  drawdownPct >= ATH_EPSILON_PCT;
+
+/**
+ * 연속 신고가 일수 — recentCloses 끝에서 역순으로 close ≥ ath(미세오차 흡수)인
+ * 날의 수. 당일이 ath 미만이면 0.
+ */
+const athStreakDays = (
+  closes: ReadonlyArray<{ date: string; price: number }>,
+  athPrice: number,
+): number => {
+  const threshold = athPrice * 0.9995;
+  let count = 0;
+  for (let i = closes.length - 1; i >= 0; i--) {
+    if (closes[i].price >= threshold) count++;
+    else break;
+  }
+  return count;
+};
+
 function HeroCard({
   data,
   ticker,
@@ -283,6 +309,7 @@ function HeroCard({
   displayName: string;
 }) {
   const todayPct = data.breakdown.oneDay?.pct ?? null;
+  const atAth = isAtAth(data.ath.drawdownPct);
   return (
     <section className="rounded-card bg-card p-4">
       {/* 종목 라벨 — "TQQQ · 나스닥 3배 레버리지" */}
@@ -290,28 +317,55 @@ function HeroCard({
         {symbolDescriptor(ticker, displayName)}
       </div>
 
-      {/* "전고점 대비" + "오늘 X%" 칩 */}
+      {/* 라벨 + 오늘 chip. 신고가면 "역대 최고가". */}
       <div className="mt-1 flex items-center justify-between">
         <span className="text-[13px] font-semibold text-muted">
-          전고점 대비
+          {atAth ? "역대 최고가" : "전고점 대비"}
         </span>
         <TodayChip pct={todayPct} />
       </div>
 
-      {/* 메인 숫자 */}
-      <div
-        className="mt-3 text-[64px] font-extrabold leading-none text-down"
-        style={{ letterSpacing: "-2px" }}
-      >
-        {formatPct(data.ath.drawdownPct, 1)}
-      </div>
+      {/* 메인 숫자/상태 */}
+      {atAth ? (
+        <>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span
+              className="text-[56px] font-extrabold leading-none text-up"
+              style={{ letterSpacing: "-2px" }}
+            >
+              신고가
+            </span>
+            <span
+              className="rounded px-1.5 py-0.5 text-[10px] font-bold"
+              style={{
+                backgroundColor: "var(--up-chip-bg)",
+                color: "var(--up)",
+                letterSpacing: "0.05em",
+              }}
+            >
+              ATH
+            </span>
+          </div>
+          <div className="mt-1.5 text-[12px] text-muted">
+            폭락장은... 아직
+          </div>
+        </>
+      ) : (
+        <div
+          className="mt-3 text-[64px] font-extrabold leading-none text-down"
+          style={{ letterSpacing: "-2px" }}
+        >
+          {formatPct(data.ath.drawdownPct, 1)}
+        </div>
+      )}
 
-      {/* 1년 스파크라인 */}
+      {/* 1년 스파크라인 — 신고가 상태면 ATH 점선/마지막 점을 up 색으로. */}
       <div className="mt-4">
         <YearSparkline
           closes={data.recentCloses}
           athPrice={data.ath.price}
           exchange={data.exchange}
+          atAth={atAth}
         />
       </div>
 
@@ -366,10 +420,13 @@ function YearSparkline({
   closes,
   athPrice,
   exchange,
+  atAth = false,
 }: {
   closes: ReadonlyArray<{ date: string; price: number }>;
   athPrice: number;
   exchange: Exchange;
+  /** 신고가 상태 — ATH 점선과 마지막 점을 up 색으로. */
+  atAth?: boolean;
 }) {
   if (closes.length < 2) return <div className="h-[70px] w-full" />;
 
@@ -418,13 +475,13 @@ function YearSparkline({
         strokeWidth={2}
         vectorEffect="non-scaling-stroke"
       />
-      {/* ATH 가로 점선 — 좌 0 ~ 우 W 전폭 */}
+      {/* ATH 가로 점선 — 좌 0 ~ 우 W 전폭. 신고가면 up 색. */}
       <line
         x1={0}
         y1={athY}
         x2={W}
         y2={athY}
-        stroke="#B4B4B8"
+        stroke={atAth ? "var(--up)" : "#B4B4B8"}
         strokeWidth={1}
         strokeDasharray="3 3"
         vectorEffect="non-scaling-stroke"
@@ -434,14 +491,19 @@ function YearSparkline({
         x={W}
         y={athY - 6}
         fontSize={10}
-        fill="#8B8B90"
+        fill={atAth ? "var(--up)" : "#8B8B90"}
         style={{ fontWeight: 600 }}
         textAnchor="end"
       >
         전고점 {formatPrice(athPrice, exchange)}
       </text>
-      {/* 마지막 점 */}
-      <circle cx={last.x} cy={last.y} r={3.5} fill="#111113" />
+      {/* 마지막 점 — 신고가면 up 색. */}
+      <circle
+        cx={last.x}
+        cy={last.y}
+        r={3.5}
+        fill={atAth ? "var(--up)" : "#111113"}
+      />
     </svg>
   );
 }
@@ -509,7 +571,33 @@ function RecoveryCard({
 }) {
   const close = data.current.price;
   const ath = data.ath.price;
-  const gap = (ath / close - 1) * 100; // close > 0 보장
+  const atAth = isAtAth(data.ath.drawdownPct);
+
+  // 신고가 상태 — 체크 아이콘 + "회복 완료", 100% up fill, 하단 "신고가 $xxx · N일 연속"
+  if (atAth) {
+    const streak = athStreakDays(data.recentCloses, ath);
+    return (
+      <CardShell label="전고점 회복까지">
+        <div className="flex items-center gap-1.5 text-[22px] font-bold text-up">
+          <CheckIcon />
+          <span>회복 완료</span>
+        </div>
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-track">
+          <div
+            className="h-full w-full rounded-full"
+            style={{ backgroundColor: "var(--up)" }}
+          />
+        </div>
+        <div className="mt-2 text-[11px] text-muted">
+          신고가 {formatPrice(ath, data.exchange)}
+          {streak > 1 ? ` · ${streak}일 연속` : ""}
+        </div>
+      </CardShell>
+    );
+  }
+
+  // 기본 — "+X%" + 진행바 + "$xxx까지"
+  const gap = (ath / close - 1) * 100;
   const progress = Math.max(0, Math.min(1, close / ath));
   return (
     <CardShell label="전고점 회복까지">
@@ -526,6 +614,25 @@ function RecoveryCard({
         {formatPrice(ath, data.exchange)}까지
       </div>
     </CardShell>
+  );
+}
+
+/** 체크 아이콘 — "회복 완료" 상태 표시용. */
+function CheckIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width={20}
+      height={20}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 8l4 4 6-8" />
+    </svg>
   );
 }
 

@@ -57,6 +57,8 @@ export type HeroData =
         avgDrawdownPct: number;
         maxDrawdownPct: number;
         maxYear: number;
+        /** 최대 낙폭 crash의 회복 개월 (null = 미회복). */
+        maxRecoveryMonths: number | null;
         count: number;
       } | null;
     }
@@ -216,8 +218,6 @@ function TickerPills({
 }) {
   const activeRef = useRef<HTMLAnchorElement>(null);
 
-  // 활성 탭이 뷰포트 밖이면 중앙으로 즉시 스크롤.
-  // block: 'nearest' — 수직 스크롤 변동 없이 가로 스크롤만.
   useEffect(() => {
     const el = activeRef.current;
     if (!el) return;
@@ -238,13 +238,15 @@ function TickerPills({
               key={m.ticker}
               href={hrefFor(m.ticker)}
               aria-current={active ? "page" : undefined}
-              className={
-                "shrink-0 whitespace-nowrap rounded-full text-[13px] font-semibold transition-colors " +
-                (active
-                  ? "bg-fg text-card"
-                  : "bg-card text-muted hover:bg-surface-hover")
-              }
-              style={{ padding: "7px 14px", scrollSnapAlign: "center" }}
+              className="shrink-0 whitespace-nowrap rounded-full text-[13px] font-semibold transition-colors"
+              style={{
+                padding: "7px 14px",
+                scrollSnapAlign: "center",
+                background: active
+                  ? "var(--tab-active-bg)"
+                  : "var(--tab-idle-bg)",
+                color: active ? "var(--tab-active-fg)" : "var(--tab-idle-fg)",
+              }}
             >
               {m.ticker.toUpperCase()}
             </Link>
@@ -311,7 +313,7 @@ function HeroCard({
   const todayPct = data.breakdown.oneDay?.pct ?? null;
   const atAth = isAtAth(data.ath.drawdownPct);
   return (
-    <section className="rounded-card bg-card p-4">
+    <section className="rounded-card border border-line bg-card p-4">
       {/* 종목 라벨 — "TQQQ · 나스닥 3배 레버리지" */}
       <div className="text-[12px] font-semibold text-muted">
         {symbolDescriptor(ticker, displayName)}
@@ -481,7 +483,7 @@ function YearSparkline({
         y1={athY}
         x2={W}
         y2={athY}
-        stroke={atAth ? "var(--up)" : "var(--subtle)"}
+        stroke={atAth ? "var(--up)" : "var(--ath-dash)"}
         strokeWidth={1}
         strokeDasharray="3 3"
         vectorEffect="non-scaling-stroke"
@@ -528,138 +530,102 @@ function BentoGrid({
     <div className="grid grid-cols-2 items-stretch gap-2">
       <RecoveryCard data={data} />
       <FearGreedCard snapshot={fearGreed} />
-      <CrashAvgCard summary={data.crashSummary} />
+      <MaxDrawdownCard summary={data.crashSummary} />
       <SeasonalityCard teaser={teaser} ticker={ticker} />
     </div>
   );
 }
 
-function CardShell({
-  label,
-  href,
-  cta,
+/* ============================================================================
+ * 벤토 카드 공통 — 아이콘 원 + 라벨 헤더
+ * ============================================================================ */
+
+/** 26px 원형 아이콘 배경 + 15px 흰 Tabler 아이콘. */
+function IconCircle({
+  color,
   children,
 }: {
-  label: string;
-  /** 내부 Next 라우트. 외부 링크는 CardShell 밖에서 처리. */
-  href?: string;
-  /** 링크 카드 하단 CTA 라벨 (예: "월별 보기"). href 있을 때만 노출. */
-  cta?: string;
+  color: string;
   children: React.ReactNode;
 }) {
-  // 비링크 카드: 보더 없이 흰 배경만.
-  // 링크 카드: 1px line-link 보더 + 우상단 chevron + 하단 CTA(accent) + hover accent-bg + active scale(0.98).
-  // 그리드 셀 stretch 받아 h-full. 내용은 flex column 상단 정렬, CTA는 mt-auto로 하단.
-  const base = "flex h-full flex-col rounded-card bg-card p-4";
-  const linkVariant =
-    "border border-line-link transition-all hover:bg-accent-bg active:scale-[0.98]";
-
-  if (href) {
-    return (
-      <Link href={href} className={base + " " + linkVariant}>
-        <div className="flex items-start justify-between gap-2">
-          <div className="text-[12px] font-semibold text-muted">{label}</div>
-          <ChevronRight />
-        </div>
-        <div className="mt-1.5">{children}</div>
-        {cta ? (
-          <div className="mt-auto pt-3 text-[12px] font-medium text-accent">
-            {cta}
-          </div>
-        ) : null}
-      </Link>
-    );
-  }
-
   return (
-    <section className={base + " transition-colors"}>
-      <div className="text-[12px] font-semibold text-muted">{label}</div>
-      <div className="mt-1.5">{children}</div>
-    </section>
+    <span
+      className="flex shrink-0 items-center justify-center rounded-full"
+      style={{ width: 26, height: 26, background: color }}
+      aria-hidden
+    >
+      {children}
+    </span>
   );
 }
 
-/** 링크 카드 우상단 아이콘 — accent 색 chevron-right. */
-function ChevronRight() {
+/** Tabler 아이콘 공용 wrapper — 15×15, 흰색 스트로크. */
+function TablerIcon({ children }: { children: React.ReactNode }) {
   return (
     <svg
-      viewBox="0 0 16 16"
-      width={14}
-      height={14}
+      width={15}
+      height={15}
+      viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
+      stroke="#FFFFFF"
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="shrink-0 text-accent"
       aria-hidden
     >
-      <path d="M6 3l5 5-5 5" />
+      {children}
     </svg>
   );
 }
 
-/** 1. 전고점 회복까지 — "+X%" + 진행바 + "${ath}까지" 캡션 */
-function RecoveryCard({
-  data,
-}: {
-  data: Extract<HeroData, { ready: true }>;
-}) {
-  const close = data.current.price;
-  const ath = data.ath.price;
-  const atAth = isAtAth(data.ath.drawdownPct);
-
-  // 신고가 상태 — 체크 아이콘 + "회복 완료", 100% up fill, 하단 "신고가 $xxx · N일 연속"
-  if (atAth) {
-    const streak = athStreakDays(data.recentCloses, ath);
-    return (
-      <CardShell label="전고점 회복까지">
-        <div className="flex items-center gap-1.5 text-[22px] font-bold text-up">
-          <CheckIcon />
-          <span>회복 완료</span>
-        </div>
-        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-track">
-          <div
-            className="h-full w-full rounded-full"
-            style={{ backgroundColor: "var(--up)" }}
-          />
-        </div>
-        <div className="mt-2 text-[11px] text-muted">
-          신고가 {formatPrice(ath, data.exchange)}
-          {streak > 1 ? ` · ${streak}일 연속` : ""}
-        </div>
-      </CardShell>
-    );
-  }
-
-  // 기본 — "+X%" + 진행바 + "$xxx까지"
-  const gap = (ath / close - 1) * 100;
-  const progress = Math.max(0, Math.min(1, close / ath));
+function IconFlag3() {
   return (
-    <CardShell label="전고점 회복까지">
-      <div className="text-[22px] font-bold text-fg">
-        {formatSignedPct(gap, 1)}
-      </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-track">
-        <div
-          className="h-full rounded-full bg-fg"
-          style={{ width: `${(progress * 100).toFixed(2)}%` }}
-        />
-      </div>
-      <div className="mt-2 text-[11px] text-muted">
-        {formatPrice(ath, data.exchange)}까지
-      </div>
-    </CardShell>
+    <TablerIcon>
+      <path d="M5 14h14l-4 -5l4 -5h-14z" />
+      <path d="M5 5v16" />
+    </TablerIcon>
   );
 }
 
-/** 체크 아이콘 — "회복 완료" 상태 표시용. */
-function CheckIcon() {
+function IconMoodNervous() {
+  return (
+    <TablerIcon>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 10l0 .01" />
+      <path d="M16 10l0 .01" />
+      <path d="M8 15l1 -1l1 1l1 -1l1 1l1 -1l1 1l1 -1" />
+    </TablerIcon>
+  );
+}
+
+function IconTrendingDown() {
+  return (
+    <TablerIcon>
+      <path d="M3 7l6 6l4 -4l8 8" />
+      <path d="M14 17l7 0l0 -7" />
+    </TablerIcon>
+  );
+}
+
+function IconCalendarStats() {
+  return (
+    <TablerIcon>
+      <path d="M11.795 21H5a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+      <path d="M18 14v4h4" />
+      <circle cx="18" cy="18" r="4" />
+      <path d="M15 3v4" />
+      <path d="M7 3v4" />
+      <path d="M3 11h16" />
+    </TablerIcon>
+  );
+}
+
+function IconCheck() {
   return (
     <svg
       viewBox="0 0 16 16"
-      width={20}
-      height={20}
+      width={18}
+      height={18}
       fill="none"
       stroke="currentColor"
       strokeWidth={2.5}
@@ -672,118 +638,270 @@ function CheckIcon() {
   );
 }
 
-/** 2. 공포탐욕지수 — 반원 게이지 */
-function FearGreedCard({ snapshot }: { snapshot: FearGreedSnapshot | null }) {
-  if (!snapshot) {
-    return (
-      <CardShell label="공포탐욕지수">
-        <div className="text-[22px] font-bold text-muted">—</div>
-        <div className="mt-2 text-[11px] text-muted">데이터 없음</div>
-      </CardShell>
-    );
-  }
-  const score = Math.round(snapshot.score);
+function IconChevronRight({ color }: { color: string }) {
   return (
-    <CardShell label="공포탐욕지수">
-      <SemicircleGauge value={score} />
-    </CardShell>
+    <svg
+      viewBox="0 0 16 16"
+      width={16}
+      height={16}
+      fill="none"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0"
+      aria-hidden
+    >
+      <path d="M6 3l5 5-5 5" />
+    </svg>
   );
 }
 
-/**
- * 반원 게이지 — pathLength 100 방식.
- *   - 트랙과 값 path가 같은 arc. 값은 stroke-dasharray "{value} 100"로 비율 표현.
- *   - value < 1이면 값 path 생략 (linecap 점만 남는 걸 방지).
- *   - 구간색: 0-25 down, 25-45 #F59E0B, 45-55 #A1A1AA, 55-75 #84CC16, 75-100 up.
- *   - max-width 160px, 아래 "공포 / 탐욕" 라벨 양끝.
- */
-function SemicircleGauge({ value }: { value: number }) {
-  const clamped = Math.max(0, Math.min(100, value));
-  const bands: { from: number; to: number; color: string }[] = [
-    { from: 0, to: 25, color: "var(--down)" },
-    { from: 25, to: 45, color: "#F59E0B" },
-    { from: 45, to: 55, color: "#A1A1AA" },
-    { from: 55, to: 75, color: "#84CC16" },
-    { from: 75, to: 100, color: "var(--up)" },
-  ];
-  const activeBand =
-    bands.find((b) => clamped >= b.from && clamped <= b.to) ?? bands[2];
-  const arcD = "M10 60 A50 50 0 0 1 110 60";
-  return (
-    <div className="mx-auto w-full" style={{ maxWidth: 160 }}>
-      <svg
-        viewBox="0 0 120 70"
-        width="100%"
-        style={{ display: "block", margin: "8px auto 0" }}
-        aria-label={`공포탐욕지수 ${clamped}`}
-      >
-        {/* 트랙 */}
-        <path
-          d={arcD}
-          pathLength={100}
-          fill="none"
-          stroke="var(--track)"
-          strokeWidth={10}
-          strokeLinecap="round"
-        />
-        {/* 값 호 — value<1이면 생략 (linecap만 남는 걸 방지) */}
-        {clamped >= 1 ? (
-          <path
-            d={arcD}
-            pathLength={100}
-            fill="none"
-            stroke={activeBand.color}
-            strokeWidth={10}
-            strokeLinecap="round"
-            strokeDasharray={`${clamped} 100`}
-          />
-        ) : null}
-        <text
-          x={60}
-          y={56}
-          textAnchor="middle"
-          fontSize={22}
-          fontWeight={700}
-          fill="var(--fg)"
+/* ============================================================================
+ * 1. 전고점 회복까지 — 블루 파스텔
+ * ============================================================================ */
+
+function RecoveryCard({
+  data,
+}: {
+  data: Extract<HeroData, { ready: true }>;
+}) {
+  const close = data.current.price;
+  const ath = data.ath.price;
+  const atAth = isAtAth(data.ath.drawdownPct);
+
+  const shell = {
+    background: "var(--bento-blue)",
+  } as React.CSSProperties;
+
+  if (atAth) {
+    const streak = athStreakDays(data.recentCloses, ath);
+    return (
+      <section className="flex h-full flex-col rounded-card p-4" style={shell}>
+        <header className="flex items-center gap-2">
+          <IconCircle color="var(--bento-blue-icon)">
+            <IconFlag3 />
+          </IconCircle>
+          <span
+            className="text-[13px]"
+            style={{ color: "var(--bento-blue-label)" }}
+          >
+            전고점 회복까지
+          </span>
+        </header>
+        <div
+          className="mt-3 flex items-center gap-1 text-[24px] font-medium"
+          style={{ color: "var(--up)" }}
         >
-          {clamped}
-        </text>
-      </svg>
-      <div className="mt-1 flex justify-between text-[10px] font-semibold text-muted">
+          <IconCheck />
+          <span>회복 완료</span>
+        </div>
+        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full">
+          <div
+            className="h-full w-full rounded-full"
+            style={{ background: "var(--up)" }}
+          />
+        </div>
+        <div
+          className="mt-2 text-[12px]"
+          style={{ color: "var(--bento-blue-label)" }}
+        >
+          신고가 {formatPrice(ath, data.exchange)}
+          {streak > 1 ? ` · ${streak}일 연속` : ""}
+        </div>
+      </section>
+    );
+  }
+
+  const gap = (ath / close - 1) * 100;
+  const progress = Math.max(0, Math.min(1, close / ath));
+  return (
+    <section className="flex h-full flex-col rounded-card p-4" style={shell}>
+      <header className="flex items-center gap-2">
+        <IconCircle color="var(--bento-blue-icon)">
+          <IconFlag3 />
+        </IconCircle>
+        <span
+          className="text-[13px]"
+          style={{ color: "var(--bento-blue-label)" }}
+        >
+          전고점 회복까지
+        </span>
+      </header>
+      <div className="mt-3 text-[24px] font-medium text-fg">
+        {formatSignedPct(gap, 1)}
+      </div>
+      <div
+        className="mt-3 h-1.5 w-full overflow-hidden rounded-full"
+        style={{ background: "var(--bento-blue-track)" }}
+      >
+        <div
+          className="h-full rounded-full"
+          style={{
+            background: "var(--bento-blue-icon)",
+            width: `${(progress * 100).toFixed(2)}%`,
+          }}
+        />
+      </div>
+      <div
+        className="mt-2 text-[12px]"
+        style={{ color: "var(--bento-blue-label)" }}
+      >
+        현재 {formatPrice(close, data.exchange)} / 전고점{" "}
+        {formatPrice(ath, data.exchange)}
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================================
+ * 2. 공포탐욕지수 — 앰버 파스텔 + 수평 gradient bar + 마커
+ * ============================================================================ */
+
+const fgBandName = (score: number): string => {
+  if (score <= 24) return "극단적 공포";
+  if (score <= 44) return "공포";
+  if (score <= 55) return "중립";
+  if (score <= 75) return "탐욕";
+  return "극단적 탐욕";
+};
+
+function FearGreedCard({ snapshot }: { snapshot: FearGreedSnapshot | null }) {
+  const shell = {
+    background: "var(--bento-amber)",
+  } as React.CSSProperties;
+  const header = (
+    <header className="flex items-center gap-2">
+      <IconCircle color="var(--bento-amber-icon)">
+        <IconMoodNervous />
+      </IconCircle>
+      <span
+        className="text-[13px]"
+        style={{ color: "var(--bento-amber-label)" }}
+      >
+        공포탐욕지수
+      </span>
+    </header>
+  );
+  if (!snapshot) {
+    return (
+      <section className="flex h-full flex-col rounded-card p-4" style={shell}>
+        {header}
+        <div className="mt-3 text-[24px] font-medium text-muted">—</div>
+        <div
+          className="mt-2 text-[12px]"
+          style={{ color: "var(--bento-amber-label)" }}
+        >
+          데이터 없음
+        </div>
+      </section>
+    );
+  }
+  const score = Math.max(0, Math.min(100, Math.round(snapshot.score)));
+  return (
+    <section className="flex h-full flex-col rounded-card p-4" style={shell}>
+      {header}
+      <div className="mt-3 flex items-baseline gap-2">
+        <span className="text-[24px] font-medium text-fg">{score}</span>
+        <span
+          className="text-[14px]"
+          style={{ color: "var(--bento-amber-sub)" }}
+        >
+          {fgBandName(score)}
+        </span>
+      </div>
+      <div
+        className="relative mt-3 h-1.5 w-full rounded-full"
+        style={{
+          background:
+            "linear-gradient(90deg, #F04452, #F59E0B 50%, #1E9E6A)",
+        }}
+      >
+        <div
+          className="absolute top-1/2 rounded-full"
+          style={{
+            left: `${score}%`,
+            width: 14,
+            height: 14,
+            transform: "translate(-50%, -50%)",
+            background: "#FFFFFF",
+            border: "3px solid #191F28",
+          }}
+          aria-hidden
+        />
+      </div>
+      <div
+        className="mt-2 flex justify-between text-[11px]"
+        style={{ color: "var(--bento-amber-label)" }}
+      >
         <span>공포</span>
         <span>탐욕</span>
       </div>
-    </div>
+    </section>
   );
 }
 
-/** 3. 역대 폭락 평균 — 평균 바닥값 + 최대 캡션 */
-function CrashAvgCard({
+/* ============================================================================
+ * 3. 역대 최대 낙폭 — 그레이 파스텔
+ * ============================================================================ */
+
+function MaxDrawdownCard({
   summary,
 }: {
   summary: Extract<HeroData, { ready: true }>["crashSummary"];
 }) {
+  const shell = {
+    background: "var(--bento-gray)",
+  } as React.CSSProperties;
+  const header = (
+    <header className="flex items-center gap-2">
+      <IconCircle color="var(--bento-gray-icon)">
+        <IconTrendingDown />
+      </IconCircle>
+      <span
+        className="text-[13px]"
+        style={{ color: "var(--bento-gray-label)" }}
+      >
+        역대 최대 낙폭
+      </span>
+    </header>
+  );
   if (!summary || summary.count === 0) {
     return (
-      <CardShell label="역대 폭락 평균">
-        <div className="text-[22px] font-bold text-muted">—</div>
-        <div className="mt-2 text-[11px] text-muted">30%↑ 낙폭 없음</div>
-      </CardShell>
+      <section className="flex h-full flex-col rounded-card p-4" style={shell}>
+        {header}
+        <div className="mt-3 text-[24px] font-medium text-muted">—</div>
+        <div
+          className="mt-2 text-[12px]"
+          style={{ color: "var(--bento-gray-label)" }}
+        >
+          30%↑ 낙폭 없음
+        </div>
+      </section>
     );
   }
   return (
-    <CardShell label="역대 폭락 평균">
-      <div className="text-[22px] font-bold text-fg">
-        {formatPct(summary.avgDrawdownPct, 1)}
+    <section className="flex h-full flex-col rounded-card p-4" style={shell}>
+      {header}
+      <div className="mt-3 text-[24px] font-medium text-fg">
+        {formatPct(summary.maxDrawdownPct, 1)}
       </div>
-      <div className="mt-2 text-[11px] text-muted">
-        최대 {formatPct(summary.maxDrawdownPct, 1)} · {summary.maxYear}년
+      <div
+        className="mt-auto pt-2 text-[12px]"
+        style={{ color: "var(--bento-gray-label)" }}
+      >
+        {summary.maxRecoveryMonths !== null
+          ? `회복까지 ${summary.maxRecoveryMonths}개월`
+          : "미회복"}
       </div>
-    </CardShell>
+    </section>
   );
 }
 
-/** 4. 월별 계절성 — 카드 전체 클릭 → /seasonality/{ticker}?m={N} */
+/* ============================================================================
+ * 4. N월에 오른 해 — 바이올렛 링크 카드 (chevron + "월별 보기")
+ * ============================================================================ */
+
 function SeasonalityCard({
   teaser,
   ticker,
@@ -791,27 +909,89 @@ function SeasonalityCard({
   teaser: SeasonalityTeaser | null;
   ticker: string;
 }) {
+  const shell = {
+    background: "var(--bento-violet)",
+  } as React.CSSProperties;
+
   if (!teaser || teaser.count === 0) {
     return (
-      <CardShell label="이번 달 계절성">
-        <div className="text-[22px] font-bold text-muted">—</div>
-        <div className="mt-2 text-[11px] text-muted">샘플 부족</div>
-      </CardShell>
+      <section className="flex h-full flex-col rounded-card p-4" style={shell}>
+        <header className="flex items-center gap-2">
+          <IconCircle color="var(--bento-violet-icon)">
+            <IconCalendarStats />
+          </IconCircle>
+          <span
+            className="text-[13px]"
+            style={{ color: "var(--bento-violet-label)" }}
+          >
+            이번 달 계절성
+          </span>
+        </header>
+        <div className="mt-3 text-[24px] font-medium text-muted">—</div>
+        <div
+          className="mt-2 text-[12px]"
+          style={{ color: "var(--bento-violet-sub)" }}
+        >
+          샘플 부족
+        </div>
+      </section>
     );
   }
   const href = `/seasonality/${ticker}?m=${teaser.month}`;
   const label = `${teaser.month}월에 오른 해`;
   const meanLabel = formatSignedPct(teaser.mean * 100, 1);
   return (
-    <CardShell label={label} href={href} cta="월별 보기">
-      <div className="text-[22px] font-bold text-fg">
-        {teaser.wins}
-        <span className="ml-1 text-[13px] font-semibold text-muted">
+    <Link
+      href={href}
+      className="group flex h-full flex-col rounded-card p-4 transition-all active:scale-[0.98]"
+      style={shell}
+      // hover 색은 inline style로는 가변이라 className+group hover는 못 씀 → onMouseEnter
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.background =
+          "var(--bento-violet-hover)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.background =
+          "var(--bento-violet)";
+      }}
+    >
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <IconCircle color="var(--bento-violet-icon)">
+            <IconCalendarStats />
+          </IconCircle>
+          <span
+            className="text-[13px]"
+            style={{ color: "var(--bento-violet-label)" }}
+          >
+            {label}
+          </span>
+        </div>
+        <IconChevronRight color="var(--bento-violet-icon)" />
+      </header>
+      <div className="mt-3 flex items-baseline">
+        <span className="text-[24px] font-medium text-fg">{teaser.wins}</span>
+        <span
+          className="ml-1 text-[14px]"
+          style={{ color: "var(--bento-violet-sub)" }}
+        >
+          {" "}
           / {teaser.count}년
         </span>
       </div>
-      <div className="mt-2 text-[11px] text-muted">평균 {meanLabel}</div>
-    </CardShell>
+      <div
+        className="mt-2 text-[12px]"
+        style={{ color: "var(--bento-violet-sub)" }}
+      >
+        평균 {meanLabel}
+      </div>
+      <div
+        className="mt-auto pt-2 text-[12px] font-medium"
+        style={{ color: "var(--bento-violet-icon)" }}
+      >
+        월별 보기
+      </div>
+    </Link>
   );
 }
 
@@ -833,8 +1013,8 @@ function BreakdownCard({
     [data.breakdown],
   );
   return (
-    <section className="rounded-card bg-card p-4">
-      <div className="text-[12px] font-semibold text-muted">기간별 수익률</div>
+    <section className="rounded-card border border-line bg-card p-4">
+      <div className="text-[13px] font-semibold text-muted">기간별 수익률</div>
       <div className="mt-3 grid grid-cols-3 gap-3">
         {items.map((item) => (
           <BreakdownCell

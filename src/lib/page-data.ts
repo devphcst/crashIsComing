@@ -94,6 +94,7 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
       avgDrawdownPct: number;
       maxDrawdownPct: number;
       maxYear: number;
+      maxRecoveryMonths: number | null;
       count: number;
     } | null = null;
     if (crashes.length > 0) {
@@ -105,6 +106,7 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
         avgDrawdownPct: sum / crashes.length,
         maxDrawdownPct: worst.drawdownPct,
         maxYear: Number(worst.troughDate.slice(0, 4)),
+        maxRecoveryMonths: worst.recoveryMonths,
         count: crashes.length,
       };
     }

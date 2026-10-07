@@ -2,9 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * Pretendard — 한글/영문 공용 sans. 시스템 설치 폰트 우선, 없으면 CDN webfont 폴백.
- */
+/* Pretendard — 한글/영문 공용 sans. */
 @font-face {
   font-family: "Pretendard";
   font-weight: 100 900;
@@ -14,35 +12,68 @@
 }
 
 /*
- * === 디자인 토큰 (쿨 화이트 + 블루 포인트) ===
- * prefers-color-scheme에 반응하는 CSS 변수. Tailwind class(bg-bg, text-fg, text-muted,
- * border-line, text-accent, text-up, text-down …)는 전부 이 변수를 참조한다.
+ * === 디자인 토큰 (쿨 화이트 + 블루 포인트 + 벤토 파스텔) ===
+ * prefers-color-scheme에 반응하는 CSS 변수.
+ * 라이트: 흰 페이지 배경 + 흰 메인카드(테두리) + 하단 2열은 파스텔 배경(테두리 없음).
  */
 :root {
   color-scheme: light;
 
-  --bg: #F2F4F8;             /* 페이지 배경 */
-  --card: #FFFFFF;           /* 카드 배경 */
-  --fg: #191F28;             /* 본문 */
-  --muted: #6B7684;          /* 라벨/보조 */
-  --subtle: #8B95A1;         /* 흐린 */
-  --line: #E6E6E9;           /* 미묘 보더 (내부 분리선) */
-  --line-link: #D6E6FD;      /* 클릭 가능 카드 보더 */
-  --track: #F0F0F2;          /* 프로그레스/게이지 트랙 */
-  --accent: #3182F6;         /* 블루 포인트 */
-  --accent-bg: #F7FAFF;      /* 링크 카드 hover 배경 */
-  --up: #1E9E6A;             /* 상승·신고가 */
+  --bg: #FFFFFF;                 /* 페이지 배경 */
+  --card: #FFFFFF;               /* 메인 카드 배경 */
+  --fg: #191F28;                 /* 본문 */
+  --muted: #6B7684;              /* 라벨/보조 */
+  --subtle: #8B95A1;             /* 흐린 */
+  --line: #E9ECF1;               /* 메인 카드 테두리 */
+  --line-link: #D6E6FD;          /* 외부 링크 카드 테두리 (현재 미사용) */
+  --track: #F0F0F2;              /* 중립 트랙 (히어로 외) */
+  --ath-dash: #B0B8C1;           /* 전고점 점선 */
+  --accent: #3182F6;             /* 블루 포인트 */
+  --accent-bg: #F7FAFF;
+  --up: #1E9E6A;                 /* 상승·신고가 */
   --up-chip-bg: #E6F6EF;
-  --down: #F04452;           /* 하락·드로다운 */
+  --down: #F04452;               /* 하락·드로다운 */
   --down-chip-bg: #FDECEE;
-  --surface-hover: #FAFAFA;  /* 비링크 카드 hover */
-  --radius-card: 18px;
+  --surface-hover: #FAFAFA;
+  --radius-card: 22px;
   --radius-tile: 6px;
+
+  /* 종목 탭 */
+  --tab-active-bg: #191F28;
+  --tab-active-fg: #FFFFFF;
+  --tab-idle-bg: #F2F4F8;
+  --tab-idle-fg: #6B7684;
+
+  /* 벤토 — 전고점 회복 (블루) */
+  --bento-blue: #EAF2FE;
+  --bento-blue-hover: #DCE8FC;
+  --bento-blue-track: #D3E3FB;
+  --bento-blue-icon: #3182F6;
+  --bento-blue-label: #4E6A8F;
+
+  /* 벤토 — 공포탐욕 (앰버) */
+  --bento-amber: #FFF4E2;
+  --bento-amber-icon: #F59E0B;
+  --bento-amber-label: #8A6A3A;
+  --bento-amber-sub: #B07A1E;
+
+  /* 벤토 — 역대 최대 낙폭 (그레이) */
+  --bento-gray: #F2F4F8;
+  --bento-gray-icon: #8B95A1;
+  --bento-gray-label: #6B7684;
+
+  /* 벤토 — 월별 계절성 (바이올렛, 링크) */
+  --bento-violet: #EEECFD;
+  --bento-violet-hover: #E7E4FB;
+  --bento-violet-icon: #6D5BD0;
+  --bento-violet-label: #5B5290;
+  --bento-violet-sub: #8C86B8;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
+
     --bg: #0E0F13;
     --card: #1A1C22;
     --fg: #F2F3F5;
@@ -51,6 +82,7 @@
     --line: #2A2E36;
     --line-link: #2E4A7A;
     --track: #272B33;
+    --ath-dash: #4A525E;
     --accent: #4C9AFF;
     --accent-bg: rgba(76, 154, 255, 0.10);
     --up: #34D399;
@@ -58,6 +90,37 @@
     --down: #FF5A5F;
     --down-chip-bg: rgba(255, 90, 95, 0.14);
     --surface-hover: #22252B;
+
+    /* 종목 탭 — 활성은 흰 글자, 비활성은 어두운 surface */
+    --tab-active-bg: #F2F3F5;
+    --tab-active-fg: #0E0F13;
+    --tab-idle-bg: #22252B;
+    --tab-idle-fg: #A1A7B3;
+
+    /* 벤토 — 블루 저채도 */
+    --bento-blue: #152538;
+    --bento-blue-hover: #1C2E45;
+    --bento-blue-track: #223A5A;
+    --bento-blue-icon: #4C9AFF;
+    --bento-blue-label: #A5C4F3;
+
+    /* 벤토 — 앰버 저채도 */
+    --bento-amber: #332411;
+    --bento-amber-icon: #FBBF24;
+    --bento-amber-label: #E2C280;
+    --bento-amber-sub: #D1A33C;
+
+    /* 벤토 — 그레이 저채도 */
+    --bento-gray: #22252B;
+    --bento-gray-icon: #8B95A1;
+    --bento-gray-label: #A1A7B3;
+
+    /* 벤토 — 바이올렛 저채도 */
+    --bento-violet: #221F3A;
+    --bento-violet-hover: #2C2847;
+    --bento-violet-icon: #9B88FF;
+    --bento-violet-label: #C9C2F0;
+    --bento-violet-sub: #9892C4;
   }
 }
 

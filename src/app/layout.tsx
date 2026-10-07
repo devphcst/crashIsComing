@@ -52,7 +52,7 @@ export const metadata: Metadata = {
 // viewport-fit=cover: iOS 노치/홈 인디케이터 영역까지 배경 확장 → safe-area-inset로 컨텐츠 보호.
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F2F4F8" },
+    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
     { media: "(prefers-color-scheme: dark)", color: "#0E0F13" },
   ],
   viewportFit: "cover",

@@ -1114,34 +1114,102 @@ function BreakdownCell({
  * 광고 카드 — 같은 카드 스타일, "AD" 라벨
  * ============================================================================ */
 
+/**
+ * 광고 배너 — 큰 폭 카드. 좌 텍스트 + 우 96px 회전 이미지.
+ *   - bg --ad-bg, radius 22, p 18, min-h 120, overflow-hidden
+ *   - 카드 전체 링크 (스마트스토어 URL, target=_blank, rel="noopener sponsored")
+ *   - hover 시 이미지 rotate(-4deg) + translateY(-2px), active 시 카드 scale(0.98)
+ *   - 이미지 로드 실패 시 그라데이션 박스만 노출.
+ */
 function AdCard({ lang }: { lang: Lang }) {
-  const copy = SIDEBAR_AD.desktop[lang];
   const href = SIDEBAR_AD.storeUrl;
-  const cta = lang === "en" ? "Visit store" : "구경가기";
+  const copy =
+    lang === "en"
+      ? {
+          mainA: "Markets crash,",
+          mainB: "your skin shouldn't",
+          sub: "Moisture Plus, made by a pharmacist",
+        }
+      : {
+          mainA: "폭락장에도",
+          mainB: "피부는 촉촉하게",
+          sub: "약사가 만든 모이스처 플러스",
+        };
+  const [imgOk, setImgOk] = useState(true);
+  const [hover, setHover] = useState(false);
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer sponsored"
       id="ad"
-      className="flex flex-col rounded-card border border-line-link bg-card p-4 transition-all hover:bg-accent-bg active:scale-[0.98]"
+      className="flex items-center gap-4 overflow-hidden rounded-card transition-transform active:scale-[0.98]"
+      style={{
+        background: "var(--ad-bg)",
+        padding: 18,
+        minHeight: 120,
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      aria-label={`${copy.mainA} ${copy.mainB} — ${copy.sub}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-[12px] font-semibold text-muted">
-          {copy.label}
-        </span>
+      {/* 좌 — 텍스트 */}
+      <div className="flex min-w-0 flex-1 flex-col">
         <span
-          className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-subtle"
-          style={{ letterSpacing: "0.05em" }}
+          className="inline-block self-start"
+          style={{
+            padding: "2px 6px",
+            fontSize: 10,
+            fontWeight: 500,
+            background: "var(--ad-badge-bg)",
+            color: "var(--ad-badge-fg)",
+            borderRadius: 4,
+          }}
         >
           AD
         </span>
+        <div
+          className="mt-2 text-[17px] font-medium"
+          style={{ color: "var(--ad-text)", lineHeight: 1.35 }}
+        >
+          {copy.mainA}
+          <br />
+          {copy.mainB}
+        </div>
+        <div
+          className="mt-1.5 text-[12px]"
+          style={{ color: "var(--ad-sub)" }}
+        >
+          {copy.sub}
+        </div>
       </div>
-      <div className="mt-1.5 text-[15px] font-bold text-fg">
-        {copy.productName}
+
+      {/* 우 — 96px 회전 이미지 박스. hover 시 rotate(-4) + translateY(-2). */}
+      <div
+        className="flex shrink-0 items-center justify-center overflow-hidden transition-transform duration-200 ease-out"
+        style={{
+          width: 96,
+          height: 96,
+          borderRadius: 24,
+          background: "linear-gradient(140deg, #FFFFFF, #CFE0FB)",
+          boxShadow: "0 8px 20px rgba(49, 130, 246, 0.18)",
+          transform: hover
+            ? "rotate(-4deg) translateY(-2px)"
+            : "rotate(-8deg)",
+        }}
+      >
+        {imgOk ? (
+          // Next/Image 대신 <img> — 파일 미존재 시 onError로 숨겨 그라데이션만 노출.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/ad/moisture-plus.png"
+            alt=""
+            aria-hidden
+            onError={() => setImgOk(false)}
+            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          />
+        ) : null}
       </div>
-      <div className="mt-1 text-[12px] text-muted">{copy.tagline}</div>
-      <div className="mt-3 text-[12px] font-medium text-accent">{cta} →</div>
     </a>
   );
 }

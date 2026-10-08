@@ -68,6 +68,13 @@
   --bento-violet-icon: #6D5BD0;
   --bento-violet-label: #5B5290;
   --bento-violet-sub: #8C86B8;
+
+  /* 광고 배너 */
+  --ad-bg: #E8F0FE;
+  --ad-text: #191F28;
+  --ad-sub: #6B7684;
+  --ad-badge-bg: #FFFFFF;
+  --ad-badge-fg: #3182F6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -121,6 +128,13 @@
     --bento-violet-icon: #9B88FF;
     --bento-violet-label: #C9C2F0;
     --bento-violet-sub: #9892C4;
+
+    /* 광고 배너 — 저채도 다크 */
+    --ad-bg: #1A2436;
+    --ad-text: #F2F3F5;
+    --ad-sub: #8C93A1;
+    --ad-badge-bg: #243453;
+    --ad-badge-fg: #4C9AFF;
   }
 }
 

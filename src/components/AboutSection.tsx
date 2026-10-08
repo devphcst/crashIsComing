@@ -1,46 +1,22 @@
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
-import { CRASH_EVENTS } from "@/constants/crashEvents";
-import { CrashChart } from "./CrashChart";
 
+/**
+ * 소개 카드 — bg #F2F4F8, radius 18px. 제목 15px/500, 본문 13px muted.
+ * 종목별 문구 없음 (모든 종목 공통).
+ */
 export function AboutSection({ lang }: { lang: Lang }) {
   const d = getDict(lang);
   return (
-    <section id="about" className="border-t border-line px-6 py-16">
-      <div className="mx-auto max-w-3xl space-y-12">
-        <div className="space-y-4">
-          <h2 className="font-sans text-lg font-semibold text-fg">
-            {d.about.title}
-          </h2>
-          <div className="space-y-4 text-sm leading-7 text-muted">
-            {d.about.paragraphs.map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
-          </div>
-        </div>
-
-        <div id="history" className="space-y-4">
-          <h2 className="font-sans text-lg font-semibold text-fg">
-            {d.history.title}
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {CRASH_EVENTS.map((ev) => (
-              <CrashChart
-                key={ev.id}
-                year={ev.year}
-                title={d.history.eventTitles[ev.id]}
-                mdd={ev.mdd}
-                months={ev.months}
-                seed={ev.seed}
-                labels={d.history}
-              />
-            ))}
-          </div>
-          <p className="pt-2 text-xs leading-relaxed text-muted">
-            {d.history.note}
-          </p>
-        </div>
-      </div>
+    <section
+      id="about"
+      className="rounded-[18px] p-5"
+      style={{ background: "var(--bento-gray)" }}
+    >
+      <h2 className="text-[15px] font-medium text-fg">{d.about.title}</h2>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
+        {d.about.body}
+      </p>
     </section>
   );
 }

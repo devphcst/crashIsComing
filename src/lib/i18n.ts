@@ -105,21 +105,26 @@ export type Dict = {
     closeAria: string;
     openAria: string;
   };
+  /** "감정 말고, 숫자로." 소개 카드. */
   about: {
     title: string;
-    paragraphs: string[];
+    body: string;
   };
+  /** 종목별 역대 폭락 표. */
   history: {
-    title: string;
-    eventTitles: Record<string, string>;
-    maxDrawdown: string;
-    recovery: string;
+    /** "{TICKER} 역대 폭락" */
+    title: (ticker: string) => string;
+    subtitle: string;
+    columns: {
+      year: string;
+      cause: string;
+      drawdown: string;
+      recovery: string;
+    };
+    /** 아직 회복되지 않은 폭락 표기. */
+    inProgress: string;
+    /** 회복 개월 포맷터. */
     monthsUnit: (n: number) => string;
-    peak: string;
-    recoveryToPeak: string;
-    recovered: string;
-    note: string;
-    chartAriaLabel: (year: string, mdd: number, months: number) => string;
   };
   /** 요약 페이지 큰 숫자 아래 "유사 시기" 블록 전용 문구. */
   similarPeriods: {
@@ -207,9 +212,27 @@ export type Dict = {
     /** 폭락 카드 데이터 없음 안내. */
     crashesEmpty: string;
   };
+  /** "그럼 폭락에 올인하면 될까?" 섹션 — 번호 3개로 압축. */
   allInWarning: {
     title: string;
-    paragraphs: string[];
+    subtitle: string;
+    items: {
+      /** 1. 상승장 샘플 편향 (레버리지 종목 전용). */
+      bullOnly: {
+        headline: string;
+        body: (ticker: string, launchYear: number) => string;
+      };
+      /** 2. 레버리지 복리 손실 (레버리지 종목 전용). */
+      leveragedDecay: {
+        headline: string;
+        body: string;
+      };
+      /** 3. 하락률은 위치지 바닥이 아님 (모든 종목). */
+      notBottom: {
+        headline: string;
+        body: string;
+      };
+    };
   };
   /** 월별 계절성 페이지(/seasonality/[ticker]) + 티저. */
   seasonality: {
@@ -459,30 +482,20 @@ const ko: Dict = {
     openAria: '메뉴 열기',
   },
   about: {
-    title: '서비스 소개',
-    paragraphs: [
-      'TQQQ는 상품 출시 이후 수많은 폭등과 폭락을 거듭해 왔다. 때로는 투자자들을 공포에 떨게 만드는 최악의 폭락이 있었지만, 시장은 그 뒤로 어김없이 반등했고 결국 그 공포는 최고의 환희를 가져다주었다.',
-      '하락장의 한가운데서 감정에 휘둘리지 않고, 진짜 역발상 투자의 기회를 포착하기 위해서는 객관적인 지표가 필요하다고 생각했다. 그래서 감정이 아니라 숫자를 기준으로 시장을 바라보기 위해, 고점 대비 현재 하락률을 한눈에 확인할 수 있는 이 사이트를 만들었다.',
-    ],
+    title: '감정 말고, 숫자로.',
+    body: '폭락장 한가운데선 누구나 흔들려요. 전고점 대비 하락률 하나로 지금 위치를 확인하세요.',
   },
   history: {
-    title: '역사적 폭락',
-    eventTitles: {
-      '2011': '미국 신용등급 강등·유럽 재정위기',
-      '2015-16': '중국 증시 쇼크·미 금리 인상 우려',
-      '2018': '미·중 무역전쟁·양적긴축',
-      '2020': '코로나19 팬데믹',
-      '2022': '인플레이션·급격한 금리 인상',
+    title: (ticker) => `${ticker} 역대 폭락`,
+    subtitle: '전고점 대비 최대 하락 · 회복까지 걸린 기간',
+    columns: {
+      year: '연도',
+      cause: '원인',
+      drawdown: '하락',
+      recovery: '회복',
     },
-    maxDrawdown: '최대 하락',
-    recovery: '회복',
+    inProgress: '회복 중',
     monthsUnit: (n) => `${n}개월`,
-    peak: '고점',
-    recoveryToPeak: '전고점 회복까지',
-    recovered: '회복',
-    note: '위 곡선은 실제 일별 주가 데이터가 아니라 흐름을 보여주기 위한 형태 예시이며, 최대 하락률과 회복 기간은 근사값이고 곡선의 중간 굴곡은 실제 가격 움직임과 다릅니다.',
-    chartAriaLabel: (year, mdd, months) =>
-      `${year} 폭락: 고점 대비 ${mdd}%까지 하락 후 ${months}개월 만에 회복`,
   },
   similarPeriods: {
     maxDrawdown: (pctLabel) => `역대 최대 낙폭 ${pctLabel}`,
@@ -592,12 +605,23 @@ const ko: Dict = {
     },
   },
   allInWarning: {
-    title: '그래서, 역사적 폭락에 올인(All-in)하는 것이 옳은가?',
-    paragraphs: [
-      'TQQQ는 2010년에 출시됐다. 즉 우리가 보고 있는 모든 데이터는 미국 증시 역사상 가장 길고 강했던 우상향기에 속한다. 위의 역사적 폭락들이 매번 회복된 것도 이 시기 안에서의 이야기다.',
-      '그 이전에 TQQQ가 있었다면 어땠을까. 나스닥 지수는 2000년 닷컴 버블 붕괴 때 고점 대비 약 -78%, 2008년 금융위기 때 약 -54% 하락했다. 3배 레버리지 상품은 이런 길고 깊은 하락장에서 단순히 지수의 3배로 떨어지는 데 그치지 않는다. 매일 손실이 복리로 누적되고, 하락과 반등을 오갈 때마다 가치가 깎여나가, 닷컴 버블처럼 2년 넘게 이어진 하락장이었다면 자산은 회복이 거의 불가능한 수준까지 사라졌을 것이다. -60%나 -80%에서 분할매수에 들어갔더라도 결과는 다르지 않았을 것이다.',
-      "이 페이지가 보여주는 '고점 대비 하락률'은 현재 위치를 알려주는 지표일 뿐, 바닥을 알려주는 지표가 아니다. 역사적 평균인 -60%가 이번 하락장의 바닥임을 보장해주지는 않는다.",
-    ],
+    title: '그럼 폭락에 올인하면 될까?',
+    subtitle: '결론부터: 아니요.',
+    items: {
+      bullOnly: {
+        headline: '데이터가 상승장뿐이에요.',
+        body: (ticker, launchYear) =>
+          `${ticker}는 ${launchYear}년 출시, 역사상 가장 강한 상승기만 겪었어요.`,
+      },
+      leveragedDecay: {
+        headline: '레버리지는 배수보다 더 빠져요.',
+        body: '닷컴처럼 긴 하락장이면 복리 손실로 회복이 거의 불가능해요.',
+      },
+      notBottom: {
+        headline: '하락률은 위치지, 바닥이 아니에요.',
+        body: '과거 수치가 이번 바닥을 보장하지 않아요.',
+      },
+    },
   },
   admin: {
     title: '관리자',
@@ -782,30 +806,21 @@ const en: Dict = {
     openAria: 'Open menu',
   },
   about: {
-    title: 'About this site',
-    paragraphs: [
-      'TQQQ has gone through countless surges and crashes since its launch. There have been brutal downturns that left investors gripped by fear — yet the market rebounded each time, and in the end that fear gave way to euphoria.',
-      'In the middle of a downturn, staying free of emotion and recognizing a genuine contrarian opportunity calls for an objective gauge. This site was built to look at the market through numbers rather than emotion — to see, at a glance, how far the price has fallen from its peak.',
-    ],
+    title: 'Numbers, not emotion.',
+    body:
+      'Everyone wobbles in the middle of a crash. One number — the drop from the all-time high — tells you where you are.',
   },
   history: {
-    title: 'Historical crashes',
-    eventTitles: {
-      '2011': 'U.S. credit downgrade & European debt crisis',
-      '2015-16': 'China stock shock & U.S. rate-hike fears',
-      '2018': 'U.S.–China trade war & quantitative tightening',
-      '2020': 'COVID-19 pandemic',
-      '2022': 'Inflation & aggressive rate hikes',
+    title: (ticker) => `${ticker} crash history`,
+    subtitle: 'Max drawdown from peak · months to recover',
+    columns: {
+      year: 'Year',
+      cause: 'Cause',
+      drawdown: 'Drawdown',
+      recovery: 'Recovery',
     },
-    maxDrawdown: 'Max drawdown',
-    recovery: 'Recovery',
-    monthsUnit: (n) => `${n} month${n === 1 ? '' : 's'}`,
-    peak: 'Peak',
-    recoveryToPeak: 'Back to previous peak',
-    recovered: 'Recovered',
-    note: 'The curves above are illustrative shapes meant to convey the overall movement, not actual daily price data. The maximum drawdowns and recovery periods are approximate, and the intermediate fluctuations differ from real price action.',
-    chartAriaLabel: (year, mdd, months) =>
-      `${year} crash: dropped ${mdd}% from peak, recovered in ${months} months`,
+    inProgress: 'In progress',
+    monthsUnit: (n) => `${n} mo`,
   },
   similarPeriods: {
     maxDrawdown: (pctLabel) => `All-time max drawdown ${pctLabel}`,
@@ -941,12 +956,24 @@ const en: Dict = {
     },
   },
   allInWarning: {
-    title: 'Is it right to go all-in on a historic crash?',
-    paragraphs: [
-      'TQQQ launched in 2010. Every piece of data we are looking at belongs to one of the longest and strongest bull runs in U.S. market history. The fact that the historic crashes above all recovered is a story told entirely within that period.',
-      'What if TQQQ had existed before then? The Nasdaq fell roughly 78% from its peak during the 2000 dot-com collapse, and roughly 54% during the 2008 financial crisis. A 3x leveraged product does not simply fall three times as far in long, deep downturns like these. Losses compound daily, and value is eroded with every swing between decline and rebound — so in a downturn that dragged on for more than two years, like the dot-com crash, the asset would have been wiped out to a point of near-irrecoverability. Entering with staged buys at -60% or even -80% would not have changed that outcome.',
-      "The 'drawdown from peak' shown on this page tells you where the price is now — not where the bottom is. A historic average of -60% is no guarantee that it marks the bottom of the current downturn.",
-    ],
+    title: 'Then should you go all-in on a crash?',
+    subtitle: 'Short answer: No.',
+    items: {
+      bullOnly: {
+        headline: 'The data only covers bull years.',
+        body: (ticker, launchYear) =>
+          `${ticker} launched in ${launchYear}, during the strongest bull run in history.`,
+      },
+      leveragedDecay: {
+        headline: 'Leveraged ETFs fall more than their multiple.',
+        body:
+          'In a long downturn like the dot-com crash, compounding losses make recovery nearly impossible.',
+      },
+      notBottom: {
+        headline: 'Drawdown shows where you are, not where the bottom is.',
+        body: "Past numbers don't guarantee this crash's bottom.",
+      },
+    },
   },
   admin: {
     title: 'Admin',

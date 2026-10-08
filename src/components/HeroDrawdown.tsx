@@ -8,14 +8,14 @@ import { formatPct, formatPrice, formatSignedPct } from "@/lib/format";
 import type { PeriodPoint } from "@/lib/peaks";
 import type { MarketStatus } from "@/lib/market-status";
 import type { LevelThresholds } from "@/constants/thresholds";
-import { Disclaimer } from "./Disclaimer";
 import { AboutSection } from "./AboutSection";
 import { AllInWarningSection } from "./AllInWarningSection";
+import { HistoryTable } from "./HistoryTable";
 import { MobileMenu } from "./MobileMenu";
 import { ProductAdMobile } from "./ProductAd";
 import { SIDEBAR_AD } from "@/constants/ads";
 import type { Exchange, SymbolMeta } from "@/lib/symbols";
-import { DEFAULT_SYMBOL } from "@/lib/symbols";
+import { DEFAULT_SYMBOL, getLeverage } from "@/lib/symbols";
 import type { FearGreedSnapshot } from "@/lib/ingest/cnn-fear-greed";
 
 /**
@@ -53,13 +53,14 @@ export type HeroData =
         recoveredHere: number;
         fellFurther: number;
       } | null;
+      /**
+       * 역대 최대 낙폭 (HISTORICAL_CRASHES 종목별 큐레이션). 데이터 없으면 null.
+       * 메인 벤토 카드와 하단 히스토리 표가 같은 소스를 공유한다.
+       */
       crashSummary: {
-        avgDrawdownPct: number;
         maxDrawdownPct: number;
         maxYear: number;
-        /** 최대 낙폭 crash의 회복 개월 (null = 미회복). */
         maxRecoveryMonths: number | null;
-        count: number;
       } | null;
     }
   | { ready: false };
@@ -144,26 +145,42 @@ export function HeroDrawdown({
   // 현재 종목 메타 — HeroCard 라벨에서 displayName 사용.
   const currentMeta = tabs.find((m) => m.ticker === current);
   const currentDisplayName = currentMeta?.displayName ?? current.toUpperCase();
+  const currentLeverage = currentMeta ? getLeverage(currentMeta) : 1;
+
+  // 공유 토스트 상태 — HeaderShareButton이 복사 성공 시 활성화.
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 2000);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
   return (
     <main className="flex min-h-screen flex-col bg-bg">
-      {/* 전역 wrapper — 헤더/탭/카드/푸터 전부 같은 max-w, mx-auto, px-inline 안에서 정렬. */}
+      {/* 전역 wrapper — 헤더/탭/섹션/푸터 전부 같은 max-w, mx-auto, px-inline. */}
       <div className="mx-auto w-full max-w-[480px] px-4">
-        {/* 헤더 — 좌 브랜드, 우 햄버거 (언어는 메뉴 안으로 이동) */}
+        {/* 헤더 — 좌 브랜드, 우 공유 아이콘 + 햄버거 */}
         <header className="flex items-center justify-between pb-3 pt-5">
           <span className="text-[15px] font-bold tracking-tight text-fg">
             {d.brand}
           </span>
-          <MobileMenu lang={lang} onChangeLang={handleLang} dict={d} />
+          <div className="flex items-center gap-2">
+            <HeaderShareButton
+              ticker={current}
+              onCopied={() => setToast(d.share.copied)}
+            />
+            <MobileMenu lang={lang} onChangeLang={handleLang} dict={d} />
+          </div>
         </header>
 
-        {/* 티커 필 — 가로 스크롤, 2개 이상일 때만. wrapper와 같은 inline-edge 공유. */}
+        {/* 티커 필 */}
         {tabs.length > 1 ? (
           <TickerPills tabs={tabs} current={current} />
         ) : null}
 
         {data.ready ? (
-          <div className="flex flex-col gap-2 pb-10 pt-3">
+          <div className="flex flex-col gap-7 pb-10 pt-3">
+            {/* 섹션 간격 28px (gap-7) */}
             <HeroCard
               data={data}
               ticker={current}
@@ -178,28 +195,61 @@ export function HeroDrawdown({
             <BreakdownCard data={data} />
             <AdCard lang={lang} />
             <AboutSection lang={lang} />
-            <AllInWarningSection lang={lang} />
+            <HistoryTable lang={lang} ticker={current} />
+            <AllInWarningSection
+              lang={lang}
+              ticker={current}
+              leverage={currentLeverage}
+            />
           </div>
         ) : (
           <NotReady dict={d} />
         )}
       </div>
 
-      <footer className="mt-auto border-t border-line">
-        <div className="mx-auto flex w-full max-w-[480px] flex-col items-center gap-2 px-4 pb-8 pt-6">
-          <Disclaimer text={d.disclaimer} />
-          {visitor.show ? (
-            <VisitorLine
-              today={visitorState.today}
-              total={visitorState.total}
-              dict={d}
-            />
-          ) : null}
-          <ShareButton dict={d} />
+      {/* 푸터 — 좌측 2줄, 상단 1px --bento-gray 라인 */}
+      <footer
+        className="mt-auto"
+        style={{ borderTop: "1px solid var(--bento-gray)" }}
+      >
+        <div className="mx-auto w-full max-w-[480px] px-4 pb-8 pt-4">
+          <div
+            className="text-[11px] leading-relaxed"
+            style={{ color: "var(--ath-dash)" }}
+          >
+            <div>{d.disclaimer}</div>
+            {visitor.show ? (
+              <VisitorLine
+                today={visitorState.today}
+                total={visitorState.total}
+                dict={d}
+              />
+            ) : null}
+          </div>
         </div>
       </footer>
 
-      {/* 모바일 fixed 알약 광고. 데스크톱은 노출 안 함(그리드 아래 AdCard로 충분). */}
+      {/* 공유 토스트 — 하단 중앙 fade in/out */}
+      {toast ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none fixed inset-x-0 z-50 flex justify-center"
+          style={{ bottom: 32 }}
+        >
+          <div
+            className="rounded-full px-4 py-2 text-[13px] font-medium"
+            style={{
+              background: "var(--fg)",
+              color: "var(--bg)",
+            }}
+          >
+            {toast}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 모바일 fixed 알약 광고. */}
       <ProductAdMobile lang={lang} />
     </main>
   );
@@ -866,7 +916,7 @@ function MaxDrawdownCard({
       </span>
     </header>
   );
-  if (!summary || summary.count === 0) {
+  if (!summary) {
     return (
       <section className="flex h-full flex-col rounded-card p-4" style={shell}>
         {header}
@@ -875,7 +925,7 @@ function MaxDrawdownCard({
           className="mt-2 text-[12px]"
           style={{ color: "var(--bento-gray-label)" }}
         >
-          30%↑ 낙폭 없음
+          데이터 없음
         </div>
       </section>
     );
@@ -1111,56 +1161,78 @@ function VisitorLine({
 }) {
   const parts = dict.visitorInline(today || null, total);
   return (
-    <span className="text-[11px] text-muted">
+    <div>
       {parts.map((p, i) => (
-        <span
-          key={i}
-          className={p.emphasis === "value" ? "font-semibold text-fg" : ""}
-        >
-          {p.text}
-        </span>
+        <span key={i}>{p.text}</span>
       ))}
-    </span>
+    </div>
   );
 }
 
-function ShareButton({ dict }: { dict: ReturnType<typeof getDict> }) {
-  const [copied, setCopied] = useState(false);
-  useEffect(() => {
-    if (!copied) return;
-    const t = window.setTimeout(() => setCopied(false), 2000);
-    return () => window.clearTimeout(t);
-  }, [copied]);
-
+/**
+ * 헤더 공유 버튼 — 34px 원형, bg --bento-gray, ti-share 19px, fg 색.
+ * 공유 URL은 현재 종목 경로(window.location). Web Share API 우선, 미지원/실패 시
+ * 클립보드 복사 + 토스트.
+ */
+function HeaderShareButton({
+  ticker,
+  onCopied,
+}: {
+  ticker: string;
+  onCopied: () => void;
+}) {
   const onClick = async () => {
     const kstYmd = todayKstYmd();
     const url = `${window.location.origin}${window.location.pathname}?d=${kstYmd}`;
+    const title = document.title;
+    // Web Share API 우선
+    const nav = navigator as Navigator & {
+      share?: (data: { title?: string; url: string }) => Promise<void>;
+    };
+    if (typeof nav.share === "function") {
+      try {
+        await nav.share({ title, url });
+        return; // 성공 — 토스트 안 띄움 (OS가 피드백 처리)
+      } catch (err) {
+        // 사용자 취소(AbortError)면 조용히 종료, 그 외 에러면 복사로 폴백
+        if (err instanceof DOMException && err.name === "AbortError") return;
+      }
+    }
     const ok = await copyToClipboard(url);
-    if (ok) setCopied(true);
+    if (ok) onCopied();
   };
 
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-live="polite"
-      className="inline-flex items-center gap-1 rounded-full bg-card px-2.5 py-1 text-[10px] font-semibold text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+      aria-label={`${ticker.toUpperCase()} 공유`}
+      className="flex items-center justify-center rounded-full transition-colors active:scale-95"
+      style={{
+        width: 34,
+        height: 34,
+        background: "var(--bento-gray)",
+        color: "var(--fg)",
+      }}
     >
+      {/* Tabler ti-share — 세 원 + 연결선 */}
       <svg
-        viewBox="0 0 12 12"
-        aria-hidden
-        className="h-2.5 w-2.5"
+        width={19}
+        height={19}
+        viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.4"
+        strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
+        aria-hidden
       >
-        <path d="M6 8V2" />
-        <path d="M3.5 4.5L6 2l2.5 2.5" />
-        <path d="M3 7v2.5a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5V7" />
+        <circle cx="6" cy="12" r="3" />
+        <circle cx="18" cy="6" r="3" />
+        <circle cx="18" cy="18" r="3" />
+        <line x1="8.7" y1="10.7" x2="15.3" y2="7.3" />
+        <line x1="8.7" y1="13.3" x2="15.3" y2="16.7" />
       </svg>
-      <span>{copied ? dict.share.copied : dict.share.button}</span>
     </button>
   );
 }

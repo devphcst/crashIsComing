@@ -131,9 +131,9 @@ export type Dict = {
     /** 하단 요약 — "총 N번 · 평균 회복 M개월". avgMonths=null이면 뒷부분 생략. */
     summary: (count: number, avgMonths: number | null) => string;
     /**
-     * 기간 라벨 — peakDate ~ troughDate (YYYY-MM-DD).
-     * ko: "2000.03 → 2002.10", 같은 해면 뒤 연도 생략 ("2020.02 → 03")
-     * en: "Mar 2000 → Oct 2002" (full)
+     * 기간 라벨 — peakDate ~ troughDate (YYYY-MM-DD). 항상 양쪽 연·월 모두 표기.
+     * ko: "2025.02 → 2025.04"
+     * en: "Feb 2025 → Apr 2025"
      */
     periodLabel: (peakDate: string, troughDate: string) => string;
     /** "더보기 (+N)" 접힌 상태 버튼. */
@@ -523,9 +523,7 @@ const ko: Dict = {
     periodLabel: (peakDate, troughDate) => {
       const [py, pm] = peakDate.split('-');
       const [ty, tm] = troughDate.split('-');
-      return py === ty
-        ? `${py}.${pm} → ${tm}`
-        : `${py}.${pm} → ${ty}.${tm}`;
+      return `${py}.${pm} → ${ty}.${tm}`;
     },
     expandMore: (more) => `더보기 (+${more})`,
     collapse: '접기',

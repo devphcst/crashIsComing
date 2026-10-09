@@ -1,6 +1,5 @@
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
-import { getSymbolHistory } from "@/constants/historicalCrashes";
 
 /**
  * "그럼 폭락에 올인하면 될까?" 섹션.
@@ -15,15 +14,17 @@ export function AllInWarningSection({
   lang,
   ticker,
   leverage,
+  launchYear,
 }: {
   lang: Lang;
   ticker: string;
   leverage: number;
+  /** 상장 연도 — 종가 데이터 첫 날짜 연도. 0이면 1번 항목(launchYear 참조) 생략. */
+  launchYear: number;
 }) {
   const d = getDict(lang);
   const t = d.allInWarning;
   const tickerUpper = ticker.toUpperCase();
-  const launchYear = getSymbolHistory(ticker)?.launchYear ?? 0;
   const isLeveraged = Math.abs(leverage) >= 2;
 
   type Item = { headline: string; body: string };

@@ -9,6 +9,7 @@ import { formatPct, formatPrice, formatSignedPct } from "@/lib/format";
 import type { PeriodPoint } from "@/lib/peaks";
 import type { MarketStatus } from "@/lib/market-status";
 import type { LevelThresholds } from "@/constants/thresholds";
+import type { CrashCandidate } from "@/lib/crashes";
 import { AboutSection } from "./AboutSection";
 import { AllInWarningSection } from "./AllInWarningSection";
 import { HistoryTable } from "./HistoryTable";
@@ -55,14 +56,18 @@ export type HeroData =
         fellFurther: number;
       } | null;
       /**
-       * 역대 최대 낙폭 (HISTORICAL_CRASHES 종목별 큐레이션). 데이터 없으면 null.
-       * 메인 벤토 카드와 하단 히스토리 표가 같은 소스를 공유한다.
+       * 역대 최대 낙폭 — getCrashEpisodes 결과 중 가장 큰 낙폭(절댓값).
+       * 메인 벤토 카드와 하단 히스토리 표가 같은 소스(episodes)를 공유.
        */
       crashSummary: {
         maxDrawdownPct: number;
         maxYear: number;
         maxRecoveryMonths: number | null;
       } | null;
+      /** 상장 연도(종가 첫 날짜). AllInWarning 1번 문구에 사용. 0이면 미노출. */
+      launchYear: number;
+      /** 종가에서 추출한 모든 crash episode(≥5%). HistoryTable 구간 분류용. */
+      crashEpisodes: readonly CrashCandidate[];
     }
   | { ready: false };
 
@@ -212,12 +217,14 @@ export function HeroDrawdown({
                 ticker={current}
                 crashBreakpoints={crashBreakpoints}
                 crashDefault={crashDefault}
+                episodes={data.crashEpisodes}
               />
             ) : null}
             <AllInWarningSection
               lang={lang}
               ticker={current}
               leverage={currentLeverage}
+              launchYear={data.launchYear}
             />
           </div>
         ) : (

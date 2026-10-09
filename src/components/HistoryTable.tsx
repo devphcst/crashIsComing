@@ -6,18 +6,19 @@ import { getDict } from "@/lib/i18n";
 import {
   buildCrashRanges,
   filterCrashesInRange,
+  type CrashCandidate,
   type CrashRange,
-} from "@/constants/historicalCrashes";
+} from "@/lib/crashes";
 import { formatPct } from "@/lib/format";
 
 /**
- * 종목별 역대 폭락 표. 어드민 crashBreakpoints로 생성한 구간 기반.
+ * 종목별 역대 폭락 표. 종가 → extractCrashes 결과(episodes)를 서버에서 받아 분류.
  *
  *   - breakpoints 비어있거나 default null이면 섹션 자체 null (호출부도 조건부 렌더).
  *   - 구간이 1개면 칩 숨김, 제목에 그 구간 반영.
  *   - 2개+면 pill 칩. 선택은 URL ?dd=<from> 과 동기화 (default면 쿼리 제거).
  *   - ?dd 값이 breakpoints에 없으면 crashDefault 사용.
- *   - 선택 구간에 폭락 0개면 "{구간} 폭락 기록 없음" 플레이스홀더.
+ *   - 선택 구간에 폭락 0개면 "{구간} 폭락 없음" 플레이스홀더.
  *   - 표 아래 요약: "총 N번 · 평균 회복 M개월" (M은 회복된 crash만 평균).
  */
 export function HistoryTable({
@@ -25,11 +26,13 @@ export function HistoryTable({
   ticker,
   crashBreakpoints,
   crashDefault,
+  episodes,
 }: {
   lang: Lang;
   ticker: string;
   crashBreakpoints: number[];
   crashDefault: number | null;
+  episodes: readonly CrashCandidate[];
 }) {
   const d = getDict(lang);
   const router = useRouter();
@@ -56,7 +59,7 @@ export function HistoryTable({
     router.replace(qs ? `?${qs}` : "?", { scroll: false });
   };
 
-  const crashes = filterCrashesInRange(ticker, selectedRange);
+  const crashes = filterCrashesInRange(episodes, selectedRange);
   const tickerUpper = ticker.toUpperCase();
 
   // 요약 — 평균 회복은 recoveryMonths가 null 아닌 것만 평균.
@@ -121,9 +124,6 @@ export function HistoryTable({
                 <th className="pb-2 pr-2 text-[11px] font-medium">
                   {d.history.columns.year}
                 </th>
-                <th className="pb-2 pr-2 text-[11px] font-medium">
-                  {d.history.columns.cause}
-                </th>
                 <th className="pb-2 pr-2 text-right text-[11px] font-medium">
                   {d.history.columns.drawdown}
                 </th>
@@ -135,11 +135,12 @@ export function HistoryTable({
             <tbody>
               {crashes.map((c, i) => (
                 <tr
-                  key={`${c.year}-${i}`}
+                  key={`${c.troughDate}-${i}`}
                   style={{ borderTop: "1px solid var(--bento-gray)" }}
                 >
-                  <td className="py-2.5 pr-2 text-fg">{c.year}</td>
-                  <td className="py-2.5 pr-2 text-fg">{c.cause[lang]}</td>
+                  <td className="py-2.5 pr-2 text-fg">
+                    {c.troughDate.slice(0, 4)}
+                  </td>
                   <td
                     className="py-2.5 pr-2 text-right font-medium"
                     style={{ color: "var(--down)" }}

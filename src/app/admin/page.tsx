@@ -11,6 +11,7 @@ import {
   isKvConfigured,
 } from "@/lib/kv";
 import { readIngestStatus } from "@/lib/ingest/status";
+import { getCrashEpisodes } from "@/lib/crashes-server";
 import { DEFAULT_SYMBOL, getExchange } from "@/lib/symbols";
 import { ClosePriceForm } from "@/components/admin/ClosePriceForm";
 import { SeedHighsForm } from "@/components/admin/SeedHighsForm";
@@ -70,6 +71,7 @@ export default async function AdminPage({
     visitorCount,
     ingestStatus,
     currentMeta,
+    crashEpisodes,
   ] = await Promise.all([
     Promise.all(list.map((t) => readMeta(t))),
     readAllCloses(currentSymbol),
@@ -79,6 +81,7 @@ export default async function AdminPage({
     readVisitorCount(),
     readIngestStatus(currentSymbol),
     readMeta(currentSymbol),
+    getCrashEpisodes(currentSymbol),
   ]);
 
   const kvOn = isKvConfigured();
@@ -139,7 +142,11 @@ export default async function AdminPage({
         {/* key={ticker}: 탭 전환 시 컴포넌트 강제 remount하여 useState/defaultValue가
             새 종목의 값으로 재초기화되도록. 없으면 폼이 이전 종목의 stale state를
             그대로 보유한 채 저장돼 종목 간 값이 섞임. */}
-        <MetaEditForm key={currentSymbol} meta={currentMeta} />
+        <MetaEditForm
+          key={currentSymbol}
+          meta={currentMeta}
+          crashEpisodes={crashEpisodes}
+        />
       </section>
 
       <section className="space-y-3 rounded-lg border border-line p-5">

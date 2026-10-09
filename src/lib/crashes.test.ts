@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { extractCrashes } from "./crashes";
+import {
+  buildCrashRanges,
+  countCrashesInRange,
+  extractCrashes,
+  filterCrashesInRange,
+  type CrashCandidate,
+} from "./crashes";
 import type { Close } from "./providers/types";
 
 const c = (date: string, price: number): Close => ({ date, price });
@@ -166,5 +172,102 @@ describe("extractCrashes", () => {
     const crashes = extractCrashes(closes, { stagnationTradingDays: 10 });
     expect(crashes.length).toBe(1);
     expect(crashes[0].recovered).toBe(true);
+  });
+});
+
+/* ============================================================================
+ * 구간 유틸 — buildCrashRanges / filterCrashesInRange / countCrashesInRange
+ * ============================================================================ */
+
+/** 테스트용 가짜 crash episode — drawdownPct만 중요. */
+const ep = (
+  drawdownPct: number,
+  overrides: Partial<CrashCandidate> = {},
+): CrashCandidate => ({
+  peakDate: "2020-01-01",
+  peakPrice: 100,
+  troughDate: "2020-06-01",
+  troughPrice: 100 + drawdownPct, // drawdownPct는 음수
+  recoveryDate: "2021-01-01",
+  recoveryMonths: 7,
+  recovered: true,
+  drawdownPct,
+  ...overrides,
+});
+
+describe("buildCrashRanges", () => {
+  it("빈 입력은 빈 배열", () => {
+    expect(buildCrashRanges([])).toEqual([]);
+  });
+
+  it("한 값이면 열린 구간 하나만", () => {
+    expect(buildCrashRanges([20])).toEqual([{ from: 20, to: null }]);
+  });
+
+  it("여러 값은 인접 쌍 + 마지막 열린 구간", () => {
+    expect(buildCrashRanges([10, 20, 30, 50])).toEqual([
+      { from: 10, to: 20 },
+      { from: 20, to: 30 },
+      { from: 30, to: 50 },
+      { from: 50, to: null },
+    ]);
+  });
+
+  it("중복 제거 + 오름차순", () => {
+    expect(buildCrashRanges([30, 10, 20, 30])).toEqual([
+      { from: 10, to: 20 },
+      { from: 20, to: 30 },
+      { from: 30, to: null },
+    ]);
+  });
+});
+
+describe("filterCrashesInRange / countCrashesInRange", () => {
+  const episodes = [
+    ep(-9.9), // 9.9% — 10 미만
+    ep(-10.0), // 정확히 10 — [10,20)에 포함
+    ep(-15.4),
+    ep(-19.99), // 20 바로 아래 — [10,20)에 포함
+    ep(-20.0), // 정확히 20 — [20,30)에 포함
+    ep(-27.9),
+    ep(-35.1),
+    ep(-49.7),
+    ep(-82.9),
+  ];
+
+  it("[10, 20) — 하한 포함, 상한 미포함", () => {
+    const rs = filterCrashesInRange(episodes, { from: 10, to: 20 });
+    expect(rs.map((c) => c.drawdownPct)).toEqual([-10.0, -15.4, -19.99]);
+    expect(countCrashesInRange(episodes, { from: 10, to: 20 })).toBe(3);
+  });
+
+  it("경계값 정확히 20.0은 [10,20) 아니라 [20,30)", () => {
+    const low = filterCrashesInRange(episodes, { from: 10, to: 20 });
+    const mid = filterCrashesInRange(episodes, { from: 20, to: 30 });
+    expect(low.map((c) => c.drawdownPct)).not.toContain(-20.0);
+    expect(mid.map((c) => c.drawdownPct)).toContain(-20.0);
+  });
+
+  it("마지막 열린 구간 [50, ∞)은 상한 없음", () => {
+    const rs = filterCrashesInRange(episodes, { from: 50, to: null });
+    expect(rs.map((c) => c.drawdownPct)).toEqual([-82.9]);
+  });
+
+  it("최소 경계 미만은 제외", () => {
+    const rs = filterCrashesInRange(episodes, { from: 10, to: 20 });
+    expect(rs.map((c) => c.drawdownPct)).not.toContain(-9.9);
+  });
+
+  it("회복 중(recoveryDate null) crash도 drawdownPct로 분류", () => {
+    const ongoing = [
+      ep(-23.5, {
+        recoveryDate: null,
+        recoveryMonths: null,
+        recovered: false,
+      }),
+    ];
+    const rs = filterCrashesInRange(ongoing, { from: 20, to: 30 });
+    expect(rs.length).toBe(1);
+    expect(rs[0].recovered).toBe(false);
   });
 });

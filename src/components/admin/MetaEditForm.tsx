@@ -24,7 +24,8 @@ import {
 import {
   buildCrashRanges,
   countCrashesInRange,
-} from "@/constants/historicalCrashes";
+  type CrashCandidate,
+} from "@/lib/crashes";
 import { dictionaries } from "@/lib/i18n";
 
 const t = dictionaries.ko.admin.symbols;
@@ -43,7 +44,14 @@ function SubmitButton() {
   );
 }
 
-export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
+export function MetaEditForm({
+  meta,
+  crashEpisodes,
+}: {
+  meta: SymbolMeta;
+  /** 서버에서 getCrashEpisodes(ticker)로 pre-computed. 미리보기 횟수에 사용. */
+  crashEpisodes: readonly CrashCandidate[];
+}) {
   const [state, formAction] = useFormState(updateMetaAction, initial);
   const [orange, setOrange] = useState(meta.orangeThreshold);
   const [red, setRed] = useState(meta.redThreshold);
@@ -325,7 +333,7 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
               {ranges.map((r) => {
                 const label =
                   r.to === null ? `${r.from}% 이상` : `${r.from}~${r.to}%`;
-                const count = countCrashesInRange(meta.ticker, r);
+                const count = countCrashesInRange(crashEpisodes, r);
                 const isDefault = crashDefault === r.from;
                 return (
                   <button

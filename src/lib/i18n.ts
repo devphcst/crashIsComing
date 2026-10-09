@@ -119,7 +119,6 @@ export type Dict = {
     rangeLabel: (from: number, to: number | null) => string;
     columns: {
       year: string;
-      cause: string;
       drawdown: string;
       recovery: string;
     };
@@ -501,7 +500,6 @@ const ko: Dict = {
       to === null ? `${from}% 이상` : `${from}~${to}%`,
     columns: {
       year: '연도',
-      cause: '원인',
       drawdown: '하락',
       recovery: '회복',
     },
@@ -836,7 +834,6 @@ const en: Dict = {
       to === null ? `≥${from}%` : `${from}–${to}%`,
     columns: {
       year: 'Year',
-      cause: 'Cause',
       drawdown: 'Drawdown',
       recovery: 'Recovery',
     },

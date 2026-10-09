@@ -20,7 +20,7 @@ import { getProvider } from "./providers";
 import { getExchange, isHidden, type SymbolMeta } from "./symbols";
 import { computeAtDrawdownStats } from "./at-drawdown";
 import { getSeasonality } from "./seasonality";
-import { getWorstCrash } from "@/constants/historicalCrashes";
+import { getCrashEpisodes } from "./crashes-server";
 import type { HeroData, SeasonalityTeaser } from "@/components/HeroDrawdown";
 
 export type VisitorInfo = {
@@ -87,16 +87,23 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
       Math.abs(athDrawdownPct),
     );
 
-    // 역대 폭락 요약 — HISTORICAL_CRASHES(종목별 큐레이션 데이터)에서 가장 큰 낙폭.
-    // 메인 "역대 최대 낙폭" 카드와 "역대 폭락" 표가 같은 소스를 공유해 값이 일치.
-    const worst = getWorstCrash(ticker);
+    // 역대 폭락 요약 — 종가에서 자동 추출한 episodes 중 가장 큰 낙폭(절댓값).
+    // 메인 "역대 최대 낙폭" 카드와 "역대 폭락" 표가 같은 소스(getCrashEpisodes).
+    const episodes = await getCrashEpisodes(ticker);
+    const worst =
+      episodes.length > 0
+        ? episodes.reduce((a, b) => (a.drawdownPct < b.drawdownPct ? a : b))
+        : null;
     const crashSummary = worst
       ? {
           maxDrawdownPct: worst.drawdownPct,
-          maxYear: worst.year,
+          maxYear: Number(worst.troughDate.slice(0, 4)),
           maxRecoveryMonths: worst.recoveryMonths,
         }
       : null;
+
+    // 상장 연도 — closes 첫 날짜. AllInWarning 1번 문구에 사용.
+    const launchYear = closes.length ? Number(closes[0].date.slice(0, 4)) : 0;
 
     return {
       ready: true,
@@ -121,6 +128,8 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
       recentCloses,
       atDdStats,
       crashSummary,
+      launchYear,
+      crashEpisodes: episodes,
     };
   } catch (err) {
     console.error(`loadHeroData(${ticker}) failed:`, err);

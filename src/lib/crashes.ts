@@ -176,3 +176,56 @@ export const extractCrashes = (
     ? crashes.slice(0, limit)
     : crashes;
 };
+
+/* ============================================================================
+ * 폭락 구간 — 어드민 폭락 기준 UI와 사용자 역대 폭락 표가 공유하는 분류 유틸.
+ * ============================================================================ */
+
+/**
+ * 폭락 구간 표현.
+ *   - [from, to) — from% 이상 to% 미만 (닫힘-열림)
+ *   - to === null — "from% 이상" 열린 구간 (마지막)
+ */
+export type CrashRange = { from: number; to: number | null };
+
+/**
+ * breakpoints 배열 → 구간 배열. 중복 제거·오름차순 정렬 후 인접 두 값이 한 구간,
+ * 마지막 값부터는 열린 구간([last, ∞)).
+ *
+ * 예: [10, 20, 30, 50] → [[10,20), [20,30), [30,50), [50,∞)]
+ */
+export const buildCrashRanges = (breakpoints: number[]): CrashRange[] => {
+  const sorted = Array.from(new Set(breakpoints)).sort((a, b) => a - b);
+  if (sorted.length === 0) return [];
+  const ranges: CrashRange[] = [];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    ranges.push({ from: sorted[i], to: sorted[i + 1] });
+  }
+  ranges.push({ from: sorted[sorted.length - 1], to: null });
+  return ranges;
+};
+
+/**
+ * 특정 구간에 속하는 crash 목록 (pure).
+ * 분류 기준: Math.abs(episode.drawdownPct)가 from ≤ … < to (열린 구간은 ≥ from).
+ * 미회복 crash도 현재까지의 최대 하락률로 자연히 분류 (더 빠지면 다음 구간으로 이동).
+ */
+export const filterCrashesInRange = (
+  episodes: readonly CrashCandidate[],
+  range: CrashRange,
+): CrashCandidate[] =>
+  episodes.filter((e) => {
+    const abs = Math.abs(e.drawdownPct);
+    if (abs < range.from) return false;
+    if (range.to === null) return true;
+    return abs < range.to;
+  });
+
+/** 특정 구간 crash 개수 — filterCrashesInRange의 길이. */
+export const countCrashesInRange = (
+  episodes: readonly CrashCandidate[],
+  range: CrashRange,
+): number => filterCrashesInRange(episodes, range).length;
+
+// 서버 전용 getCrashEpisodes는 crashes-server.ts로 분리 — client 번들이 kv/node:fs를
+// 가져가지 않도록. pure 유틸만 crashes.ts에서 export.

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { updateMetaAction, type ActionState } from "@/app/admin/actions";
 import {
+  CRASH_THRESHOLD_CHOICES,
   DEFAULT_SYMBOL,
   DEFAULT_MIN_CRASH_DRAWDOWN_PCT,
   DEFAULT_SIMILAR_RANGE_PPBP,
@@ -20,6 +21,7 @@ import {
   isHidden,
   type SymbolMeta,
 } from "@/lib/symbols";
+import { countCrashesAtOrAbove } from "@/constants/historicalCrashes";
 import { dictionaries } from "@/lib/i18n";
 
 const t = dictionaries.ko.admin.symbols;
@@ -45,6 +47,34 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
   const [similarPp, setSimilarPp] = useState<number>(getSimilarRangePpBp(meta));
   const [minCrash, setMinCrash] = useState<number>(getMinCrashDrawdownPct(meta));
   const [newTicker, setNewTicker] = useState(meta.ticker);
+
+  // 폭락 기준 — 로컬 state. 체크 토글은 default 자동 초기화 포함.
+  const [crashThresholds, setCrashThresholds] = useState<Set<number>>(
+    () => new Set(meta.crashThresholds ?? []),
+  );
+  const [crashDefault, setCrashDefault] = useState<number | null>(
+    meta.crashDefault ?? null,
+  );
+  const toggleThreshold = (n: number) => {
+    setCrashThresholds((prev) => {
+      const next = new Set(prev);
+      if (next.has(n)) {
+        next.delete(n);
+        // 기본값으로 지정된 항목을 해제하면 default도 null — 자동 선택 X.
+        setCrashDefault((d) => (d === n ? null : d));
+      } else {
+        next.add(n);
+      }
+      return next;
+    });
+  };
+  const crashWarn: string | null = (() => {
+    if (crashThresholds.size === 0) return "폭락 기준을 1개 이상 선택하세요";
+    if (crashDefault === null || !crashThresholds.has(crashDefault))
+      return "기본으로 보여줄 기준을 선택하세요";
+    return null;
+  })();
+
   // 기본 종목(DEFAULT_SYMBOL)은 코드 상수 매핑이 깨지므로 ticker 변경 금지 — UI 잠금.
   const tickerLocked = meta.ticker === DEFAULT_SYMBOL;
   const tickerChanged = !tickerLocked && newTicker !== meta.ticker;
@@ -236,6 +266,74 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
           {t.leverageHint} (기본 {defaultLeverageFor(meta.ticker)}, 비워두면 ticker 매핑 사용)
         </span>
       </label>
+
+      {/* 폭락 기준 — 체크박스 20개 + 라디오 기본값. hidden input으로 formData 전송. */}
+      <fieldset className="space-y-3 rounded-md border border-line p-3">
+        <legend className="px-1 text-[10px] uppercase tracking-wide text-muted">
+          폭락 기준
+        </legend>
+        {crashWarn ? (
+          <p className="text-[11px] text-down">{crashWarn}</p>
+        ) : null}
+        <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
+          {CRASH_THRESHOLD_CHOICES.map((n) => {
+            const checked = crashThresholds.has(n);
+            const count = countCrashesAtOrAbove(meta.ticker, n);
+            const isDefault = crashDefault === n;
+            return (
+              <label
+                key={n}
+                className={
+                  "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] transition-colors " +
+                  (checked
+                    ? "border-fg bg-surface-hover text-fg"
+                    : "border-line text-muted")
+                }
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleThreshold(n)}
+                  className="accent-fg"
+                />
+                <span className={count === 0 ? "opacity-50" : ""}>
+                  {n}%<span className="text-subtle"> · {count}번</span>
+                </span>
+                {checked ? (
+                  <input
+                    type="radio"
+                    name="pickDefault"
+                    checked={isDefault}
+                    onChange={() => setCrashDefault(n)}
+                    className="ml-auto accent-fg"
+                    aria-label={`${n}% 기본값으로 지정`}
+                  />
+                ) : null}
+              </label>
+            );
+          })}
+        </div>
+        <p className="text-[10px] text-muted">
+          체크한 임계값이 사용자 화면 칩으로 노출됩니다. 라디오로 기본 선택값을
+          지정하세요.
+        </p>
+        {/* hidden inputs — formData 전송 */}
+        {Array.from(crashThresholds)
+          .sort((a, b) => a - b)
+          .map((n) => (
+            <input
+              key={n}
+              type="hidden"
+              name="crashThresholds"
+              value={String(n)}
+            />
+          ))}
+        <input
+          type="hidden"
+          name="crashDefault"
+          value={crashDefault !== null ? String(crashDefault) : ""}
+        />
+      </fieldset>
 
       <div className="flex items-center gap-3">
         <SubmitButton />

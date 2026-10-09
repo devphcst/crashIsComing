@@ -187,3 +187,20 @@ export const getWorstCrash = (ticker: string): HistoricalCrash | null => {
     a.drawdownPct < b.drawdownPct ? a : b,
   );
 };
+
+/**
+ * 지정 임계값 이상 낙폭(|drawdownPct| ≥ pct) crash 목록. 어드민 횟수 표시와
+ * 사용자 화면 테이블이 모두 이 함수를 공유 — 숫자 일관성 보장.
+ */
+export const filterCrashesAtOrAbove = (
+  ticker: string,
+  pct: number,
+): HistoricalCrash[] => {
+  const h = getSymbolHistory(ticker);
+  if (!h) return [];
+  return h.crashes.filter((c) => Math.abs(c.drawdownPct) >= pct);
+};
+
+/** 지정 임계값 이상 낙폭 crash 개수. filterCrashesAtOrAbove의 길이. */
+export const countCrashesAtOrAbove = (ticker: string, pct: number): number =>
+  filterCrashesAtOrAbove(ticker, pct).length;

@@ -112,8 +112,8 @@ export type Dict = {
   };
   /** 종목별 역대 폭락 표. */
   history: {
-    /** "{TICKER} 역대 폭락" */
-    title: (ticker: string) => string;
+    /** "{TICKER} {N}% 이상 폭락" — 선택 임계값에 맞춰 제목 생성. */
+    title: (ticker: string, pct: number) => string;
     subtitle: string;
     columns: {
       year: string;
@@ -125,6 +125,8 @@ export type Dict = {
     inProgress: string;
     /** 회복 개월 포맷터. */
     monthsUnit: (n: number) => string;
+    /** 선택된 임계값에 해당하는 폭락이 하나도 없을 때 플레이스홀더. */
+    noneAtThreshold: (pct: number) => string;
   };
   /** 요약 페이지 큰 숫자 아래 "유사 시기" 블록 전용 문구. */
   similarPeriods: {
@@ -486,7 +488,7 @@ const ko: Dict = {
     body: '폭락장 한가운데선 누구나 흔들려요. 전고점 대비 하락률 하나로 지금 위치를 확인하세요.',
   },
   history: {
-    title: (ticker) => `${ticker} 역대 폭락`,
+    title: (ticker, pct) => `${ticker} ${pct}% 이상 폭락`,
     subtitle: '전고점 대비 최대 하락 · 회복까지 걸린 기간',
     columns: {
       year: '연도',
@@ -496,6 +498,7 @@ const ko: Dict = {
     },
     inProgress: '회복 중',
     monthsUnit: (n) => `${n}개월`,
+    noneAtThreshold: (pct) => `${pct}% 이상 폭락 기록 없음`,
   },
   similarPeriods: {
     maxDrawdown: (pctLabel) => `역대 최대 낙폭 ${pctLabel}`,
@@ -811,7 +814,7 @@ const en: Dict = {
       'Everyone wobbles in the middle of a crash. One number — the drop from the all-time high — tells you where you are.',
   },
   history: {
-    title: (ticker) => `${ticker} crash history`,
+    title: (ticker, pct) => `${ticker} ≥${pct}% drawdowns`,
     subtitle: 'Max drawdown from peak · months to recover',
     columns: {
       year: 'Year',
@@ -821,6 +824,7 @@ const en: Dict = {
     },
     inProgress: 'In progress',
     monthsUnit: (n) => `${n} mo`,
+    noneAtThreshold: (pct) => `No drawdowns ≥${pct}% on record`,
   },
   similarPeriods: {
     maxDrawdown: (pctLabel) => `All-time max drawdown ${pctLabel}`,

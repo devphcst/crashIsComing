@@ -45,7 +45,28 @@ export type SymbolMeta = {
    * 색은 ETF 수익률 방향 그대로 — 인버스가 올랐으면 초록.
    */
   leverage?: number;
+  /**
+   * 역대 폭락 섹션에 노출할 임계값 목록 (5~100, 5 단위, 오름차순).
+   *   - 비어있거나 undefined ≡ "미설정" → 사용자 화면 섹션 미노출.
+   *   - 어드민 편집 폼 저장 시엔 반드시 1개 이상 필수.
+   * 하드코딩 기본값 없음 — 각 종목은 어드민에서 수동 설정.
+   */
+  crashThresholds?: number[];
+  /**
+   * 역대 폭락 섹션의 기본 선택 임계값. 사용자 첫 진입 시 이 값으로 필터.
+   *   - null/undefined ≡ "미설정" → 사용자 화면 섹션 미노출.
+   *   - 반드시 crashThresholds 안의 값이어야 함.
+   */
+  crashDefault?: number | null;
 };
+
+/** 어드민 UI 체크박스 목록 — 5 ~ 100, 5 단위, 총 20개. */
+export const CRASH_THRESHOLD_CHOICES: readonly number[] = [
+  5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
+  55, 60, 65, 70, 75, 80, 85, 90, 95, 100,
+];
+export const CRASH_THRESHOLD_MIN = 5;
+export const CRASH_THRESHOLD_MAX = 100;
 
 /** SymbolMeta의 similarRangePpBp 기본값. */
 export const DEFAULT_SIMILAR_RANGE_PPBP = 3;
@@ -71,7 +92,9 @@ export type MetaValidationError =
   | "exchange_invalid"
   | "similar_range_out_of_bounds"
   | "min_crash_out_of_bounds"
-  | "leverage_invalid";
+  | "leverage_invalid"
+  | "crash_thresholds_invalid"
+  | "crash_default_invalid";
 
 /** leverage 허용 범위. 0은 금지 — 수익률 색 분기가 의미 없어짐. */
 export const LEVERAGE_MIN = -5;
@@ -109,6 +132,28 @@ export const validateMeta = (meta: SymbolMeta): MetaValidationError | null => {
       meta.minCrashDrawdownPct > MIN_CRASH_DRAWDOWN_PCT_MAX
     ) {
       return "min_crash_out_of_bounds";
+    }
+  }
+  if (meta.crashThresholds !== undefined) {
+    for (const t of meta.crashThresholds) {
+      if (
+        !Number.isInteger(t) ||
+        t < CRASH_THRESHOLD_MIN ||
+        t > CRASH_THRESHOLD_MAX ||
+        t % 5 !== 0
+      ) {
+        return "crash_thresholds_invalid";
+      }
+    }
+    // 비어있어도 "미설정" 상태로 저장 허용. "required" 체크는 액션 레벨에서.
+  }
+  if (meta.crashDefault !== undefined && meta.crashDefault !== null) {
+    // crashThresholds가 있어야 하고, 그 안에 포함돼야.
+    if (
+      !meta.crashThresholds ||
+      !meta.crashThresholds.includes(meta.crashDefault)
+    ) {
+      return "crash_default_invalid";
     }
   }
   if (meta.leverage !== undefined) {

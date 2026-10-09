@@ -19,6 +19,7 @@ export function MobileMenu({
   onChangeLang,
   dict,
   anchorBase,
+  showHistory = true,
 }: {
   lang: Lang;
   onChangeLang: (l: Lang) => void;
@@ -29,7 +30,13 @@ export function MobileMenu({
    * 전체 URL이 되어 클릭 시 요약 페이지로 이동한다.
    */
   anchorBase?: string;
+  /** 종목의 crashThresholds가 비어있으면 #history 항목 숨김. 기본 true. */
+  showHistory?: boolean;
 }) {
+  // 조건부 메뉴 — history 항목만 노출 분기. 다른 anchor는 상시.
+  const menuItems = showHistory
+    ? MENU_ITEMS
+    : MENU_ITEMS.filter((item) => item.key !== "history");
   const [open, setOpen] = useState(false);
   // "앱처럼 쓰기" 항목 노출 여부. 조건:
   //  1) iOS Safari (안내 UI 내용이 iOS 공유시트 흐름 전용)
@@ -152,7 +159,7 @@ export function MobileMenu({
             {dict.menu.title}
           </div>
           <ul className="divide-y divide-line">
-            {MENU_ITEMS.map((item) => {
+            {menuItems.map((item) => {
               const href = anchorBase ? `${anchorBase}${item.href}` : item.href;
               return (
                 <li key={item.key}>

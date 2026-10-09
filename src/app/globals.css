@@ -69,6 +69,9 @@
   --bento-violet-label: #5B5290;
   --bento-violet-sub: #8C86B8;
 
+  /* 빈 상태 박스 (역대 폭락 섹션 등) */
+  --empty-bg: #F7F8FA;
+
   /* 광고 배너 */
   --ad-bg: #E8F0FE;
   --ad-text: #191F28;
@@ -128,6 +131,9 @@
     --bento-violet-icon: #9B88FF;
     --bento-violet-label: #C9C2F0;
     --bento-violet-sub: #9892C4;
+
+    /* 빈 상태 — 다크에서는 카드 톤 */
+    --empty-bg: #1A1C22;
 
     /* 광고 배너 — 저채도 다크 */
     --ad-bg: #1A2436;

@@ -130,6 +130,16 @@ export type Dict = {
     noneInRange: string;
     /** 하단 요약 — "총 N번 · 평균 회복 M개월". avgMonths=null이면 뒷부분 생략. */
     summary: (count: number, avgMonths: number | null) => string;
+    /**
+     * 기간 라벨 — peakDate ~ troughDate (YYYY-MM-DD).
+     * ko: "2000.03 → 2002.10", 같은 해면 뒤 연도 생략 ("2020.02 → 03")
+     * en: "Mar 2000 → Oct 2002" (full)
+     */
+    periodLabel: (peakDate: string, troughDate: string) => string;
+    /** "더보기 (+N)" 접힌 상태 버튼. */
+    expandMore: (more: number) => string;
+    /** "접기" 펼친 상태 버튼. */
+    collapse: string;
   };
   /** 요약 페이지 큰 숫자 아래 "유사 시기" 블록 전용 문구. */
   similarPeriods: {
@@ -495,11 +505,11 @@ const ko: Dict = {
       to === null
         ? `${ticker} ${from}% 이상 폭락`
         : `${ticker} ${from}~${to}% 폭락`,
-    subtitle: '전고점 대비 최대 하락 · 회복까지 걸린 기간',
+    subtitle: '전고점 대비 최대 하락 · 바닥에서 전고점까지 걸린 기간',
     rangeLabel: (from, to) =>
       to === null ? `${from}% 이상` : `${from}~${to}%`,
     columns: {
-      year: '연도',
+      year: '기간',
       drawdown: '하락',
       recovery: '회복',
     },
@@ -510,6 +520,15 @@ const ko: Dict = {
       avgMonths === null
         ? `총 ${count}번`
         : `총 ${count}번 · 평균 회복 ${avgMonths}개월`,
+    periodLabel: (peakDate, troughDate) => {
+      const [py, pm] = peakDate.split('-');
+      const [ty, tm] = troughDate.split('-');
+      return py === ty
+        ? `${py}.${pm} → ${tm}`
+        : `${py}.${pm} → ${ty}.${tm}`;
+    },
+    expandMore: (more) => `더보기 (+${more})`,
+    collapse: '접기',
   },
   similarPeriods: {
     maxDrawdown: (pctLabel) => `역대 최대 낙폭 ${pctLabel}`,
@@ -829,11 +848,11 @@ const en: Dict = {
       to === null
         ? `${ticker} drawdowns over ${from}%`
         : `${ticker} drawdowns of ${from}–${to}%`,
-    subtitle: 'Max drawdown from peak · months to recover',
+    subtitle: 'Peak-to-trough drop · time from trough back to peak',
     rangeLabel: (from, to) =>
       to === null ? `≥${from}%` : `${from}–${to}%`,
     columns: {
-      year: 'Year',
+      year: 'Period',
       drawdown: 'Drawdown',
       recovery: 'Recovery',
     },
@@ -844,6 +863,19 @@ const en: Dict = {
       avgMonths === null
         ? `${count} total`
         : `${count} total · avg recovery ${avgMonths} mo`,
+    periodLabel: (peakDate, troughDate) => {
+      const names = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      ];
+      const [py, pm] = peakDate.split('-');
+      const [ty, tm] = troughDate.split('-');
+      const peakLabel = `${names[Number(pm) - 1]} ${py}`;
+      const troughLabel = `${names[Number(tm) - 1]} ${ty}`;
+      return `${peakLabel} → ${troughLabel}`;
+    },
+    expandMore: (more) => `Show ${more} more`,
+    collapse: 'Show less',
   },
   similarPeriods: {
     maxDrawdown: (pctLabel) => `All-time max drawdown ${pctLabel}`,

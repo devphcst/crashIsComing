@@ -1194,7 +1194,7 @@ function AdCard({ lang }: { lang: Lang }) {
       <div className="relative w-[140px] shrink-0 max-[360px]:w-[112px]">
         {imgOk ? (
           <Image
-            src="/ad/moisture-plus.jpg"
+            src="/ads/moisture-plus.png"
             alt={copy.alt}
             fill
             sizes="140px"

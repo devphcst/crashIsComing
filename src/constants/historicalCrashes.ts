@@ -189,18 +189,50 @@ export const getWorstCrash = (ticker: string): HistoricalCrash | null => {
 };
 
 /**
- * 지정 임계값 이상 낙폭(|drawdownPct| ≥ pct) crash 목록. 어드민 횟수 표시와
- * 사용자 화면 테이블이 모두 이 함수를 공유 — 숫자 일관성 보장.
+ * 폭락 구간 표현.
+ *   - [from, to) — from% 이상 to% 미만 (닫힘-열림)
+ *   - to === null — "from% 이상" 열린 구간 (마지막)
  */
-export const filterCrashesAtOrAbove = (
+export type CrashRange = { from: number; to: number | null };
+
+/**
+ * breakpoints(5~100, 5 단위, 오름차순이 아니어도 OK — 내부 정렬) → 구간 배열.
+ * 각 구간은 인접 두 breakpoint. 마지막 breakpoint부터는 열린 구간([last, ∞)).
+ *
+ * 예: [10, 20, 30, 50] → [[10,20), [20,30), [30,50), [50,∞)]
+ */
+export const buildCrashRanges = (breakpoints: number[]): CrashRange[] => {
+  const sorted = Array.from(new Set(breakpoints)).sort((a, b) => a - b);
+  if (sorted.length === 0) return [];
+  const ranges: CrashRange[] = [];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    ranges.push({ from: sorted[i], to: sorted[i + 1] });
+  }
+  ranges.push({ from: sorted[sorted.length - 1], to: null });
+  return ranges;
+};
+
+/**
+ * 특정 구간에 속하는 crash 목록. 어드민 미리보기 횟수와 사용자 테이블이 공유.
+ * 분류 기준: Math.abs(c.drawdownPct)가 from ≤ … < to (마지막 열린 구간은 ≥ from만).
+ * 미회복 crash도 현재 drawdownPct로 분류됨 (의미상 "현재까지 최대 하락률").
+ */
+export const filterCrashesInRange = (
   ticker: string,
-  pct: number,
+  range: CrashRange,
 ): HistoricalCrash[] => {
   const h = getSymbolHistory(ticker);
   if (!h) return [];
-  return h.crashes.filter((c) => Math.abs(c.drawdownPct) >= pct);
+  return h.crashes.filter((c) => {
+    const abs = Math.abs(c.drawdownPct);
+    if (abs < range.from) return false;
+    if (range.to === null) return true;
+    return abs < range.to;
+  });
 };
 
-/** 지정 임계값 이상 낙폭 crash 개수. filterCrashesAtOrAbove의 길이. */
-export const countCrashesAtOrAbove = (ticker: string, pct: number): number =>
-  filterCrashesAtOrAbove(ticker, pct).length;
+/** 특정 구간 crash 개수 — filterCrashesInRange의 길이. */
+export const countCrashesInRange = (
+  ticker: string,
+  range: CrashRange,
+): number => filterCrashesInRange(ticker, range).length;

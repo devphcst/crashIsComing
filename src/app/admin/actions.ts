@@ -86,8 +86,10 @@ const META_ERROR_MESSAGES: Record<MetaValidationError, string> = {
   similar_range_out_of_bounds: `유사 시기 반경은 ${SIMILAR_RANGE_PPBP_MIN} ~ ${SIMILAR_RANGE_PPBP_MAX} 사이여야 합니다.`,
   min_crash_out_of_bounds: `"폭락" 최소 낙폭은 ${MIN_CRASH_DRAWDOWN_PCT_MIN} ~ ${MIN_CRASH_DRAWDOWN_PCT_MAX}% 사이여야 합니다.`,
   leverage_invalid: `레버리지 배수는 ${LEVERAGE_MIN} ~ ${LEVERAGE_MAX} 사이의 0이 아닌 값이어야 합니다.`,
-  crash_thresholds_invalid: "폭락 기준값이 올바르지 않습니다 (5~100, 5단위).",
-  crash_default_invalid: "기본 폭락 기준은 선택한 임계값 중 하나여야 합니다.",
+  crash_breakpoints_invalid:
+    "폭락 구간 경계값이 올바르지 않습니다 (5~100, 5단위).",
+  crash_default_invalid:
+    "기본 구간은 선택한 경계 중 하나여야 합니다 (구간 시작값).",
 };
 
 /** 폼 'exchange' 값을 정규화 — undefined/빈문자/기타는 NYSE로 처리. */
@@ -144,11 +146,11 @@ const parseLeverage = (
 };
 
 /**
- * 폼 'crashThresholds' (checkbox multiple) 파싱 — 유효(5~100 중 5의 배수) 값만
+ * 폼 'crashBreakpoints' (checkbox multiple) 파싱 — 유효(5~100 중 5의 배수) 값만
  * 수집, 중복 제거, 오름차순 정렬. 빈 결과도 그대로 [] 반환.
  */
-const parseCrashThresholds = (fd: FormData): number[] => {
-  const vals = fd.getAll("crashThresholds");
+const parseCrashBreakpoints = (fd: FormData): number[] => {
+  const vals = fd.getAll("crashBreakpoints");
   const uniq = new Set<number>();
   for (const v of vals) {
     const n = Number(v);
@@ -499,15 +501,15 @@ export async function updateMetaAction(
     formData.get("minCrashDrawdownPct"),
   );
   const leverage = parseLeverage(formData.get("leverage"));
-  const crashThresholds = parseCrashThresholds(formData);
+  const crashBreakpoints = parseCrashBreakpoints(formData);
   const crashDefault = parseCrashDefault(formData.get("crashDefault"));
 
-  // 폭락 기준 — 편집 폼에서는 반드시 1개 이상 + 기본값 지정.
-  if (crashThresholds.length === 0) {
-    return { ok: false, message: "폭락 기준을 1개 이상 선택하세요" };
+  // 폭락 구간 — 편집 폼에서는 반드시 1개 이상 경계 + 기본 구간 지정.
+  if (crashBreakpoints.length === 0) {
+    return { ok: false, message: "폭락 구간 경계를 1개 이상 선택하세요" };
   }
-  if (crashDefault === null || !crashThresholds.includes(crashDefault)) {
-    return { ok: false, message: "기본으로 보여줄 기준을 선택하세요" };
+  if (crashDefault === null || !crashBreakpoints.includes(crashDefault)) {
+    return { ok: false, message: "기본으로 보여줄 구간을 선택하세요" };
   }
 
   // newTicker는 옵셔널 — 폼이 안 보내면 기존 ticker 유지(rename 미사용).
@@ -535,7 +537,7 @@ export async function updateMetaAction(
     similarRangePpBp,
     minCrashDrawdownPct,
     leverage,
-    crashThresholds,
+    crashBreakpoints,
     crashDefault,
   };
   const err = validateMeta(meta);

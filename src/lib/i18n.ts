@@ -112,9 +112,11 @@ export type Dict = {
   };
   /** 종목별 역대 폭락 표. */
   history: {
-    /** "{TICKER} {N}% 이상 폭락" — 선택 임계값에 맞춰 제목 생성. */
-    title: (ticker: string, pct: number) => string;
+    /** "{TICKER} {a}~{b}% 폭락" 또는 "{TICKER} {a}% 이상 폭락" (to=null). */
+    title: (ticker: string, from: number, to: number | null) => string;
     subtitle: string;
+    /** 칩/미리보기 라벨 — "{a}~{b}%" / "{a}% 이상". */
+    rangeLabel: (from: number, to: number | null) => string;
     columns: {
       year: string;
       cause: string;
@@ -125,8 +127,10 @@ export type Dict = {
     inProgress: string;
     /** 회복 개월 포맷터. */
     monthsUnit: (n: number) => string;
-    /** 선택된 임계값에 해당하는 폭락이 하나도 없을 때 플레이스홀더. */
-    noneAtThreshold: (pct: number) => string;
+    /** 선택 구간에 폭락이 하나도 없을 때 플레이스홀더. */
+    noneInRange: string;
+    /** 하단 요약 — "총 N번 · 평균 회복 M개월". avgMonths=null이면 뒷부분 생략. */
+    summary: (count: number, avgMonths: number | null) => string;
   };
   /** 요약 페이지 큰 숫자 아래 "유사 시기" 블록 전용 문구. */
   similarPeriods: {
@@ -488,8 +492,13 @@ const ko: Dict = {
     body: '폭락장 한가운데선 누구나 흔들려요. 전고점 대비 하락률 하나로 지금 위치를 확인하세요.',
   },
   history: {
-    title: (ticker, pct) => `${ticker} ${pct}% 이상 폭락`,
+    title: (ticker, from, to) =>
+      to === null
+        ? `${ticker} ${from}% 이상 폭락`
+        : `${ticker} ${from}~${to}% 폭락`,
     subtitle: '전고점 대비 최대 하락 · 회복까지 걸린 기간',
+    rangeLabel: (from, to) =>
+      to === null ? `${from}% 이상` : `${from}~${to}%`,
     columns: {
       year: '연도',
       cause: '원인',
@@ -498,7 +507,11 @@ const ko: Dict = {
     },
     inProgress: '회복 중',
     monthsUnit: (n) => `${n}개월`,
-    noneAtThreshold: (pct) => `${pct}% 이상 폭락 기록 없음`,
+    noneInRange: '상장 이후 이 구간의 폭락은 없었어요',
+    summary: (count, avgMonths) =>
+      avgMonths === null
+        ? `총 ${count}번`
+        : `총 ${count}번 · 평균 회복 ${avgMonths}개월`,
   },
   similarPeriods: {
     maxDrawdown: (pctLabel) => `역대 최대 낙폭 ${pctLabel}`,
@@ -814,8 +827,13 @@ const en: Dict = {
       'Everyone wobbles in the middle of a crash. One number — the drop from the all-time high — tells you where you are.',
   },
   history: {
-    title: (ticker, pct) => `${ticker} ≥${pct}% drawdowns`,
+    title: (ticker, from, to) =>
+      to === null
+        ? `${ticker} drawdowns over ${from}%`
+        : `${ticker} drawdowns of ${from}–${to}%`,
     subtitle: 'Max drawdown from peak · months to recover',
+    rangeLabel: (from, to) =>
+      to === null ? `≥${from}%` : `${from}–${to}%`,
     columns: {
       year: 'Year',
       cause: 'Cause',
@@ -824,7 +842,11 @@ const en: Dict = {
     },
     inProgress: 'In progress',
     monthsUnit: (n) => `${n} mo`,
-    noneAtThreshold: (pct) => `No drawdowns ≥${pct}% on record`,
+    noneInRange: 'No drawdowns in this range since launch',
+    summary: (count, avgMonths) =>
+      avgMonths === null
+        ? `${count} total`
+        : `${count} total · avg recovery ${avgMonths} mo`,
   },
   similarPeriods: {
     maxDrawdown: (pctLabel) => `All-time max drawdown ${pctLabel}`,

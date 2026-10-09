@@ -55,14 +55,14 @@ export function SymbolTabs({
                 ({t.hiddenBadge})
               </span>
             ) : null}
-            {!m.crashThresholds || m.crashThresholds.length === 0 ? (
+            {!m.crashBreakpoints || m.crashBreakpoints.length === 0 ? (
               <span
                 className="ml-1 rounded px-1 py-0.5 text-[9px] font-semibold"
                 style={{
                   background: "var(--down-chip-bg)",
                   color: "var(--down)",
                 }}
-                title="폭락 기준이 설정되지 않았습니다"
+                title="폭락 구간이 설정되지 않았습니다"
               >
                 폭락 미설정
               </span>

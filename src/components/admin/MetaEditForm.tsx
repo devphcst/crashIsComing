@@ -21,7 +21,10 @@ import {
   isHidden,
   type SymbolMeta,
 } from "@/lib/symbols";
-import { countCrashesAtOrAbove } from "@/constants/historicalCrashes";
+import {
+  buildCrashRanges,
+  countCrashesInRange,
+} from "@/constants/historicalCrashes";
 import { dictionaries } from "@/lib/i18n";
 
 const t = dictionaries.ko.admin.symbols;
@@ -48,30 +51,40 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
   const [minCrash, setMinCrash] = useState<number>(getMinCrashDrawdownPct(meta));
   const [newTicker, setNewTicker] = useState(meta.ticker);
 
-  // 폭락 기준 — 로컬 state. 체크 토글은 default 자동 초기화 포함.
-  const [crashThresholds, setCrashThresholds] = useState<Set<number>>(
-    () => new Set(meta.crashThresholds ?? []),
+  // 폭락 구간 — 로컬 state. 체크한 breakpoint 집합과 기본 구간 시작값.
+  const [crashBreakpoints, setCrashBreakpoints] = useState<Set<number>>(
+    () => new Set(meta.crashBreakpoints ?? []),
   );
   const [crashDefault, setCrashDefault] = useState<number | null>(
     meta.crashDefault ?? null,
   );
-  const toggleThreshold = (n: number) => {
-    setCrashThresholds((prev) => {
+  const toggleBreakpoint = (n: number) => {
+    setCrashBreakpoints((prev) => {
       const next = new Set(prev);
       if (next.has(n)) {
         next.delete(n);
-        // 기본값으로 지정된 항목을 해제하면 default도 null — 자동 선택 X.
-        setCrashDefault((d) => (d === n ? null : d));
+        // 체크 해제로 default 구간이 사라졌는지는 아래 useEffect에서 처리.
       } else {
         next.add(n);
       }
       return next;
     });
   };
+  // 체크를 바꿔서 기본 구간이 사라지면 default null로 초기화.
+  // ranges는 breakpoints 변경 시마다 재계산되므로 default가 유효한 구간 시작값인지 확인.
+  const ranges = buildCrashRanges(Array.from(crashBreakpoints));
+  const defaultIsValid =
+    crashDefault !== null && ranges.some((r) => r.from === crashDefault);
+  // 렌더 사이클에서 즉시 보정 — effect 아닌 derived state로 반영이 필요하면
+  // 바로 null 처리 (setState 호출은 다음 렌더에서).
+  if (crashDefault !== null && !defaultIsValid) {
+    // defer setter — 렌더 중 setState 호출 피하기 위해 microtask.
+    queueMicrotask(() => setCrashDefault(null));
+  }
   const crashWarn: string | null = (() => {
-    if (crashThresholds.size === 0) return "폭락 기준을 1개 이상 선택하세요";
-    if (crashDefault === null || !crashThresholds.has(crashDefault))
-      return "기본으로 보여줄 기준을 선택하세요";
+    if (crashBreakpoints.size === 0)
+      return "폭락 구간 경계를 1개 이상 선택하세요";
+    if (!defaultIsValid) return "기본으로 보여줄 구간을 선택하세요";
     return null;
   })();
 
@@ -267,64 +280,94 @@ export function MetaEditForm({ meta }: { meta: SymbolMeta }) {
         </span>
       </label>
 
-      {/* 폭락 기준 — 체크박스 20개 + 라디오 기본값. hidden input으로 formData 전송. */}
+      {/* 폭락 구간 — 체크박스로 경계 선택 + 미리보기 칩으로 구간/기본 지정. */}
       <fieldset className="space-y-3 rounded-md border border-line p-3">
         <legend className="px-1 text-[10px] uppercase tracking-wide text-muted">
-          폭락 기준
+          폭락 구간
         </legend>
         {crashWarn ? (
           <p className="text-[11px] text-down">{crashWarn}</p>
         ) : null}
-        <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
-          {CRASH_THRESHOLD_CHOICES.map((n) => {
-            const checked = crashThresholds.has(n);
-            const count = countCrashesAtOrAbove(meta.ticker, n);
-            const isDefault = crashDefault === n;
-            return (
-              <label
-                key={n}
-                className={
-                  "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] transition-colors " +
-                  (checked
-                    ? "border-fg bg-surface-hover text-fg"
-                    : "border-line text-muted")
-                }
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleThreshold(n)}
-                  className="accent-fg"
-                />
-                <span className={count === 0 ? "opacity-50" : ""}>
-                  {n}%<span className="text-subtle"> · {count}번</span>
-                </span>
-                {checked ? (
+        <div>
+          <div className="mb-1.5 text-[10px] text-muted">경계값 선택</div>
+          <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
+            {CRASH_THRESHOLD_CHOICES.map((n) => {
+              const checked = crashBreakpoints.has(n);
+              return (
+                <label
+                  key={n}
+                  className={
+                    "flex items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] transition-colors " +
+                    (checked
+                      ? "border-fg bg-surface-hover text-fg"
+                      : "border-line text-muted")
+                  }
+                >
                   <input
-                    type="radio"
-                    name="pickDefault"
-                    checked={isDefault}
-                    onChange={() => setCrashDefault(n)}
-                    className="ml-auto accent-fg"
-                    aria-label={`${n}% 기본값으로 지정`}
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleBreakpoint(n)}
+                    className="accent-fg"
                   />
-                ) : null}
-              </label>
-            );
-          })}
+                  <span>{n}%</span>
+                </label>
+              );
+            })}
+          </div>
         </div>
-        <p className="text-[10px] text-muted">
-          체크한 임계값이 사용자 화면 칩으로 노출됩니다. 라디오로 기본 선택값을
-          지정하세요.
-        </p>
+
+        {ranges.length > 0 ? (
+          <div>
+            <div className="mb-1.5 text-[10px] text-muted">
+              미리보기 — 기본으로 보여줄 구간을 선택
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {ranges.map((r) => {
+                const label =
+                  r.to === null ? `${r.from}% 이상` : `${r.from}~${r.to}%`;
+                const count = countCrashesInRange(meta.ticker, r);
+                const isDefault = crashDefault === r.from;
+                return (
+                  <button
+                    key={r.from}
+                    type="button"
+                    onClick={() => setCrashDefault(r.from)}
+                    aria-pressed={isDefault}
+                    className={
+                      "rounded-full border px-3 py-1 text-[11px] transition-colors " +
+                      (isDefault
+                        ? "border-fg bg-fg text-bg"
+                        : "border-line bg-bg text-muted hover:border-fg hover:text-fg")
+                    }
+                  >
+                    {label}
+                    <span
+                      className={
+                        "ml-1.5 " +
+                        (isDefault ? "text-bg/70" : "text-subtle")
+                      }
+                    >
+                      · {count}번
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <p className="text-[10px] text-muted">
+            경계값을 체크하면 구간 미리보기가 여기에 표시됩니다.
+          </p>
+        )}
+
         {/* hidden inputs — formData 전송 */}
-        {Array.from(crashThresholds)
+        {Array.from(crashBreakpoints)
           .sort((a, b) => a - b)
           .map((n) => (
             <input
               key={n}
               type="hidden"
-              name="crashThresholds"
+              name="crashBreakpoints"
               value={String(n)}
             />
           ))}

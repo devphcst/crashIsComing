@@ -46,16 +46,18 @@ export type SymbolMeta = {
    */
   leverage?: number;
   /**
-   * 역대 폭락 섹션에 노출할 임계값 목록 (5~100, 5 단위, 오름차순).
+   * 역대 폭락 섹션 구간 경계 목록 (5~100, 5 단위, 오름차순).
+   * 인접한 두 값이 하나의 구간 [a, b), 마지막은 [a, ∞).
+   *   - 예: [10, 20, 30, 50] → 10~20%, 20~30%, 30~50%, 50% 이상
    *   - 비어있거나 undefined ≡ "미설정" → 사용자 화면 섹션 미노출.
    *   - 어드민 편집 폼 저장 시엔 반드시 1개 이상 필수.
    * 하드코딩 기본값 없음 — 각 종목은 어드민에서 수동 설정.
    */
-  crashThresholds?: number[];
+  crashBreakpoints?: number[];
   /**
-   * 역대 폭락 섹션의 기본 선택 임계값. 사용자 첫 진입 시 이 값으로 필터.
+   * 역대 폭락 섹션의 기본 선택 구간의 시작값 (crashBreakpoints 중 하나).
    *   - null/undefined ≡ "미설정" → 사용자 화면 섹션 미노출.
-   *   - 반드시 crashThresholds 안의 값이어야 함.
+   *   - 체크 변경으로 default 값이 breakpoints에서 사라지면 null로 초기화.
    */
   crashDefault?: number | null;
 };
@@ -93,7 +95,7 @@ export type MetaValidationError =
   | "similar_range_out_of_bounds"
   | "min_crash_out_of_bounds"
   | "leverage_invalid"
-  | "crash_thresholds_invalid"
+  | "crash_breakpoints_invalid"
   | "crash_default_invalid";
 
 /** leverage 허용 범위. 0은 금지 — 수익률 색 분기가 의미 없어짐. */
@@ -134,24 +136,24 @@ export const validateMeta = (meta: SymbolMeta): MetaValidationError | null => {
       return "min_crash_out_of_bounds";
     }
   }
-  if (meta.crashThresholds !== undefined) {
-    for (const t of meta.crashThresholds) {
+  if (meta.crashBreakpoints !== undefined) {
+    for (const b of meta.crashBreakpoints) {
       if (
-        !Number.isInteger(t) ||
-        t < CRASH_THRESHOLD_MIN ||
-        t > CRASH_THRESHOLD_MAX ||
-        t % 5 !== 0
+        !Number.isInteger(b) ||
+        b < CRASH_THRESHOLD_MIN ||
+        b > CRASH_THRESHOLD_MAX ||
+        b % 5 !== 0
       ) {
-        return "crash_thresholds_invalid";
+        return "crash_breakpoints_invalid";
       }
     }
     // 비어있어도 "미설정" 상태로 저장 허용. "required" 체크는 액션 레벨에서.
   }
   if (meta.crashDefault !== undefined && meta.crashDefault !== null) {
-    // crashThresholds가 있어야 하고, 그 안에 포함돼야.
+    // crashBreakpoints가 있어야 하고, 그 안의 값이어야 (각 breakpoint가 구간 시작값).
     if (
-      !meta.crashThresholds ||
-      !meta.crashThresholds.includes(meta.crashDefault)
+      !meta.crashBreakpoints ||
+      !meta.crashBreakpoints.includes(meta.crashDefault)
     ) {
       return "crash_default_invalid";
     }

@@ -3,76 +3,98 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
-import { filterCrashesAtOrAbove } from "@/constants/historicalCrashes";
+import {
+  buildCrashRanges,
+  filterCrashesInRange,
+  type CrashRange,
+} from "@/constants/historicalCrashes";
 import { formatPct } from "@/lib/format";
 
 /**
- * 종목별 역대 폭락 표. 어드민에서 설정한 crashThresholds/crashDefault 기반.
+ * 종목별 역대 폭락 표. 어드민 crashBreakpoints로 생성한 구간 기반.
  *
- *   - crashThresholds 비어있으면 섹션 자체 null (호출부에서도 조건부 렌더).
- *   - 1개뿐이면 칩 줄 숨기고 제목에 N% 반영.
- *   - 2개 이상이면 칩 오름차순. 선택은 URL ?dd=N과 동기화.
- *   - ?dd 유효하지 않으면 crashDefault 사용.
- *   - 데이터는 filterCrashesAtOrAbove(ticker, selected)만 — 어드민 횟수와 공유.
+ *   - breakpoints 비어있거나 default null이면 섹션 자체 null (호출부도 조건부 렌더).
+ *   - 구간이 1개면 칩 숨김, 제목에 그 구간 반영.
+ *   - 2개+면 pill 칩. 선택은 URL ?dd=<from> 과 동기화 (default면 쿼리 제거).
+ *   - ?dd 값이 breakpoints에 없으면 crashDefault 사용.
+ *   - 선택 구간에 폭락 0개면 "{구간} 폭락 기록 없음" 플레이스홀더.
+ *   - 표 아래 요약: "총 N번 · 평균 회복 M개월" (M은 회복된 crash만 평균).
  */
 export function HistoryTable({
   lang,
   ticker,
-  crashThresholds,
+  crashBreakpoints,
   crashDefault,
 }: {
   lang: Lang;
   ticker: string;
-  crashThresholds: number[];
+  crashBreakpoints: number[];
   crashDefault: number | null;
 }) {
   const d = getDict(lang);
   const router = useRouter();
   const sp = useSearchParams();
 
-  if (crashThresholds.length === 0 || crashDefault === null) return null;
+  if (crashBreakpoints.length === 0 || crashDefault === null) return null;
 
-  const sorted = [...crashThresholds].sort((a, b) => a - b);
+  const ranges = buildCrashRanges(crashBreakpoints);
   const urlDdRaw = sp.get("dd");
   const urlDd = urlDdRaw !== null ? Number(urlDdRaw) : NaN;
-  const selected = sorted.includes(urlDd) ? urlDd : crashDefault;
+  const validUrlDd = ranges.some((r) => r.from === urlDd) ? urlDd : null;
+  const selectedFrom = validUrlDd ?? crashDefault;
+  const selectedRange: CrashRange =
+    ranges.find((r) => r.from === selectedFrom) ?? ranges[0];
 
-  const handlePick = (n: number) => {
+  const handlePick = (from: number) => {
     const next = new URLSearchParams(Array.from(sp.entries()));
-    if (n === crashDefault) {
+    if (from === crashDefault) {
       next.delete("dd");
     } else {
-      next.set("dd", String(n));
+      next.set("dd", String(from));
     }
     const qs = next.toString();
     router.replace(qs ? `?${qs}` : "?", { scroll: false });
   };
 
-  const crashes = filterCrashesAtOrAbove(ticker, selected);
+  const crashes = filterCrashesInRange(ticker, selectedRange);
   const tickerUpper = ticker.toUpperCase();
+
+  // 요약 — 평균 회복은 recoveryMonths가 null 아닌 것만 평균.
+  const recovered = crashes.filter((c) => c.recoveryMonths !== null);
+  const avgMonths =
+    recovered.length > 0
+      ? Math.round(
+          recovered.reduce((a, c) => a + (c.recoveryMonths ?? 0), 0) /
+            recovered.length,
+        )
+      : null;
 
   return (
     <section id="history" className="flex flex-col">
       <h2 className="text-[15px] font-medium text-fg">
-        {d.history.title(tickerUpper, selected)}
+        {d.history.title(tickerUpper, selectedRange.from, selectedRange.to)}
       </h2>
       <p className="mt-1 text-[13px] text-muted">{d.history.subtitle}</p>
 
-      {sorted.length > 1 ? (
+      {ranges.length > 1 ? (
         <div
           role="tablist"
-          aria-label={d.history.title(tickerUpper, selected)}
+          aria-label={d.history.title(
+            tickerUpper,
+            selectedRange.from,
+            selectedRange.to,
+          )}
           className="scrollbar-hide mt-3 flex gap-1.5 overflow-x-auto"
         >
-          {sorted.map((n) => {
-            const active = n === selected;
+          {ranges.map((r) => {
+            const active = r.from === selectedRange.from;
             return (
               <button
-                key={n}
+                key={r.from}
                 type="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => handlePick(n)}
+                onClick={() => handlePick(r.from)}
                 className="shrink-0 whitespace-nowrap rounded-full text-[12px] font-semibold transition-colors"
                 style={{
                   padding: "6px 12px",
@@ -82,7 +104,7 @@ export function HistoryTable({
                   color: active ? "var(--tab-active-fg)" : "var(--tab-idle-fg)",
                 }}
               >
-                {n}%
+                {d.history.rangeLabel(r.from, r.to)}
               </button>
             );
           })}
@@ -90,53 +112,56 @@ export function HistoryTable({
       ) : null}
 
       {crashes.length === 0 ? (
-        <p className="mt-3 text-[13px] text-muted">
-          {d.history.noneAtThreshold(selected)}
-        </p>
+        <p className="mt-3 text-[13px] text-muted">{d.history.noneInRange}</p>
       ) : (
-        <table className="mt-3 w-full border-collapse text-left text-[13px]">
-          <thead>
-            <tr style={{ color: "var(--ath-dash)" }}>
-              <th className="pb-2 pr-2 text-[11px] font-medium">
-                {d.history.columns.year}
-              </th>
-              <th className="pb-2 pr-2 text-[11px] font-medium">
-                {d.history.columns.cause}
-              </th>
-              <th className="pb-2 pr-2 text-right text-[11px] font-medium">
-                {d.history.columns.drawdown}
-              </th>
-              <th className="pb-2 text-right text-[11px] font-medium">
-                {d.history.columns.recovery}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {crashes.map((c, i) => (
-              <tr
-                key={`${c.year}-${i}`}
-                style={{ borderTop: "1px solid var(--bento-gray)" }}
-              >
-                <td className="py-2.5 pr-2 text-fg">{c.year}</td>
-                <td className="py-2.5 pr-2 text-fg">{c.cause[lang]}</td>
-                <td
-                  className="py-2.5 pr-2 text-right font-medium"
-                  style={{ color: "var(--down)" }}
-                >
-                  {formatPct(c.drawdownPct, 1)}
-                </td>
-                <td
-                  className="py-2.5 text-right"
-                  style={{ color: "var(--subtle)" }}
-                >
-                  {c.recoveryMonths !== null
-                    ? d.history.monthsUnit(c.recoveryMonths)
-                    : d.history.inProgress}
-                </td>
+        <>
+          <table className="mt-3 w-full border-collapse text-left text-[13px]">
+            <thead>
+              <tr style={{ color: "var(--ath-dash)" }}>
+                <th className="pb-2 pr-2 text-[11px] font-medium">
+                  {d.history.columns.year}
+                </th>
+                <th className="pb-2 pr-2 text-[11px] font-medium">
+                  {d.history.columns.cause}
+                </th>
+                <th className="pb-2 pr-2 text-right text-[11px] font-medium">
+                  {d.history.columns.drawdown}
+                </th>
+                <th className="pb-2 text-right text-[11px] font-medium">
+                  {d.history.columns.recovery}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {crashes.map((c, i) => (
+                <tr
+                  key={`${c.year}-${i}`}
+                  style={{ borderTop: "1px solid var(--bento-gray)" }}
+                >
+                  <td className="py-2.5 pr-2 text-fg">{c.year}</td>
+                  <td className="py-2.5 pr-2 text-fg">{c.cause[lang]}</td>
+                  <td
+                    className="py-2.5 pr-2 text-right font-medium"
+                    style={{ color: "var(--down)" }}
+                  >
+                    {formatPct(c.drawdownPct, 1)}
+                  </td>
+                  <td
+                    className="py-2.5 text-right"
+                    style={{ color: "var(--subtle)" }}
+                  >
+                    {c.recoveryMonths !== null
+                      ? d.history.monthsUnit(c.recoveryMonths)
+                      : d.history.inProgress}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-3 text-[12px] text-muted">
+            {d.history.summary(crashes.length, avgMonths)}
+          </p>
+        </>
       )}
     </section>
   );

@@ -147,11 +147,11 @@ export function HeroDrawdown({
   const currentMeta = tabs.find((m) => m.ticker === current);
   const currentDisplayName = currentMeta?.displayName ?? current.toUpperCase();
   const currentLeverage = currentMeta ? getLeverage(currentMeta) : 1;
-  // 폭락 기준 미설정이면 섹션 전체·메뉴 anchor도 숨김.
-  const crashThresholds = currentMeta?.crashThresholds ?? [];
+  // 폭락 구간 미설정이면 섹션 전체·메뉴 anchor도 숨김.
+  const crashBreakpoints = currentMeta?.crashBreakpoints ?? [];
   const crashDefault = currentMeta?.crashDefault ?? null;
   const showHistory =
-    crashThresholds.length > 0 && crashDefault !== null;
+    crashBreakpoints.length > 0 && crashDefault !== null;
 
   // 공유 토스트 상태 — HeaderShareButton이 복사 성공 시 활성화.
   const [toast, setToast] = useState<string | null>(null);
@@ -210,7 +210,7 @@ export function HeroDrawdown({
               <HistoryTable
                 lang={lang}
                 ticker={current}
-                crashThresholds={crashThresholds}
+                crashBreakpoints={crashBreakpoints}
                 crashDefault={crashDefault}
               />
             ) : null}

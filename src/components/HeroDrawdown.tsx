@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
@@ -1115,11 +1116,14 @@ function BreakdownCell({
  * ============================================================================ */
 
 /**
- * 광고 배너 — 큰 폭 카드. 좌 텍스트 + 우 96px 회전 이미지.
- *   - bg --ad-bg, radius 22, p 18, min-h 120, overflow-hidden
- *   - 카드 전체 링크 (스마트스토어 URL, target=_blank, rel="noopener sponsored")
- *   - hover 시 이미지 rotate(-4deg) + translateY(-2px), active 시 카드 scale(0.98)
- *   - 이미지 로드 실패 시 그라데이션 박스만 노출.
+ * 광고 배너 — 사진 배너 레이아웃.
+ *   - bg --ad-bg, radius 22, min-h 140, overflow-hidden, flex row (padding 0)
+ *   - 전체 링크 (스마트스토어 URL, target=_blank, rel="noopener sponsored"), active scale(0.98)
+ *   - 좌 flex:1 텍스트(세로 가운데, p 18)
+ *   - 우 140px(≤360px 112px) 사진. object-cover 30% 45%.
+ *   - 사진 왼쪽 경계에 24px 페이드 오버레이(--ad-bg → transparent)로 블렌딩
+ *   - hover 시 이미지 scale(1.04) 300ms (group-hover)
+ *   - 이미지 로드 실패 시 사진 영역은 그라데이션 bg(또는 ad-bg)만 — onError로 숨김.
  */
 function AdCard({ lang }: { lang: Lang }) {
   const href = SIDEBAR_AD.storeUrl;
@@ -1129,32 +1133,34 @@ function AdCard({ lang }: { lang: Lang }) {
           mainA: "Markets crash,",
           mainB: "your skin shouldn't",
           sub: "Moisture Plus, made by a pharmacist",
+          alt: "Model holding Moisture Plus",
         }
       : {
           mainA: "폭락장에도",
           mainB: "피부는 촉촉하게",
           sub: "약사가 만든 모이스처 플러스",
+          alt: "모이스처 플러스를 든 모델",
         };
   const [imgOk, setImgOk] = useState(true);
-  const [hover, setHover] = useState(false);
+
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer sponsored"
       id="ad"
-      className="flex items-center gap-4 overflow-hidden rounded-card transition-transform active:scale-[0.98]"
+      className="group flex overflow-hidden rounded-card transition-transform active:scale-[0.98]"
       style={{
         background: "var(--ad-bg)",
-        padding: 18,
-        minHeight: 120,
+        minHeight: 140,
       }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       aria-label={`${copy.mainA} ${copy.mainB} — ${copy.sub}`}
     >
-      {/* 좌 — 텍스트 */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* 좌 — 텍스트, 세로 가운데 정렬 */}
+      <div
+        className="flex min-w-0 flex-1 flex-col justify-center"
+        style={{ padding: 18 }}
+      >
         <span
           className="inline-block self-start"
           style={{
@@ -1184,31 +1190,30 @@ function AdCard({ lang }: { lang: Lang }) {
         </div>
       </div>
 
-      {/* 우 — 96px 회전 이미지 박스. hover 시 rotate(-4) + translateY(-2). */}
-      <div
-        className="flex shrink-0 items-center justify-center overflow-hidden transition-transform duration-200 ease-out"
-        style={{
-          width: 96,
-          height: 96,
-          borderRadius: 24,
-          background: "linear-gradient(140deg, #FFFFFF, #CFE0FB)",
-          boxShadow: "0 8px 20px rgba(49, 130, 246, 0.18)",
-          transform: hover
-            ? "rotate(-4deg) translateY(-2px)"
-            : "rotate(-8deg)",
-        }}
-      >
+      {/* 우 — 사진. 140px (≤360px 뷰포트에서 112px). */}
+      <div className="relative w-[140px] shrink-0 max-[360px]:w-[112px]">
         {imgOk ? (
-          // Next/Image 대신 <img> — 파일 미존재 시 onError로 숨겨 그라데이션만 노출.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src="/ad/moisture-plus.png"
-            alt=""
-            aria-hidden
+          <Image
+            src="/ad/moisture-plus.jpg"
+            alt={copy.alt}
+            fill
+            sizes="140px"
+            loading="lazy"
             onError={() => setImgOk(false)}
-            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            style={{ objectFit: "cover", objectPosition: "30% 45%" }}
+            className="transition-transform duration-300 ease-out group-hover:scale-[1.04]"
           />
         ) : null}
+        {/* 왼쪽 24px 페이드 오버레이 — ad-bg 색 그라데이션으로 자연스럽게 블렌딩. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0"
+          style={{
+            width: 24,
+            background:
+              "linear-gradient(90deg, var(--ad-bg), transparent)",
+          }}
+        />
       </div>
     </a>
   );

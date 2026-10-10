@@ -1146,7 +1146,6 @@ function BreakdownCell({
  *   - 좌 flex:1 텍스트(세로 가운데, p 18)
  *   - 우 140px(≤360px 112px) 사진. object-cover 30% 45%.
  *   - 사진 왼쪽 경계에 24px 페이드 오버레이(--ad-bg → transparent)로 블렌딩
- *   - hover 시 이미지 scale(1.04) 300ms (group-hover)
  *   - 이미지 로드 실패 시 사진 영역은 그라데이션 bg(또는 ad-bg)만 — onError로 숨김.
  */
 function AdCard({ lang }: { lang: Lang }) {
@@ -1173,7 +1172,7 @@ function AdCard({ lang }: { lang: Lang }) {
       target="_blank"
       rel="noopener noreferrer sponsored"
       id="ad"
-      className="group flex overflow-hidden rounded-card transition-transform active:scale-[0.98]"
+      className="flex overflow-hidden rounded-card transition-transform active:scale-[0.98]"
       style={{
         background: "var(--ad-bg)",
         minHeight: 140,
@@ -1225,7 +1224,6 @@ function AdCard({ lang }: { lang: Lang }) {
             loading="lazy"
             onError={() => setImgOk(false)}
             style={{ objectFit: "cover", objectPosition: "30% 45%" }}
-            className="transition-transform duration-300 ease-out group-hover:scale-[1.04]"
           />
         ) : null}
         {/* 왼쪽 24px 페이드 오버레이 — ad-bg 색 그라데이션으로 자연스럽게 블렌딩. */}

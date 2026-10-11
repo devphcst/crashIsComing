@@ -190,6 +190,26 @@ export const loadAllMetas = unstable_cache(_loadAllMetas, ["all-metas"], {
 });
 
 /**
+ * 종목 리스트 — unstable_cache. admin 액션의 revalidateTag('symbols')로 자동 flush.
+ * generateMetadata와 page 본문이 동일 함수 참조 → KV 호출 1회만.
+ */
+export const loadSymbolList = unstable_cache(
+  async () => readSymbolList(),
+  ["symbol-list"],
+  { revalidate: CACHE_TTL_SECONDS, tags: [CACHE_TAG] },
+);
+
+/**
+ * 단일 종목 메타 — unstable_cache. 인자 ticker가 캐시 키에 자동 포함.
+ * resolveOr404와 page 본문이 같은 캐시 공유.
+ */
+export const loadMeta = unstable_cache(
+  async (ticker: string) => readMeta(ticker),
+  ["symbol-meta"],
+  { revalidate: CACHE_TTL_SECONDS, tags: [CACHE_TAG] },
+);
+
+/**
  * 사용자 페이지(메인 / 종목)용 — hidden 종목 제외한 메타.
  * admin은 loadAllMetas를 그대로 써서 hidden 종목도 관리 화면에 노출된다.
  * KV 호출 비용을 피하려고 loadAllMetas 결과 위에서 필터.

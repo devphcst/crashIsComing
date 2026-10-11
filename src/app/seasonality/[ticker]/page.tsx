@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { readMeta, readSymbolList } from "@/lib/kv";
-import { loadVisibleMetas } from "@/lib/page-data";
+import { loadMeta, loadSymbolList, loadVisibleMetas } from "@/lib/page-data";
 import { getLeverage, isHidden } from "@/lib/symbols";
 import { getSeasonality } from "@/lib/seasonality";
 import { SeasonalityPageClient } from "@/components/SeasonalityPageClient";
@@ -29,9 +28,9 @@ const readLangFromCookie = (): Lang => {
 
 const resolveOr404 = async (raw: string): Promise<string> => {
   const t = normalize(raw);
-  const list = await readSymbolList();
+  const list = await loadSymbolList();
   if (!list.includes(t)) notFound();
-  const meta = await readMeta(t);
+  const meta = await loadMeta(t);
   if (isHidden(meta)) notFound();
   return t;
 };
@@ -71,9 +70,9 @@ export async function generateMetadata({
   searchParams?: { m?: string };
 }): Promise<Metadata> {
   const t = normalize(params.ticker);
-  const list = await readSymbolList();
+  const list = await loadSymbolList();
   if (!list.includes(t)) return {};
-  const meta = await readMeta(t);
+  const meta = await loadMeta(t);
   if (isHidden(meta)) return {};
   const lang = readLangFromCookie();
   const d = getDict(lang);
@@ -112,7 +111,7 @@ export default async function SeasonalityPage({
 }) {
   const ticker = await resolveOr404(params.ticker);
   const [meta, tabs, sea] = await Promise.all([
-    readMeta(ticker),
+    loadMeta(ticker),
     loadVisibleMetas(),
     getSeasonality(ticker),
   ]);

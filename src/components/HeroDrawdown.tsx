@@ -291,17 +291,28 @@ function TickerPills({
   tabs: SymbolMeta[];
   current: string;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLAnchorElement>(null);
 
+  // scrollIntoView는 블록 축도 조정해 페이지가 세로로 스크롤되는 부작용이 있어서
+  // 컨테이너 scrollLeft만 직접 계산해 조정 (수평만 영향).
   useEffect(() => {
-    const el = activeRef.current;
-    if (!el) return;
-    el.scrollIntoView({ inline: "center", block: "nearest" });
+    const container = scrollRef.current;
+    const chip = activeRef.current;
+    if (!container || !chip) return;
+    const chipLeft = chip.offsetLeft;
+    const chipRight = chipLeft + chip.offsetWidth;
+    const viewLeft = container.scrollLeft;
+    const viewRight = viewLeft + container.clientWidth;
+    if (chipLeft < viewLeft) container.scrollLeft = chipLeft;
+    else if (chipRight > viewRight)
+      container.scrollLeft = chipRight - container.clientWidth;
   }, [current]);
 
   return (
     <nav aria-label="종목" className="pb-2">
       <div
+        ref={scrollRef}
         className="scrollbar-hide flex gap-1.5 overflow-x-auto overscroll-x-contain"
         style={{ scrollSnapType: "x mandatory" }}
       >
@@ -312,6 +323,7 @@ function TickerPills({
               ref={active ? activeRef : undefined}
               key={m.ticker}
               href={hrefFor(m.ticker)}
+              prefetch={true}
               aria-current={active ? "page" : undefined}
               className="shrink-0 whitespace-nowrap rounded-full text-[13px] font-semibold transition-colors"
               style={{

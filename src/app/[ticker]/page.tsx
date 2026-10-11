@@ -2,11 +2,12 @@ import { cookies } from "next/headers";
 import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
-import { readMeta, readSymbolList } from "@/lib/kv";
 import {
   loadFearGreed,
   loadHeroData,
+  loadMeta,
   loadSeasonalityTeaser,
+  loadSymbolList,
   loadVisibleMetas,
   loadVisitorInfo,
 } from "@/lib/page-data";
@@ -27,11 +28,11 @@ const normalize = (raw: string): string => raw.toLowerCase();
 
 const resolveOr404 = async (raw: string): Promise<string> => {
   const t = normalize(raw);
-  const list = await readSymbolList();
+  const list = await loadSymbolList();
   if (!list.includes(t)) notFound();
   // hidden=true 종목은 사용자에게 존재하지 않는 것처럼 처리 (SEO도 깔끔하게 404).
-  // admin 화면은 readMeta로 별도 접근하므로 영향 없음.
-  const meta = await readMeta(t);
+  // generateMetadata와 본문 모두 loadMeta를 거쳐 캐시 공유 → KV 호출 1회.
+  const meta = await loadMeta(t);
   if (isHidden(meta)) notFound();
   return t;
 };
@@ -45,7 +46,7 @@ export async function generateMetadata({
   if (normalize(params.ticker) === DEFAULT_SYMBOL) return {};
   const ticker = await resolveOr404(params.ticker);
   const [meta, hero] = await Promise.all([
-    readMeta(ticker),
+    loadMeta(ticker),
     // loadHeroData는 unstable_cache(symbols 태그)라 페이지 본문 fetch와 비용 공유.
     loadHeroData(ticker),
   ]);
@@ -67,7 +68,7 @@ export default async function TickerPage({
       loadHeroData(ticker),
       loadVisitorInfo(),
       loadVisibleMetas(),
-      readMeta(ticker),
+      loadMeta(ticker),
       loadFearGreed(),
       loadSeasonalityTeaser(ticker),
     ]);

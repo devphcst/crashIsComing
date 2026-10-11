@@ -44,6 +44,7 @@ export function MainSymbolTabs({
             <Link
               key={m.ticker}
               href={hrefFor(m.ticker)}
+              prefetch={true}
               className={
                 "shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors " +
                 (active

@@ -68,12 +68,20 @@ export function HistoryTable({
     setExpanded(false);
   }, [selectedFrom]);
 
-  // 활성 칩이 뷰포트 밖이면 가로 스크롤로 가장 가까운 가장자리까지만 이동.
+  // 활성 칩이 가로 뷰포트 밖이면 컨테이너 scrollLeft만 직접 조정 (세로 영향 X).
+  // scrollIntoView는 block: "nearest" 라도 Safari 등에서 부모 세로 스크롤 조정하는
+  // 사례가 있어 직접 계산.
   useEffect(() => {
-    activeChipRef.current?.scrollIntoView({
-      inline: "nearest",
-      block: "nearest",
-    });
+    const container = chipScrollRef.current;
+    const chip = activeChipRef.current;
+    if (!container || !chip) return;
+    const chipLeft = chip.offsetLeft;
+    const chipRight = chipLeft + chip.offsetWidth;
+    const viewLeft = container.scrollLeft;
+    const viewRight = viewLeft + container.clientWidth;
+    if (chipLeft < viewLeft) container.scrollLeft = chipLeft;
+    else if (chipRight > viewRight)
+      container.scrollLeft = chipRight - container.clientWidth;
   }, [selectedFrom]);
 
   // 칩 줄 overflow 체크 — 넘칠 때만 오른쪽 fade 노출.

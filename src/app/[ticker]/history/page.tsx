@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { readAllCloses, readMeta, readSymbolList } from "@/lib/kv";
-import { loadVisibleMetas } from "@/lib/page-data";
+import { readAllCloses } from "@/lib/kv";
+import { loadMeta, loadSymbolList, loadVisibleMetas } from "@/lib/page-data";
 import { getExchange, isHidden } from "@/lib/symbols";
 import { extractCrashes } from "@/lib/crashes";
 import { HistoryPageClient } from "@/components/HistoryPageClient";
@@ -36,9 +36,9 @@ export async function generateMetadata({
   params: { ticker: string };
 }): Promise<Metadata> {
   const t = normalize(params.ticker);
-  const list = await readSymbolList();
+  const list = await loadSymbolList();
   if (!list.includes(t)) return {};
-  const meta = await readMeta(t);
+  const meta = await loadMeta(t);
   if (isHidden(meta)) return {};
   const lang = readLangFromCookie();
   const d = getDict(lang);
@@ -53,11 +53,11 @@ export default async function TickerHistoryPage({
   params: { ticker: string };
 }) {
   const ticker = normalize(params.ticker);
-  const list = await readSymbolList();
+  const list = await loadSymbolList();
   if (!list.includes(ticker)) notFound();
 
   const [meta, closes, tabs] = await Promise.all([
-    readMeta(ticker),
+    loadMeta(ticker),
     readAllCloses(ticker),
     loadVisibleMetas(),
   ]);

@@ -1,10 +1,10 @@
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
-import { readMeta } from "@/lib/kv";
 import {
   loadFearGreed,
   loadHeroData,
+  loadMeta,
   loadSeasonalityTeaser,
   loadVisibleMetas,
   loadVisitorInfo,
@@ -31,7 +31,7 @@ const ROOT_OG_ALT = "폭락장은 온다";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [meta, hero] = await Promise.all([
-    readMeta(DEFAULT_SYMBOL),
+    loadMeta(DEFAULT_SYMBOL),
     loadHeroData(DEFAULT_SYMBOL),
   ]);
   const drawdownPct = hero.ready ? hero.ath.drawdownPct : undefined;
@@ -64,7 +64,7 @@ export default async function Page() {
       loadHeroData(DEFAULT_SYMBOL),
       loadVisitorInfo(),
       loadVisibleMetas(),
-      readMeta(DEFAULT_SYMBOL),
+      loadMeta(DEFAULT_SYMBOL),
       loadFearGreed(),
       loadSeasonalityTeaser(DEFAULT_SYMBOL),
     ]);

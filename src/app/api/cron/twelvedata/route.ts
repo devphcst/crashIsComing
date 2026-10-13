@@ -4,6 +4,7 @@ import { readMeta, readSymbolList, writeClose } from "@/lib/kv";
 import { fetchLatestCloseFromTwelveData } from "@/lib/ingest/twelvedata-fetch";
 import { recordFailure, recordSuccess } from "@/lib/ingest/status";
 import { notifySystemAlert } from "@/lib/ingest/notify";
+import { rebuildSnapshotsFor } from "@/lib/snapshot";
 import { getExchange, getProviderSymbol } from "@/lib/symbols";
 
 /**
@@ -85,6 +86,10 @@ export async function GET(req: Request) {
       );
       await writeClose(ticker, close);
       await recordSuccess(ticker, close);
+      // 종가 저장 즉시 스냅샷(메인+히스토리) 재생성. 실패해도 cron 자체는 성공.
+      await rebuildSnapshotsFor(ticker).catch((err) =>
+        console.error(`[cron/twelvedata] rebuildSnapshotsFor(${ticker}) failed:`, err),
+      );
       anyWritten = true;
       results.push({ ticker, ok: true, written: close });
     } catch (err) {

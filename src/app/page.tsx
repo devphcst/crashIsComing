@@ -2,10 +2,8 @@ import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
 import {
+  getSnapshot,
   loadFearGreed,
-  loadHeroData,
-  loadMeta,
-  loadSeasonalityTeaser,
   loadVisibleMetas,
   loadVisitorInfo,
 } from "@/lib/page-data";
@@ -30,12 +28,11 @@ const ROOT_OG_IMAGE = "/og-default.png";
 const ROOT_OG_ALT = "폭락장은 온다";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [meta, hero] = await Promise.all([
-    loadMeta(DEFAULT_SYMBOL),
-    loadHeroData(DEFAULT_SYMBOL),
-  ]);
-  const drawdownPct = hero.ready ? hero.ath.drawdownPct : undefined;
-  const base = buildSymbolMetadata(readLangFromCookie(), meta, drawdownPct);
+  const snap = await getSnapshot(DEFAULT_SYMBOL);
+  const drawdownPct = snap.heroData.ready
+    ? snap.heroData.ath.drawdownPct
+    : undefined;
+  const base = buildSymbolMetadata(readLangFromCookie(), snap.meta, drawdownPct);
   // title/description/URL/twitter card 등은 base 유지, 이미지만 정적으로 override.
   return {
     ...base,
@@ -59,30 +56,27 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page() {
   const lang = readLangFromCookie();
-  const [data, visitor, metas, meta, fearGreed, seasonalityTeaser] =
-    await Promise.all([
-      loadHeroData(DEFAULT_SYMBOL),
-      loadVisitorInfo(),
-      loadVisibleMetas(),
-      loadMeta(DEFAULT_SYMBOL),
-      loadFearGreed(),
-      loadSeasonalityTeaser(DEFAULT_SYMBOL),
-    ]);
+  const [snap, visitor, metas, fearGreed] = await Promise.all([
+    getSnapshot(DEFAULT_SYMBOL),
+    loadVisitorInfo(),
+    loadVisibleMetas(),
+    loadFearGreed(),
+  ]);
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildJsonLd(lang, meta)),
+          __html: JSON.stringify(buildJsonLd(lang, snap.meta)),
         }}
       />
       <HeroDrawdown
-        data={data}
+        data={snap.heroData}
         visitor={visitor}
         tabs={metas}
         current={DEFAULT_SYMBOL}
         fearGreed={fearGreed}
-        seasonalityTeaser={seasonalityTeaser}
+        seasonalityTeaser={snap.seasonalityTeaser}
       />
     </>
   );

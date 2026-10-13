@@ -3,10 +3,8 @@ import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
 import {
+  getSnapshot,
   loadFearGreed,
-  loadHeroData,
-  loadMeta,
-  loadSeasonalityTeaser,
   loadSymbolList,
   loadVisibleMetas,
   loadVisitorInfo,
@@ -30,10 +28,10 @@ const resolveOr404 = async (raw: string): Promise<string> => {
   const t = normalize(raw);
   const list = await loadSymbolList();
   if (!list.includes(t)) notFound();
-  // hidden=true 종목은 사용자에게 존재하지 않는 것처럼 처리 (SEO도 깔끔하게 404).
-  // generateMetadata와 본문 모두 loadMeta를 거쳐 캐시 공유 → KV 호출 1회.
-  const meta = await loadMeta(t);
-  if (isHidden(meta)) notFound();
+  // hidden 체크는 스냅샷의 meta로 — getSnapshot이 캐시되므로 generateMetadata와
+  // page 본문이 KV 호출 1회만 공유.
+  const snap = await getSnapshot(t);
+  if (isHidden(snap.meta)) notFound();
   return t;
 };
 
@@ -45,14 +43,12 @@ export async function generateMetadata({
   // 기본 종목은 / 로 redirect되므로 메타데이터는 비워둠 (실제 응답 안 됨)
   if (normalize(params.ticker) === DEFAULT_SYMBOL) return {};
   const ticker = await resolveOr404(params.ticker);
-  const [meta, hero] = await Promise.all([
-    loadMeta(ticker),
-    // loadHeroData는 unstable_cache(symbols 태그)라 페이지 본문 fetch와 비용 공유.
-    loadHeroData(ticker),
-  ]);
-  // hero.ready=false면 시드/종가 부족 — drawdownPct undefined로 title 낙폭 prefix 생략.
-  const drawdownPct = hero.ready ? hero.ath.drawdownPct : undefined;
-  return buildSymbolMetadata(readLangFromCookie(), meta, drawdownPct);
+  // resolveOr404가 이미 getSnapshot 호출 — 캐시 재사용으로 KV 조회 없이 재사용.
+  const snap = await getSnapshot(ticker);
+  const drawdownPct = snap.heroData.ready
+    ? snap.heroData.ath.drawdownPct
+    : undefined;
+  return buildSymbolMetadata(readLangFromCookie(), snap.meta, drawdownPct);
 }
 
 export default async function TickerPage({
@@ -63,30 +59,27 @@ export default async function TickerPage({
   if (normalize(params.ticker) === DEFAULT_SYMBOL) permanentRedirect("/");
   const ticker = await resolveOr404(params.ticker);
   const lang = readLangFromCookie();
-  const [data, visitor, metas, meta, fearGreed, seasonalityTeaser] =
-    await Promise.all([
-      loadHeroData(ticker),
-      loadVisitorInfo(),
-      loadVisibleMetas(),
-      loadMeta(ticker),
-      loadFearGreed(),
-      loadSeasonalityTeaser(ticker),
-    ]);
+  const [snap, visitor, metas, fearGreed] = await Promise.all([
+    getSnapshot(ticker),
+    loadVisitorInfo(),
+    loadVisibleMetas(),
+    loadFearGreed(),
+  ]);
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildJsonLd(lang, meta)),
+          __html: JSON.stringify(buildJsonLd(lang, snap.meta)),
         }}
       />
       <HeroDrawdown
-        data={data}
+        data={snap.heroData}
         visitor={visitor}
         tabs={metas}
         current={ticker}
         fearGreed={fearGreed}
-        seasonalityTeaser={seasonalityTeaser}
+        seasonalityTeaser={snap.seasonalityTeaser}
       />
     </>
   );

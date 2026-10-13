@@ -21,6 +21,12 @@ import { getExchange, isHidden, type SymbolMeta } from "./symbols";
 import { computeAtDrawdownStats } from "./at-drawdown";
 import { getSeasonality } from "./seasonality";
 import { getCrashEpisodes } from "./crashes-server";
+import {
+  readOrBuildHistorySnapshot,
+  readOrBuildSnapshot,
+  type HistorySnapshot,
+  type Snapshot,
+} from "./snapshot";
 import type { HeroData, SeasonalityTeaser } from "@/components/HeroDrawdown";
 
 export type VisitorInfo = {
@@ -49,7 +55,8 @@ const todayKstDate = (): string => {
  * 캐시 키는 함수 인자(ticker 등)가 자동으로 직렬화되어 들어감 — Next.js
  * `unstable_cache` 기본 동작. 그래서 ticker별로 독립적으로 캐시된다.
  */
-const CACHE_TTL_SECONDS = 900;
+// 캐시는 revalidateTag('symbols')로 즉시 flush되므로 TTL은 길게. 24시간.
+const CACHE_TTL_SECONDS = 86400;
 const CACHE_TAG = "symbols";
 
 const _loadHeroData = async (ticker: string): Promise<HeroData> => {
@@ -196,6 +203,28 @@ export const loadAllMetas = unstable_cache(_loadAllMetas, ["all-metas"], {
 export const loadSymbolList = unstable_cache(
   async () => readSymbolList(),
   ["symbol-list"],
+  { revalidate: CACHE_TTL_SECONDS, tags: [CACHE_TAG] },
+);
+
+/**
+ * 종목별 사전계산 스냅샷 — snapshot:{ticker} 1회 읽기.
+ * 메인/계절성 페이지(/, /[ticker], /seasonality/[ticker])의 단일 데이터 소스.
+ * 폴백: readOrBuildSnapshot — 저장된 값 없거나 깨졌으면 즉시 계산 후 저장.
+ */
+export const getSnapshot = unstable_cache(
+  async (ticker: string): Promise<Snapshot> => readOrBuildSnapshot(ticker),
+  ["snapshot"],
+  { revalidate: CACHE_TTL_SECONDS, tags: [CACHE_TAG] },
+);
+
+/**
+ * 역대 차트용 스냅샷 — history:{ticker}. /[ticker]/history 전용.
+ * column 포맷(start + dates + prices + top-5 crashes) — 서버에서 디코딩해 전달.
+ */
+export const getHistorySnapshot = unstable_cache(
+  async (ticker: string): Promise<HistorySnapshot> =>
+    readOrBuildHistorySnapshot(ticker),
+  ["history-snapshot"],
   { revalidate: CACHE_TTL_SECONDS, tags: [CACHE_TAG] },
 );
 

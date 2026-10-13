@@ -1,10 +1,14 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { readAllCloses } from "@/lib/kv";
-import { loadMeta, loadSymbolList, loadVisibleMetas } from "@/lib/page-data";
+import {
+  getHistorySnapshot,
+  getSnapshot,
+  loadSymbolList,
+  loadVisibleMetas,
+} from "@/lib/page-data";
+import { decodeHistorySnapshot } from "@/lib/history-codec";
 import { getExchange, isHidden } from "@/lib/symbols";
-import { extractCrashes } from "@/lib/crashes";
 import { HistoryPageClient } from "@/components/HistoryPageClient";
 import { LANG_COOKIE } from "@/constants/seo";
 import type { Lang } from "@/lib/i18n";
@@ -38,12 +42,12 @@ export async function generateMetadata({
   const t = normalize(params.ticker);
   const list = await loadSymbolList();
   if (!list.includes(t)) return {};
-  const meta = await loadMeta(t);
-  if (isHidden(meta)) return {};
+  const snap = await getSnapshot(t);
+  if (isHidden(snap.meta)) return {};
   const lang = readLangFromCookie();
   const d = getDict(lang);
   return {
-    title: `${meta.displayName} — ${d.historyPage.crashesHeader}`,
+    title: `${snap.meta.displayName} — ${d.historyPage.crashesHeader}`,
   };
 }
 
@@ -56,26 +60,25 @@ export default async function TickerHistoryPage({
   const list = await loadSymbolList();
   if (!list.includes(ticker)) notFound();
 
-  const [meta, closes, tabs] = await Promise.all([
-    loadMeta(ticker),
-    readAllCloses(ticker),
+  // snapshot: 메타(hidden 체크), historySnapshot: 전체 종가 + top-5 crashes.
+  const [snap, hist, tabs] = await Promise.all([
+    getSnapshot(ticker),
+    getHistorySnapshot(ticker),
     loadVisibleMetas(),
   ]);
-  if (isHidden(meta)) notFound();
+  if (isHidden(snap.meta)) notFound();
 
-  const crashes = extractCrashes(closes, { limit: 5 });
-
-  // client payload에 실을 종가 배열은 { date, price }만 (Close에 다른 필드 생겨도 무관하게).
-  const closesForClient = closes.map((c) => ({ date: c.date, price: c.price }));
+  // column 포맷 → {date, price}[] 복원.
+  const closesForClient = decodeHistorySnapshot(hist);
 
   return (
     <HistoryPageClient
       payload={{
         ticker,
-        displayName: meta.displayName,
-        exchange: getExchange(meta),
+        displayName: snap.meta.displayName,
+        exchange: getExchange(snap.meta),
         closes: closesForClient,
-        crashes,
+        crashes: hist.historyCrashes,
         tabs,
       }}
     />

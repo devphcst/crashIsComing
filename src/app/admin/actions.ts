@@ -47,6 +47,7 @@ import {
   countAffected,
 } from "@/lib/splits";
 import { formatPrice, formatSignedPct } from "@/lib/format";
+import { rebuildAllSnapshots, rebuildSnapshotsFor } from "@/lib/snapshot";
 import type { Close, SeedHighs } from "@/lib/providers/types";
 import {
   mergeParsedFiles,
@@ -192,7 +193,11 @@ const resolveTickerFromForm = async (
  *      비워 [ticker]/page.tsx의 redirect 응답까지 fresh 보장.
  *   4) `/admin` — admin 자체 화면(최근 입력 리스트 등) 즉시 반영.
  */
-const revalidateSymbolPaths = (ticker: string): void => {
+const revalidateSymbolPaths = async (ticker: string): Promise<void> => {
+  // 두 스냅샷(메인+히스토리) 재생성 — unstable_cache가 fetch하기 전에 fresh 보장.
+  await rebuildSnapshotsFor(ticker).catch((err) =>
+    console.error(`rebuildSnapshotsFor(${ticker}) failed:`, err),
+  );
   // layout 모드로 / 트리 전체 RSC payload 무효화 — `/`와 `/[ticker]` 둘 다 포함.
   revalidatePath("/", "layout");
   // 추가 안전망: 종목별 동적 라우트 명시 (DEFAULT_SYMBOL 분기 없이 항상).
@@ -262,7 +267,7 @@ export async function addCloseAction(
   }
 
   await writeClose(ticker, { date, price });
-  revalidateSymbolPaths(ticker);
+  await revalidateSymbolPaths(ticker);
   // 사용자가 어떤 값이 저장됐는지 실측 가능하도록 날짜·가격을 메시지에 포함.
   return {
     ok: true,
@@ -313,7 +318,7 @@ export async function setSeedAction(
   }
 
   await writeSeed(ticker, next);
-  revalidateSymbolPaths(ticker);
+  await revalidateSymbolPaths(ticker);
   return { ok: true, message: "시드값이 저장되었습니다." };
 }
 
@@ -398,7 +403,7 @@ export async function applySplitAction(
     affectedCount: changed.length,
   });
 
-  revalidateSymbolPaths(ticker);
+  await revalidateSymbolPaths(ticker);
   return {
     ok: true,
     message: `${changed.length}건이 보정되었습니다.`,
@@ -475,7 +480,7 @@ export async function addSymbolAction(
 
   await writeMeta(ticker, meta);
   await writeSymbolList([...list, ticker]);
-  revalidateSymbolPaths(ticker);
+  await revalidateSymbolPaths(ticker);
   redirect(`/admin?symbol=${ticker}`);
 }
 
@@ -568,7 +573,7 @@ export async function updateMetaAction(
   }
 
   await writeMeta(oldTicker, meta);
-  revalidateSymbolPaths(oldTicker);
+  await revalidateSymbolPaths(oldTicker);
   return { ok: true, message: "메타 정보를 저장했습니다." };
 }
 
@@ -596,7 +601,7 @@ export async function deleteSymbolAction(
   }
 
   await deleteSymbol(ticker);
-  revalidateSymbolPaths(ticker);
+  await revalidateSymbolPaths(ticker);
   redirect("/admin");
 }
 
@@ -628,6 +633,28 @@ export async function reorderSymbolsAction(
   revalidatePath("/admin");
   revalidatePath("/");
   revalidateTag("symbols");
+}
+
+/**
+ * 어드민 "전체 스냅샷 다시 만들기" 수동 복구용.
+ * 모든 종목(hidden 포함)에 대해 snapshot:{ticker} + history:{ticker} 재생성.
+ * 성공·실패 요약을 상태로 반환.
+ */
+export async function rebuildAllSnapshotsAction(): Promise<ActionState> {
+  if (!checkAuth()) return unauthorized();
+  const tickers = await readSymbolList();
+  const results = await rebuildAllSnapshots(tickers);
+  const ok = results.every((r) => r.ok);
+  const failed = results.filter((r) => !r.ok);
+  revalidateTag("symbols");
+  revalidatePath("/", "layout");
+  revalidatePath("/admin");
+  return {
+    ok,
+    message: ok
+      ? `${results.length}개 종목 스냅샷 재생성 완료`
+      : `${results.length - failed.length}/${results.length} 성공 — 실패: ${failed.map((f) => `${f.ticker}(${f.error})`).join(", ")}`,
+  };
 }
 
 // ---- CSV import ----
@@ -752,7 +779,7 @@ export async function importCsvAction(
     }
   }
 
-  revalidateSymbolPaths(ticker);
+  await revalidateSymbolPaths(ticker);
 
   const parts: string[] = [];
   parts.push(`${incoming.length}개 파싱 (신규 ${newCount} / 덮어쓰기 ${overwriteCount})`);
@@ -814,7 +841,7 @@ export async function seedUsdkrwAction(): Promise<ActionState> {
     }
     await writeManyCloses(ticker, closes);
 
-    revalidateSymbolPaths(ticker);
+    await revalidateSymbolPaths(ticker);
     return {
       ok: true,
       message: `USDKRW ${closes.length.toLocaleString()}건 저장 (${closes[0].date} ~ ${closes[closes.length - 1].date}).`,

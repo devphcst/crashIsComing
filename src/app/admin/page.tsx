@@ -27,6 +27,7 @@ import { DeleteSymbolForm } from "@/components/admin/DeleteSymbolForm";
 import { SymbolReorderList } from "@/components/admin/SymbolReorderList";
 import { CsvImportForm } from "@/components/admin/CsvImportForm";
 import { logoutAction } from "./actions";
+import { RebuildSnapshotsButton } from "@/components/admin/RebuildSnapshotsButton";
 import { dictionaries } from "@/lib/i18n";
 
 const t = dictionaries.ko.admin;
@@ -226,6 +227,16 @@ export default async function AdminPage({
           <SymbolReorderList metas={metas} />
         </section>
       ) : null}
+
+      <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">스냅샷</h2>
+        <p className="text-xs text-muted">
+          전 종목의 사전 계산 스냅샷(snapshot:{"{ticker}"} + history:{"{ticker}"})을
+          강제로 다시 만듭니다. 크론/저장 액션이 자동 갱신하므로 평소엔 불필요 — 데이터
+          포맷 변경 후 복구용.
+        </p>
+        <RebuildSnapshotsButton />
+      </section>
 
       <section className="space-y-3 rounded-lg border border-line p-5">
         <h2 className="text-sm font-medium text-fg">외부 데이터</h2>

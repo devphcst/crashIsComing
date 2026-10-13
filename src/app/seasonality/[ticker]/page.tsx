@@ -1,9 +1,8 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { loadMeta, loadSymbolList, loadVisibleMetas } from "@/lib/page-data";
+import { getSnapshot, loadSymbolList, loadVisibleMetas } from "@/lib/page-data";
 import { getLeverage, isHidden } from "@/lib/symbols";
-import { getSeasonality } from "@/lib/seasonality";
 import { SeasonalityPageClient } from "@/components/SeasonalityPageClient";
 import { LANG_COOKIE, SITE_URL } from "@/constants/seo";
 import type { Lang } from "@/lib/i18n";
@@ -30,8 +29,8 @@ const resolveOr404 = async (raw: string): Promise<string> => {
   const t = normalize(raw);
   const list = await loadSymbolList();
   if (!list.includes(t)) notFound();
-  const meta = await loadMeta(t);
-  if (isHidden(meta)) notFound();
+  const snap = await getSnapshot(t);
+  if (isHidden(snap.meta)) notFound();
   return t;
 };
 
@@ -72,18 +71,18 @@ export async function generateMetadata({
   const t = normalize(params.ticker);
   const list = await loadSymbolList();
   if (!list.includes(t)) return {};
-  const meta = await loadMeta(t);
-  if (isHidden(meta)) return {};
+  const snap = await getSnapshot(t);
+  if (isHidden(snap.meta)) return {};
   const lang = readLangFromCookie();
   const d = getDict(lang);
-  const sea = await getSeasonality(t);
+  const sea = snap.seasonality;
   const available = new Set<number>();
   for (let i = 1; i <= 12; i++) {
     if (sea.byMonth[i].returns.length) available.add(i);
   }
   const month =
     parseMonth(searchParams?.m) ?? defaultMonth(sea.lastCloseDate, available);
-  const title = `${d.seasonality.pageTitle(meta.displayName)} · ${d.seasonality.monthLabel(month)}`;
+  const title = `${d.seasonality.pageTitle(snap.meta.displayName)} · ${d.seasonality.monthLabel(month)}`;
   const ogUrl = new URL("/api/og/seasonality", SITE_URL);
   ogUrl.searchParams.set("ticker", t);
   ogUrl.searchParams.set("m", String(month));
@@ -110,11 +109,11 @@ export default async function SeasonalityPage({
   searchParams?: { m?: string };
 }) {
   const ticker = await resolveOr404(params.ticker);
-  const [meta, tabs, sea] = await Promise.all([
-    loadMeta(ticker),
+  const [snap, tabs] = await Promise.all([
+    getSnapshot(ticker),
     loadVisibleMetas(),
-    getSeasonality(ticker),
   ]);
+  const sea = snap.seasonality;
 
   const available = new Set<number>();
   for (let i = 1; i <= 12; i++) {
@@ -127,8 +126,8 @@ export default async function SeasonalityPage({
     <SeasonalityPageClient
       payload={{
         ticker,
-        displayName: meta.displayName,
-        leverage: getLeverage(meta),
+        displayName: snap.meta.displayName,
+        leverage: getLeverage(snap.meta),
         initialMonth,
         seasonality: sea,
         tabs,

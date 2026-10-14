@@ -146,6 +146,37 @@ describe("matchCompatible / matchOpposite", () => {
   });
 });
 
+describe("실사용 시나리오", () => {
+  it("지수 ETF 적립식 장기 보유, 앱 거의 안 보는 사람 → BOHI", () => {
+    // 판단 축(B/M): 적립식은 가격 흐름 신경 안 쓰므로 전부 mid → 합 0,
+    //   첫 문항도 mid → 전 축 앞 글자 폴백으로 B.
+    // 위험 축(E/O): 레버리지 0, 지수 ETF 위주, 개별 종목 안 삼, 신용 없음 → -4 → O.
+    // 기간 축(H/T): 1년 이상 보유, 매매 안 함, 익절 안 함, 손절 없음 → +4 → H.
+    // 멘탈 축(I/A): 큰 낙폭도 버팀, 앱 거의 안 봄, 영향 없음, 뉴스 무시 → +4 → I.
+    const answers: Answer[] = [
+      { questionId: "exp-1", choiceId: "mid" },
+      { questionId: "exp-2", choiceId: "mid" },
+      { questionId: "exp-3", choiceId: "mid" },
+      { questionId: "exp-4", choiceId: "mid" },
+      { questionId: "exp-5", choiceId: "neg" },
+      { questionId: "exp-6", choiceId: "neg" },
+      { questionId: "exp-7", choiceId: "neg" },
+      { questionId: "exp-8", choiceId: "neg" },
+      { questionId: "exp-9", choiceId: "pos" },
+      { questionId: "exp-10", choiceId: "pos" },
+      { questionId: "exp-11", choiceId: "pos" },
+      { questionId: "exp-12", choiceId: "pos" },
+      { questionId: "exp-13", choiceId: "pos" },
+      { questionId: "exp-14", choiceId: "pos" },
+      { questionId: "exp-15", choiceId: "pos" },
+      { questionId: "exp-16", choiceId: "pos" },
+    ];
+    const scores = computeScores("experienced", answers);
+    expect(scores).toEqual({ buy: 0, lev: -4, hold: 4, mind: 4 });
+    expect(codeFromScores("experienced", scores, answers)).toBe("BOHI");
+  });
+});
+
 describe("각 트랙 극단 조합 — 보고용 요약", () => {
   it.each([
     ["experienced", "pos"],

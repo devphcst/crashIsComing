@@ -55,8 +55,8 @@ const EXPERIENCED: Question[] = [
     id: "exp-1",
     axis: "buy",
     prompt: {
-      ko: "최근에 산 종목, 살 때 주가 흐름은?",
-      en: "Your most recent buy — what was the price doing at the time?",
+      ko: "최근에 산 종목이나 ETF, 살 때 가격 흐름은?",
+      en: "Your most recent stock or ETF buy — what was the price doing?",
     },
     choices: [
       {
@@ -80,25 +80,32 @@ const EXPERIENCED: Question[] = [
     id: "exp-2",
     axis: "buy",
     prompt: {
-      ko: "종목 고르는 방식은?",
-      en: "How do you usually pick names?",
+      ko: "살 때 타이밍은 어떻게 정해?",
+      en: "How do you time your buys?",
     },
     choices: [
       {
         id: "pos",
         delta: 1,
         label: {
-          ko: "저평가·소외된 걸 찾는다",
-          en: "Hunt for the undervalued and overlooked",
+          ko: "가격이 빠졌을 때",
+          en: "When the price has fallen",
         },
       },
-      { id: "mid", delta: 0, label: { ko: "섞어서", en: "A mix" } },
+      {
+        id: "mid",
+        delta: 0,
+        label: {
+          ko: "정해둔 날에 적립",
+          en: "On a scheduled day",
+        },
+      },
       {
         id: "neg",
         delta: -1,
         label: {
-          ko: "요즘 뜨는 걸 찾는다",
-          en: "Look for what's hot right now",
+          ko: "오르기 시작할 때",
+          en: "As it starts to climb",
         },
       },
     ],
@@ -107,8 +114,8 @@ const EXPERIENCED: Question[] = [
     id: "exp-3",
     axis: "buy",
     prompt: {
-      ko: "들고 있는 종목이 -10% 빠지면 보통?",
-      en: "A holding drops 10% — your usual move?",
+      ko: "들고 있는 종목이나 ETF가 -10% 빠지면 보통?",
+      en: "A holding (stock or ETF) drops 10% — your usual move?",
     },
     choices: [
       { id: "pos", delta: 1, label: { ko: "더 산다", en: "Buy more" } },
@@ -124,8 +131,8 @@ const EXPERIENCED: Question[] = [
     id: "exp-4",
     axis: "buy",
     prompt: {
-      ko: "신고가 찍은 종목을 보면?",
-      en: "A stock just hit an all-time high — what do you think?",
+      ko: "신고가를 찍은 종목이나 ETF를 보면?",
+      en: "A stock or ETF just hit an all-time high — what do you think?",
     },
     choices: [
       {
@@ -189,8 +196,8 @@ const EXPERIENCED: Question[] = [
     id: "exp-7",
     axis: "lev",
     prompt: {
-      ko: "한 종목에 가장 많이 넣은 비중은?",
-      en: "The biggest share you've put into a single name?",
+      ko: "개별 종목 하나에 가장 많이 넣은 비중은? (지수 ETF 제외)",
+      en: "Biggest share in a single stock? (Index ETFs don't count)",
     },
     choices: [
       { id: "pos", delta: 1, label: { ko: "50% 이상", en: "50% or more" } },
@@ -198,7 +205,10 @@ const EXPERIENCED: Question[] = [
       {
         id: "neg",
         delta: -1,
-        label: { ko: "20% 미만", en: "Under 20%" },
+        label: {
+          ko: "20% 미만 · 개별 종목 안 삼",
+          en: "Under 20% · don't buy singles",
+        },
       },
     ],
   },
@@ -464,8 +474,8 @@ const BEGINNER: Question[] = [
     id: "beg-3",
     axis: "buy",
     prompt: {
-      ko: "사고 싶던 종목이 -20% 빠졌다.",
-      en: "A stock you wanted just dropped 20%.",
+      ko: "사고 싶던 종목이나 ETF가 -20% 빠졌다.",
+      en: "A stock or ETF you wanted just dropped 20%.",
     },
     choices: [
       { id: "pos", delta: 1, label: { ko: "바로 산다", en: "Buy today" } },

@@ -2,9 +2,9 @@ import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { LANG_COOKIE, SITE_URL } from "@/constants/seo";
 import type { Lang } from "@/lib/i18n";
-import { getSnapshot } from "@/lib/page-data";
+import { getSnapshot, loadSymbolList } from "@/lib/page-data";
 import { extractRealCrashBits } from "@/lib/investor-type-real";
-import { DEFAULT_SYMBOL } from "@/lib/symbols";
+import type { RealCrashBits } from "@/lib/investor-type-real";
 import { InvestorTypeTest } from "@/components/type/InvestorTypeTest";
 
 export const dynamic = "force-dynamic";
@@ -51,10 +51,16 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function TypePage() {
   const lang = readLang();
-  // TQQQ 스냅샷에서 실제 crashEpisodes만 가져와 1·6번 문항 숫자 채움. 다른
-  // 데이터는 사용 안 함.
-  const snap = await getSnapshot(DEFAULT_SYMBOL);
-  const episodes = snap.heroData.ready ? snap.heroData.crashEpisodes : [];
-  const realBits = extractRealCrashBits(episodes);
+  // 처음 트랙 1·10번 실제상황 숫자용 — QQQ(나스닥) crashEpisodes 가져옴.
+  // QQQ가 아직 등록 안 됐으면 getSnapshot이 heroData.ready=false로 폴백 →
+  // crashEpisodes=[] → extractRealCrashBits가 모두 null 반환 → 1·10번은 뱃지·공개박스
+  // 숨기고 fallback 질문으로 진행.
+  const list = await loadSymbolList();
+  let realBits: RealCrashBits = { crash2020: null, crash2022: null };
+  if (list.includes("qqq")) {
+    const snap = await getSnapshot("qqq");
+    const episodes = snap.heroData.ready ? snap.heroData.crashEpisodes : [];
+    realBits = extractRealCrashBits(episodes);
+  }
   return <InvestorTypeTest lang={lang} realBits={realBits} />;
 }

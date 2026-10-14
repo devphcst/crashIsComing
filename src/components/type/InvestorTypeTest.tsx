@@ -7,12 +7,16 @@ import {
   AXES,
   AXIS_ORDER,
   INVESTOR_TYPES,
-  QUESTIONS,
-  REAL_TELLS,
   type AxisKey,
-  type Question,
   type TypeCode,
 } from "@/data/investor-types";
+import {
+  INTRO_QUESTION,
+  QUESTIONS,
+  REAL_TELLS,
+  type Question,
+  type Track,
+} from "@/data/investor-quiz";
 import type { RealCrashBits, RealCrashBit } from "@/lib/investor-type-real";
 import {
   barRatios,
@@ -24,7 +28,7 @@ import {
   type Answer,
 } from "@/lib/investor-type";
 
-type Stage = "intro" | "question" | "result";
+type Stage = "intro" | "fork" | "question" | "result";
 
 type CopyBlock = {
   heroLead: string;
@@ -34,8 +38,6 @@ type CopyBlock = {
   back: string;
   next: string;
   stepLabel: (n: number, total: number) => string;
-  nByMcount: (n: number, m: number) => string;
-  realBadge: (text: string) => string;
   resultTitle: string;
   resultCta: string;
   retry: string;
@@ -44,6 +46,7 @@ type CopyBlock = {
   match: string;
   opposite: string;
   disclaimer: string;
+  beginnerDisclaimer: string;
   sharedToast: string;
 };
 
@@ -51,13 +54,12 @@ const COPY: Record<Lang, CopyBlock> = {
   ko: {
     heroLead: "폭락장은 온다 · 성향 테스트",
     heroTitle: "폭락장에서\n나는 어떤 투자자일까?",
-    heroDesc: "8문항 · 1분. 16유형 중 하나로 결과를 알려드려요.",
+    heroDesc:
+      "16문항 · 1~2분. 16유형 중 하나로 결과를 알려드려요. 답은 브라우저 밖으로 나가지 않아요.",
     startBtn: "시작하기",
     back: "뒤로",
     next: "다음",
-    stepLabel: (n: number, total: number) => `${n} / ${total}`,
-    nByMcount: (n: number, m: number) => `${n} / ${m}`,
-    realBadge: (text: string) => text,
+    stepLabel: (n, total) => `${n} / ${total}`,
     resultTitle: "나의 폭락장 유형",
     resultCta: "결과 공유하기",
     retry: "다시 하기",
@@ -66,18 +68,19 @@ const COPY: Record<Lang, CopyBlock> = {
     match: "잘 맞는 유형",
     opposite: "상극 유형",
     disclaimer: "재미로 보는 테스트예요. 투자 자문이 아닙니다.",
+    beginnerDisclaimer:
+      "가정으로 답한 결과예요. 실제로 투자해보면 달라질 수 있어요.",
     sharedToast: "링크를 복사했어요",
   },
   en: {
     heroLead: "Crash Is Coming · Personality Test",
     heroTitle: "In a crash,\nwhat kind of investor are you?",
-    heroDesc: "8 questions, 1 minute. Find your type among 16.",
+    heroDesc:
+      "16 questions, 1–2 minutes. Find your type among 16. Your answers never leave your browser.",
     startBtn: "Start",
     back: "Back",
     next: "Next",
-    stepLabel: (n: number, total: number) => `${n} / ${total}`,
-    nByMcount: (n: number, m: number) => `${n} / ${m}`,
-    realBadge: (text: string) => text,
+    stepLabel: (n, total) => `${n} / ${total}`,
     resultTitle: "Your Crash Type",
     resultCta: "Share result",
     retry: "Retake",
@@ -86,6 +89,8 @@ const COPY: Record<Lang, CopyBlock> = {
     match: "You click with",
     opposite: "Clash with",
     disclaimer: "Just for fun — not investment advice.",
+    beginnerDisclaimer:
+      "This is a hypothetical result. Real investing can change the answer.",
     sharedToast: "Link copied",
   },
 };
@@ -99,20 +104,32 @@ export function InvestorTypeTest({
 }) {
   const copy = COPY[lang];
   const [stage, setStage] = useState<Stage>("intro");
+  const [track, setTrack] = useState<Track | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
   // 실제상황 문항: 선택 → 공개박스 노출 → "다음" 눌러야 넘어감.
   const [revealedChoiceId, setRevealedChoiceId] = useState<string | null>(null);
 
-  const q = QUESTIONS[index];
-  const total = QUESTIONS.length;
+  const list = track ? QUESTIONS[track] : [];
+  const q: Question | null = track ? list[index] : null;
+  const total = list.length;
+
   const realBit = useMemo<RealCrashBit | null>(() => {
-    if (!q.real) return null;
+    if (!q?.real) return null;
     return realBits[q.real.source];
-  }, [q.real, realBits]);
-  const realActive = Boolean(q.real && realBit);
+  }, [q, realBits]);
+  const realActive = Boolean(q?.real && realBit);
 
   const start = () => {
+    setStage("fork");
+    setTrack(null);
+    setIndex(0);
+    setAnswers([]);
+    setRevealedChoiceId(null);
+  };
+
+  const pickTrack = (t: Track) => {
+    setTrack(t);
     setStage("question");
     setIndex(0);
     setAnswers([]);
@@ -121,12 +138,14 @@ export function InvestorTypeTest({
 
   const retry = () => {
     setStage("intro");
+    setTrack(null);
     setIndex(0);
     setAnswers([]);
     setRevealedChoiceId(null);
   };
 
   const commitAndAdvance = (choiceId: string) => {
+    if (!q) return;
     const next = [
       ...answers.filter((a) => a.questionId !== q.id),
       { questionId: q.id, choiceId },
@@ -142,7 +161,6 @@ export function InvestorTypeTest({
 
   const onPick = (choiceId: string) => {
     if (realActive) {
-      // 실제상황: 공개박스 열고 멈춤.
       setRevealedChoiceId(choiceId);
       return;
     }
@@ -155,12 +173,12 @@ export function InvestorTypeTest({
 
   const onBack = () => {
     if (index === 0) {
-      setStage("intro");
+      setStage("fork");
       return;
     }
     const prevIdx = index - 1;
     setIndex(prevIdx);
-    const prevQ = QUESTIONS[prevIdx];
+    const prevQ = list[prevIdx];
     const prevAns = answers.find((a) => a.questionId === prevQ.id);
     setRevealedChoiceId(prevAns && prevQ.real ? prevAns.choiceId : null);
   };
@@ -169,19 +187,33 @@ export function InvestorTypeTest({
     return <Intro copy={copy} onStart={start} />;
   }
 
-  if (stage === "result") {
-    const scores = computeScores(answers);
-    const code = codeFromScores(scores, answers);
+  if (stage === "fork") {
+    return (
+      <Fork
+        lang={lang}
+        copy={copy}
+        onPick={pickTrack}
+        onBack={() => setStage("intro")}
+      />
+    );
+  }
+
+  if (stage === "result" && track) {
+    const scores = computeScores(track, answers);
+    const code = codeFromScores(track, scores, answers);
     return (
       <Result
         lang={lang}
         copy={copy}
+        track={track}
         code={code}
         scores={scores}
         onRetry={retry}
       />
     );
   }
+
+  if (!q || !track) return null;
 
   return (
     <QuestionView
@@ -201,7 +233,7 @@ export function InvestorTypeTest({
 }
 
 /* ============================================================================
- * Intro — "폭락장에서 나는 어떤 투자자일까?" 큰 타이틀 + 시작 버튼
+ * Intro
  * ============================================================================ */
 
 function Intro({
@@ -250,7 +282,71 @@ function Intro({
 }
 
 /* ============================================================================
- * 문항 화면 — 진행바 + 뒤로가기 + 뱃지(옵션) + 질문 + 선택지 + 공개박스
+ * 0번 갈림길
+ * ============================================================================ */
+
+function Fork({
+  lang,
+  copy,
+  onPick,
+  onBack,
+}: {
+  lang: Lang;
+  copy: CopyBlock;
+  onPick: (t: Track) => void;
+  onBack: () => void;
+}) {
+  return (
+    <main className="mx-auto flex min-h-screen max-w-[480px] flex-col px-6 pb-10 pt-6">
+      <header className="flex items-center">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label={copy.back}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:text-fg"
+        >
+          ←
+        </button>
+      </header>
+
+      <div className="flex flex-col gap-5 pt-10">
+        <h2
+          style={{
+            fontSize: 19,
+            fontWeight: 500,
+            lineHeight: 1.5,
+            color: "#191F28",
+          }}
+        >
+          {INTRO_QUESTION.prompt[lang]}
+        </h2>
+        <div className="flex flex-col gap-3 pt-1">
+          {INTRO_QUESTION.choices.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onPick(c.id)}
+              className="w-full text-left transition-colors"
+              style={{
+                background: "#F2F4F8",
+                color: "#191F28",
+                borderRadius: 14,
+                padding: "16px 18px",
+                fontSize: 15,
+                fontWeight: 500,
+              }}
+            >
+              {c.label[lang]}
+            </button>
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/* ============================================================================
+ * 문항 — 진행바 + 뒤로가기 + 뱃지(옵션) + 질문 + 선택지 + 공개박스
  * ============================================================================ */
 
 function QuestionView({
@@ -280,11 +376,10 @@ function QuestionView({
 }) {
   const progress = ((index + 1) / total) * 100;
 
-  const prompt = useMemo(() => fillPrompt(q.prompt[lang], realBit), [
-    q.prompt,
-    lang,
-    realBit,
-  ]);
+  const prompt = useMemo(
+    () => fillPrompt(q, lang, realBit, realActive),
+    [q, lang, realBit, realActive],
+  );
 
   const reveal =
     realActive && revealedChoiceId
@@ -411,13 +506,25 @@ function QuestionView({
 
 const roundPct = (pct: number): number => Math.abs(Math.round(pct));
 
-/** {dd} / {rm} 토큰 치환. realBit이 없으면 토큰 그대로 남음(실무에서 그 상태로
- * 노출되지 않도록 realActive gate가 선행). */
-const fillPrompt = (template: string, bit: RealCrashBit | null): string => {
+/** 질문 prompt에서 {dd}·{rm} 치환. realActive 아니면 promptFallback 또는 원문. */
+const fillPrompt = (
+  q: Question,
+  lang: Lang,
+  bit: RealCrashBit | null,
+  realActive: boolean,
+): string => {
+  if (!realActive) {
+    // 실제상황 비활성(real 플래그 없음 or crash 데이터 없음) → fallback 질문.
+    return q.promptFallback?.[lang] ?? q.prompt[lang];
+  }
+  const template = q.prompt[lang];
   if (!bit) return template;
   return template
     .replace(/\{dd\}/g, String(roundPct(bit.drawdownPct)))
-    .replace(/\{rm\}/g, bit.recoveryMonths !== null ? String(bit.recoveryMonths) : "—");
+    .replace(
+      /\{rm\}/g,
+      bit.recoveryMonths !== null ? String(bit.recoveryMonths) : "—",
+    );
 };
 
 const realTellFor = (
@@ -427,44 +534,37 @@ const realTellFor = (
   lang: Lang,
 ): string | null => {
   if (!q.real || !bit) return null;
-  if (q.real.source === "crash2020") {
-    const key = choiceId as "sell" | "hold" | "buyMore";
-    const tpl = REAL_TELLS.crash2020[key]?.[lang];
-    if (!tpl) return null;
-    // 2020 "hold" 분기는 2022 회복 개월도 참조 — fallback으로 2020 자체 recovery.
-    const rm2022 = bit.recoveryMonths ?? bit.recoveryMonths;
-    return tpl
-      .replace(/\{rm\}/g, bit.recoveryMonths !== null ? String(bit.recoveryMonths) : "—")
-      .replace(/\{rm2022\}/g, rm2022 !== null ? String(rm2022) : "—");
-  }
-  if (q.real.source === "crash2022") {
-    const key = choiceId as "hold" | "swap" | "exit";
-    const bundle = REAL_TELLS.crash2022[key];
-    if (!bundle) return null;
-    const tpl =
-      bit.recoveryMonths !== null
-        ? bundle.withRecovery[lang]
-        : bundle.recovering[lang];
-    return tpl
-      .replace(/\{rm\}/g, bit.recoveryMonths !== null ? String(bit.recoveryMonths) : "—")
-      .replace(/\{dd\}/g, String(roundPct(bit.drawdownPct)));
-  }
-  return null;
+  const bundle =
+    q.real.source === "crash2020"
+      ? REAL_TELLS.crash2020
+      : REAL_TELLS.crash2022;
+  const slot = bundle[choiceId as "pos" | "mid" | "neg"];
+  if (!slot) return null;
+  const tpl =
+    bit.recoveryMonths !== null ? slot.withRecovery[lang] : slot.recovering[lang];
+  return tpl
+    .replace(
+      /\{rm\}/g,
+      bit.recoveryMonths !== null ? String(bit.recoveryMonths) : "—",
+    )
+    .replace(/\{dd\}/g, String(roundPct(bit.drawdownPct)));
 };
 
 /* ============================================================================
- * 결과 — 코드 / 4축 바 / 낙폭 카드 / 궁합 / 공유·다시
+ * 결과
  * ============================================================================ */
 
 function Result({
   lang,
   copy,
+  track,
   code,
   scores,
   onRetry,
 }: {
   lang: Lang;
   copy: CopyBlock;
+  track: Track;
   code: TypeCode;
   scores: ReturnType<typeof computeScores>;
   onRetry: () => void;
@@ -488,7 +588,6 @@ function Result({
         await navigator.share({ title: text, url });
         return;
       } catch {
-        // 사용자가 공유 취소 — 조용히 무시.
         return;
       }
     }
@@ -533,6 +632,18 @@ function Result({
         >
           {type.description[lang]}
         </p>
+        {track === "beginner" ? (
+          <p
+            style={{
+              marginTop: 10,
+              fontSize: 12,
+              color: "#8B95A1",
+              lineHeight: 1.6,
+            }}
+          >
+            {copy.beginnerDisclaimer}
+          </p>
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-4">

@@ -2,11 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import { calcDrawdown } from "./drawdown";
-import {
-  computeATH,
-  computeOneYearHigh,
-  computePeriodDrawdowns,
-} from "./peaks";
+import { computeATH, computePeriodDrawdowns } from "./peaks";
 import { computeMarketStatus } from "./market-status";
 import {
   readMeta,
@@ -19,7 +15,6 @@ import type { FearGreedSnapshot } from "./ingest/cnn-fear-greed";
 import { getProvider } from "./providers";
 import { getExchange, isHidden, type SymbolMeta } from "./symbols";
 import { computeAtDrawdownStats } from "./at-drawdown";
-import { getSeasonality } from "./seasonality";
 import { getCrashEpisodes } from "./crashes-server";
 import {
   readOrBuildHistorySnapshot,
@@ -27,6 +22,7 @@ import {
   type HistorySnapshot,
   type Snapshot,
 } from "./snapshot";
+import type { SeasonalityData } from "./seasonality-math";
 import type { HeroData, SeasonalityTeaser } from "@/components/HeroDrawdown";
 
 export type VisitorInfo = {
@@ -70,9 +66,8 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
     ]);
 
     const ath = computeATH(closes, seed);
-    const oneYear = computeOneYearHigh(closes, seed);
 
-    if (!latest || !ath || !oneYear) return { ready: false };
+    if (!latest || !ath) return { ready: false };
 
     // 기간별 폭락(전기 대비) — 데이터 부족 항목은 null로 들어가 UI에서 숨김 처리.
     const periodDrawdowns = computePeriodDrawdowns(closes);
@@ -120,11 +115,6 @@ const _loadHeroData = async (ticker: string): Promise<HeroData> => {
         date: ath.date,
         price: ath.price,
         drawdownPct: athDrawdownPct,
-      },
-      oneYear: {
-        date: oneYear.date,
-        price: oneYear.price,
-        drawdownPct: calcDrawdown(latest.price, oneYear.price),
       },
       breakdown: periodDrawdowns,
       marketStatus: computeMarketStatus(latest.date, exchange),
@@ -249,40 +239,34 @@ export const loadVisibleMetas = async (): Promise<SymbolMeta[]> => {
 };
 
 /** 현재 KST 월(1~12). */
-const currentKstMonth = (): number => {
+export const currentKstMonth = (): number => {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   return kst.getUTCMonth() + 1;
 };
 
 /**
- * 월별 계절성 티저 — 현재 KST 월의 과거 N년 통계를 요약.
- * 현재 월은 데이터상 "미완성"이지만 과거 N년의 완결된 샘플만 쓰므로 안전.
- * 해당 월에 샘플이 0이면 null (블록 미표시).
+ * 스냅샷의 월별 계절성 요약에서 특정 월의 티저를 뽑는다 (pure).
+ * 스냅샷엔 byMonth 전체가 들어 있고 월 선택은 렌더 시점에서 하므로 월이 바뀌어도
+ * 다음 종가 저장 전까지 지난달이 노출되지 않는다. 샘플 0이면 null (블록 미표시).
  */
-export const loadSeasonalityTeaser = async (
-  ticker: string,
-): Promise<SeasonalityTeaser | null> => {
-  try {
-    const sea = await getSeasonality(ticker);
-    const month = currentKstMonth();
-    const series = sea.byMonth[month];
-    const s = series?.stats;
-    if (!series || !s || s.count === 0 || !s.best || !s.worst) return null;
-    return {
-      month,
-      mean: s.mean,
-      wins: s.wins,
-      count: s.count,
-      bestRet: s.best.ret,
-      bestYear: s.best.year,
-      worstRet: s.worst.ret,
-      worstYear: s.worst.year,
-    };
-  } catch (err) {
-    console.error(`loadSeasonalityTeaser(${ticker}) failed:`, err);
-    return null;
-  }
+export const pickSeasonalityTeaser = (
+  seasonality: SeasonalityData,
+  month: number,
+): SeasonalityTeaser | null => {
+  const series = seasonality.byMonth[month];
+  const s = series?.stats;
+  if (!series || !s || s.count === 0 || !s.best || !s.worst) return null;
+  return {
+    month,
+    mean: s.mean,
+    wins: s.wins,
+    count: s.count,
+    bestRet: s.best.ret,
+    bestYear: s.best.year,
+    worstRet: s.worst.ret,
+    worstYear: s.worst.year,
+  };
 };
 
 /**

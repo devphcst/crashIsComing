@@ -638,23 +638,28 @@ export async function reorderSymbolsAction(
 /**
  * 어드민 "전체 스냅샷 다시 만들기" 수동 복구용.
  * 모든 종목(hidden 포함)에 대해 snapshot:{ticker} + history:{ticker} 재생성.
- * 성공·실패 요약을 상태로 반환.
+ * 종목별·총 소요 시간(ms)과 성공·실패 요약을 메시지로 반환 — Vercel 함수 제한
+ * 체크용(Hobby 10s, Pro 60s).
  */
 export async function rebuildAllSnapshotsAction(): Promise<ActionState> {
   if (!checkAuth()) return unauthorized();
   const tickers = await readSymbolList();
+  const startedAt = performance.now();
   const results = await rebuildAllSnapshots(tickers);
+  const totalMs = Math.round(performance.now() - startedAt);
   const ok = results.every((r) => r.ok);
   const failed = results.filter((r) => !r.ok);
   revalidateTag("symbols");
   revalidatePath("/", "layout");
   revalidatePath("/admin");
-  return {
-    ok,
-    message: ok
-      ? `${results.length}개 종목 스냅샷 재생성 완료`
-      : `${results.length - failed.length}/${results.length} 성공 — 실패: ${failed.map((f) => `${f.ticker}(${f.error})`).join(", ")}`,
-  };
+
+  const perTicker = results
+    .map((r) => `${r.ticker} ${r.ms}ms${r.ok ? "" : `(실패: ${r.error})`}`)
+    .join(", ");
+  const summary = ok
+    ? `${results.length}개 재생성 완료 (총 ${totalMs}ms)`
+    : `${results.length - failed.length}/${results.length} 성공 (총 ${totalMs}ms)`;
+  return { ok, message: `${summary} — ${perTicker}` };
 }
 
 // ---- CSV import ----

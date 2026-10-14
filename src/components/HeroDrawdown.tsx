@@ -40,7 +40,6 @@ export type HeroData =
       exchange: Exchange;
       current: { date: string; price: number };
       ath: { date: string; price: number; drawdownPct: number };
-      oneYear: { date: string; price: number; drawdownPct: number };
       breakdown: {
         oneDay: PeriodPoint | null;
         oneWeek: PeriodPoint | null;

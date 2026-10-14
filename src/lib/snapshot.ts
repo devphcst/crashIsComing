@@ -5,11 +5,7 @@ import path from "node:path";
 import { kv } from "@vercel/kv";
 import { isKvConfigured, readAllCloses, readMeta, readSeed } from "./kv";
 import { calcDrawdown } from "./drawdown";
-import {
-  computeATH,
-  computeOneYearHigh,
-  computePeriodDrawdowns,
-} from "./peaks";
+import { computeATH, computePeriodDrawdowns } from "./peaks";
 import { computeMarketStatus } from "./market-status";
 import { computeAtDrawdownStats } from "./at-drawdown";
 import { getExchange, type SymbolMeta } from "./symbols";
@@ -21,10 +17,7 @@ import {
   buildSeasonalityData,
   type SeasonalityData,
 } from "./seasonality-math";
-import type {
-  HeroData,
-  SeasonalityTeaser,
-} from "@/components/HeroDrawdown";
+import type { HeroData } from "@/components/HeroDrawdown";
 
 /* ============================================================================
  * 두 종류의 사전 계산 스냅샷:
@@ -38,13 +31,18 @@ import type {
  * 계산 후 저장". 원본 closes:{ticker}는 그대로 — 재계산의 single source of truth.
  * ============================================================================ */
 
+/**
+ * 메인 스냅샷은 "시점 비의존 원재료"만 담는다. 월별 티저(seasonalityTeaser)는
+ * 저장하지 않고 렌더 시 `pickSeasonalityTeaser(seasonality, currentKstMonth())`로
+ * 뽑는다 — buildSnapshot 시점의 월에 티저가 고정되면 월초(예: 11/1~11/3 아침)
+ * 다음 종가 저장 전까지 지난달이 노출되기 때문.
+ */
 export type Snapshot = {
   builtAt: string;
   ticker: string;
   meta: SymbolMeta;
   heroData: HeroData;
   seasonality: SeasonalityData;
-  seasonalityTeaser: SeasonalityTeaser | null;
 };
 
 /**
@@ -62,13 +60,6 @@ export type HistorySnapshot = {
   dates: number[];
   prices: number[];
   historyCrashes: CrashCandidate[];
-};
-
-/** 현재 KST 월(1~12). seasonality teaser 선택에 사용. */
-const currentKstMonth = (): number => {
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  return kst.getUTCMonth() + 1;
 };
 
 const daysBetween = (fromISO: string, toISO: string): number => {
@@ -92,11 +83,10 @@ export const buildSnapshot = async (ticker: string): Promise<Snapshot> => {
 
   // HeroData (loadHeroData와 동일 로직).
   const ath = computeATH(closesRaw, seed);
-  const oneYear = computeOneYearHigh(closesRaw, seed);
   const latest = closesRaw.length ? closesRaw[closesRaw.length - 1] : null;
 
   let heroData: HeroData;
-  if (!latest || !ath || !oneYear) {
+  if (!latest || !ath) {
     heroData = { ready: false };
   } else {
     const periodDrawdowns = computePeriodDrawdowns(closesRaw);
@@ -129,11 +119,6 @@ export const buildSnapshot = async (ticker: string): Promise<Snapshot> => {
       exchange,
       current: latest,
       ath: { date: ath.date, price: ath.price, drawdownPct: athDrawdownPct },
-      oneYear: {
-        date: oneYear.date,
-        price: oneYear.price,
-        drawdownPct: calcDrawdown(latest.price, oneYear.price),
-      },
       breakdown: periodDrawdowns,
       marketStatus: computeMarketStatus(latest.date, exchange),
       thresholds: {
@@ -148,24 +133,8 @@ export const buildSnapshot = async (ticker: string): Promise<Snapshot> => {
     };
   }
 
-  // Seasonality + teaser.
+  // Seasonality — 월별 전체 요약을 저장. 티저 월 선택은 렌더 시점에서.
   const seasonality = buildSeasonalityData(ticker, closesRaw);
-  let seasonalityTeaser: SeasonalityTeaser | null = null;
-  const month = currentKstMonth();
-  const monthSeries = seasonality.byMonth[month];
-  const s = monthSeries?.stats;
-  if (s && s.count > 0 && s.best && s.worst) {
-    seasonalityTeaser = {
-      month,
-      mean: s.mean,
-      wins: s.wins,
-      count: s.count,
-      bestRet: s.best.ret,
-      bestYear: s.best.year,
-      worstRet: s.worst.ret,
-      worstYear: s.worst.year,
-    };
-  }
 
   return {
     builtAt: new Date().toISOString(),
@@ -173,7 +142,6 @@ export const buildSnapshot = async (ticker: string): Promise<Snapshot> => {
     meta,
     heroData,
     seasonality,
-    seasonalityTeaser,
   };
 };
 
@@ -344,19 +312,31 @@ export const rebuildSnapshotsFor = async (ticker: string): Promise<void> => {
   ]);
 };
 
-/** 종목 목록 전체 재생성 (어드민 "전체 스냅샷 다시 만들기" 버튼). */
+/**
+ * 종목 목록 전체 재생성 (어드민 "전체 스냅샷 다시 만들기" 버튼).
+ * 종목별 소요 시간(ms) + 결과를 반환. Vercel 함수 제한 체크용.
+ */
 export const rebuildAllSnapshots = async (
   tickers: string[],
-): Promise<Array<{ ticker: string; ok: boolean; error?: string }>> => {
-  const results: Array<{ ticker: string; ok: boolean; error?: string }> = [];
+): Promise<
+  Array<{ ticker: string; ok: boolean; ms: number; error?: string }>
+> => {
+  const results: Array<{
+    ticker: string;
+    ok: boolean;
+    ms: number;
+    error?: string;
+  }> = [];
   for (const t of tickers) {
+    const start = performance.now();
     try {
       await rebuildSnapshotsFor(t);
-      results.push({ ticker: t, ok: true });
+      results.push({ ticker: t, ok: true, ms: Math.round(performance.now() - start) });
     } catch (err) {
       results.push({
         ticker: t,
         ok: false,
+        ms: Math.round(performance.now() - start),
         error: err instanceof Error ? err.message : String(err),
       });
     }

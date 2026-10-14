@@ -3,11 +3,13 @@ import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
 import {
+  currentKstMonth,
   getSnapshot,
   loadFearGreed,
   loadSymbolList,
   loadVisibleMetas,
   loadVisitorInfo,
+  pickSeasonalityTeaser,
 } from "@/lib/page-data";
 import { buildJsonLd, buildSymbolMetadata } from "@/lib/seo-builder";
 import { DEFAULT_SYMBOL, isHidden } from "@/lib/symbols";
@@ -65,6 +67,7 @@ export default async function TickerPage({
     loadVisibleMetas(),
     loadFearGreed(),
   ]);
+  const teaser = pickSeasonalityTeaser(snap.seasonality, currentKstMonth());
   return (
     <>
       <script
@@ -79,7 +82,7 @@ export default async function TickerPage({
         tabs={metas}
         current={ticker}
         fearGreed={fearGreed}
-        seasonalityTeaser={snap.seasonalityTeaser}
+        seasonalityTeaser={teaser}
       />
     </>
   );

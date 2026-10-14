@@ -2,10 +2,12 @@ import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { HeroDrawdown } from "@/components/HeroDrawdown";
 import {
+  currentKstMonth,
   getSnapshot,
   loadFearGreed,
   loadVisibleMetas,
   loadVisitorInfo,
+  pickSeasonalityTeaser,
 } from "@/lib/page-data";
 import { buildJsonLd, buildSymbolMetadata } from "@/lib/seo-builder";
 import { DEFAULT_SYMBOL } from "@/lib/symbols";
@@ -62,6 +64,7 @@ export default async function Page() {
     loadVisibleMetas(),
     loadFearGreed(),
   ]);
+  const teaser = pickSeasonalityTeaser(snap.seasonality, currentKstMonth());
   return (
     <>
       <script
@@ -76,7 +79,7 @@ export default async function Page() {
         tabs={metas}
         current={DEFAULT_SYMBOL}
         fearGreed={fearGreed}
-        seasonalityTeaser={snap.seasonalityTeaser}
+        seasonalityTeaser={teaser}
       />
     </>
   );

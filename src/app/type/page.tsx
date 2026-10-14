@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { LANG_COOKIE, SITE_URL } from "@/constants/seo";
 import type { Lang } from "@/lib/i18n";
 import { InvestorTypeTest } from "@/components/type/InvestorTypeTest";
+import { getNasdaqSnap } from "@/lib/nasdaq-snap";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function TypePage() {
+export default async function TypePage() {
   const lang = readLang();
-  return <InvestorTypeTest lang={lang} />;
+  const nasdaq = await getNasdaqSnap();
+  return <InvestorTypeTest lang={lang} nasdaq={nasdaq} />;
 }

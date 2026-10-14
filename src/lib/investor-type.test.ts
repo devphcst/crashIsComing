@@ -6,7 +6,6 @@ import {
   computeScores,
   matchCompatible,
   matchOpposite,
-  tolerableDrawdown,
   type Answer,
 } from "./investor-type";
 
@@ -113,18 +112,6 @@ describe("barRatios", () => {
       hold: 1,
       mind: 0.75,
     });
-  });
-});
-
-describe("tolerableDrawdown", () => {
-  it("극한 안전형: 15%", () => {
-    expect(tolerableDrawdown({ buy: 0, lev: -4, hold: 0, mind: -4 })).toBe(15);
-  });
-  it("극한 공격형: 60%", () => {
-    expect(tolerableDrawdown({ buy: 0, lev: 4, hold: 0, mind: 4 })).toBe(60);
-  });
-  it("중간(모두 0): 5단위 반올림 → 40%", () => {
-    expect(tolerableDrawdown({ buy: 0, lev: 0, hold: 0, mind: 0 })).toBe(40);
   });
 });
 

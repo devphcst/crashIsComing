@@ -9,8 +9,7 @@
  *      그 답도 0(중간)이면 전 축 앞 글자(B·E·H·I)로 폴백.
  *   5. 판단-위험-기간-멘탈 순서로 조합한 4자리 코드 반환.
  *   6. 축별 바 비율 (score+4)/8 → 0~1.
- *   7. 버틸 수 있는 낙폭 15 + e*25 + i*20 (5단위 반올림, 15~60 클램프).
- *   8. 궁합: 판단·기간 같고 위험·멘탈 반대 = 잘 맞음 / 4글자 전부 반대 = 상극.
+ *   7. 궁합: 판단·기간 같고 위험·멘탈 반대 = 잘 맞음 / 4글자 전부 반대 = 상극.
  */
 
 import {
@@ -97,14 +96,6 @@ export const barRatios = (scores: AxisScores): Record<AxisKey, number> => ({
   hold: (scores.hold + 4) / 8,
   mind: (scores.mind + 4) / 8,
 });
-
-export const tolerableDrawdown = (scores: AxisScores): number => {
-  const e = (scores.lev + 4) / 8;
-  const i = (scores.mind + 4) / 8;
-  const raw = 15 + e * 25 + i * 20;
-  const rounded = Math.round(raw / 5) * 5;
-  return Math.max(15, Math.min(60, rounded));
-};
 
 const flip = (code: TypeCode, axis: AxisKey): TypeCode => {
   const idx = AXIS_ORDER.indexOf(axis);

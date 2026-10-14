@@ -331,13 +331,13 @@ async function renderTypeOg(code: TypeCode, lang: Lang) {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: 24,
+            gap: 18,
           }}
         >
           <div
             style={{
               display: "flex",
-              fontSize: 200,
+              fontSize: 180,
               letterSpacing: 12,
               color: "#191F28",
               lineHeight: 1,
@@ -348,13 +348,24 @@ async function renderTypeOg(code: TypeCode, lang: Lang) {
           <div
             style={{
               display: "flex",
-              fontSize: 34,
+              fontSize: 30,
               fontWeight: 500,
               color: "#4E5968",
               textAlign: "center",
             }}
           >
             {type.reading[lang]} · {type.nickname[lang]}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              fontSize: 22,
+              color: "#8B95A1",
+              textAlign: "center",
+              maxWidth: 980,
+            }}
+          >
+            &ldquo;{type.quotes[lang][0]}&rdquo;
           </div>
         </div>
 

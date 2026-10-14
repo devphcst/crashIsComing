@@ -11,6 +11,7 @@ import {
   isHidden,
   type SymbolMeta,
 } from "@/lib/symbols";
+import { INVESTOR_TYPES, isValidCode, type TypeCode } from "@/data/investor-types";
 
 /**
  * 종목별 동적 OG 이미지. /api/og?ticker=soxl[&lang=en]
@@ -143,6 +144,11 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const lang = parseLang(url.searchParams.get("lang"));
+    // 성향 테스트 결과 OG — ?type=CODE 분기.
+    const rawType = url.searchParams.get("type");
+    if (rawType && isValidCode(rawType)) {
+      return renderTypeOg(rawType.toUpperCase() as TypeCode, lang);
+    }
     const ticker = await resolveTicker(url.searchParams.get("ticker"));
     const [{ meta, pct, latestDate }, fontData] = await Promise.all([
       loadOgData(ticker),
@@ -274,4 +280,114 @@ export async function GET(req: Request) {
     console.error("[/api/og] failed:", err);
     return new Response("og generation failed", { status: 500 });
   }
+}
+
+/**
+ * 성향 테스트 결과 OG 이미지. 흰 배경, 코드 크게, 읽기·별명, 사이트명.
+ * 결과 페이지(/type/[CODE])의 메타데이터가 이 URL을 가리킨다.
+ */
+async function renderTypeOg(code: TypeCode, lang: Lang) {
+  const fontData = await loadFont();
+  const type = INVESTOR_TYPES[code];
+  const brand = COPY[lang].brand;
+  const subLabel =
+    lang === "ko" ? "폭락장 성향 테스트" : "Crash Personality Test";
+
+  const image = new ImageResponse(
+    (
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          background: "#FFFFFF",
+          color: "#191F28",
+          fontFamily: "Pretendard",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: 60,
+            left: 60,
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          }}
+        >
+          <div style={{ fontSize: 24, color: "#6B7684" }}>{brand}</div>
+          <div style={{ fontSize: 16, color: "#8B95A1" }}>{subLabel}</div>
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 24,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              fontSize: 200,
+              letterSpacing: 12,
+              color: "#191F28",
+              lineHeight: 1,
+            }}
+          >
+            {code}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              fontSize: 34,
+              fontWeight: 500,
+              color: "#4E5968",
+              textAlign: "center",
+            }}
+          >
+            {type.reading[lang]} · {type.nickname[lang]}
+          </div>
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            bottom: 60,
+            right: 60,
+            display: "flex",
+            fontSize: 18,
+            color: "#8B95A1",
+          }}
+        >
+          crash-is-coming
+        </div>
+      </div>
+    ),
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      fonts: [
+        {
+          name: "Pretendard",
+          data: fontData,
+          style: "normal",
+          weight: 700,
+        },
+      ],
+    },
+  );
+  image.headers.set(
+    "Cache-Control",
+    "public, max-age=0, s-maxage=86400, stale-while-revalidate=604800",
+  );
+  return image;
 }

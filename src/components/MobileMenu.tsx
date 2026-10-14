@@ -5,9 +5,10 @@ import { LangToggle } from "./LangToggle";
 import { PWA_GUIDE_OPEN_EVENT } from "./PwaGuide";
 import type { Lang, Dict } from "@/lib/i18n";
 
-type MenuKey = "about" | "history" | "allInWarning" | "ad";
+type MenuKey = "typeTest" | "about" | "history" | "allInWarning" | "ad";
 
 const MENU_ITEMS: ReadonlyArray<{ href: string; key: MenuKey }> = [
+  { href: "/type", key: "typeTest" },
   { href: "#about", key: "about" },
   { href: "#history", key: "history" },
   { href: "#all-in-warning", key: "allInWarning" },
@@ -90,9 +91,11 @@ export function MobileMenu({
     e: React.MouseEvent<HTMLAnchorElement>,
     href: string,
   ) => {
+    // 전체 경로("/type" 등)는 anchor 처리 안 함 — 기본 네비게이션에 맡김.
+    const isAnchor = href.startsWith("#");
     // anchorBase가 있으면 다른 페이지로의 이동이므로 기본 브라우저 네비게이션에 맡김.
     // 드로어만 닫고 preventDefault 안 함.
-    if (anchorBase) {
+    if (anchorBase || !isAnchor) {
       setOpen(false);
       return;
     }
@@ -160,7 +163,11 @@ export function MobileMenu({
           </div>
           <ul className="divide-y divide-line">
             {menuItems.map((item) => {
-              const href = anchorBase ? `${anchorBase}${item.href}` : item.href;
+              const isAnchor = item.href.startsWith("#");
+              const href =
+                anchorBase && isAnchor
+                  ? `${anchorBase}${item.href}`
+                  : item.href;
               return (
                 <li key={item.key}>
                   <a

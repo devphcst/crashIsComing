@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/constants/seo";
 import { readMeta, readSymbolList } from "@/lib/kv";
 import { DEFAULT_SYMBOL, isHidden } from "@/lib/symbols";
+import { ALL_CODES } from "@/data/investor-types";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const list = await readSymbolList();
@@ -23,6 +24,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "monthly" as const,
       priority: t === DEFAULT_SYMBOL ? 0.7 : 0.5,
+    });
+  }
+  // 폭락장 성향 테스트 — 시작 페이지 + 16개 결과 공유 페이지.
+  entries.push({
+    url: `${SITE_URL}/type`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  });
+  for (const code of ALL_CODES) {
+    entries.push({
+      url: `${SITE_URL}/type/${code}`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.4,
     });
   }
   return entries;

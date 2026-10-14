@@ -15,6 +15,7 @@ import { AllInWarningSection } from "./AllInWarningSection";
 import { HistoryTable } from "./HistoryTable";
 import { MobileMenu } from "./MobileMenu";
 import { ProductAdMobile } from "./ProductAd";
+import { TypeTestEntry } from "./TypeTestEntry";
 import { SIDEBAR_AD } from "@/constants/ads";
 import type { Exchange, SymbolMeta } from "@/lib/symbols";
 import { DEFAULT_SYMBOL, getLeverage } from "@/lib/symbols";
@@ -209,6 +210,7 @@ export function HeroDrawdown({
             />
             <BreakdownCard data={data} />
             <AdCard lang={lang} />
+            <TypeTestEntry lang={lang} />
             <AboutSection lang={lang} />
             {showHistory ? (
               <HistoryTable

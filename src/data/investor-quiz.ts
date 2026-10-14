@@ -1,15 +1,14 @@
 /**
- * 폭락장 성향 테스트 — 문항 데이터.
+ * 투자 성향 테스트 — 문항 데이터.
  *
  * 구조:
- *   0번 갈림길 ("주식/ETF 사본 적 있어?") → experienced / beginner 트랙 선택
+ *   0번 갈림길("주식·ETF 사본 적 있어?") → experienced / beginner 트랙
  *   그 뒤 각 트랙 16문항 (4축 × 4문항).
  *
  * 선택지는 항상 3개, 순서는 화면 그대로:
  *   pos (+1, 앞 글자) → mid (0, 중간) → neg (-1, 뒤 글자)
  *
- * "A · B" 형태 label은 같은 점수의 한 버튼. 템플릿 토큰 {dd}·{rm}은
- * 처음 트랙 1·10번(실제상황)만 치환됨.
+ * "A · B" 형태 label은 같은 점수의 한 버튼.
  */
 
 import type { Lang } from "@/lib/i18n";
@@ -26,13 +25,7 @@ export type QuestionChoice = {
 export type Question = {
   id: string;
   axis: AxisKey;
-  real?: {
-    source: "crash2020" | "crash2022";
-    badge: Record<Lang, string>;
-  };
   prompt: Record<Lang, string>;
-  /** real 활성이지만 실제 crash 데이터가 없을 때 쓰는 대체 질문. */
-  promptFallback?: Record<Lang, string>;
   choices: QuestionChoice[];
 };
 
@@ -47,48 +40,39 @@ export const INTRO_QUESTION: IntroQuestion = {
     en: "Have you ever bought a stock or ETF yourself?",
   },
   choices: [
-    {
-      id: "experienced",
-      label: { ko: "있다", en: "Yes" },
-    },
-    {
-      id: "beginner",
-      label: { ko: "없다", en: "No" },
-    },
+    { id: "experienced", label: { ko: "있다", en: "Yes" } },
+    { id: "beginner", label: { ko: "없다", en: "No" } },
   ],
 };
 
 /* ============================================================================
- * 경험 트랙 — 실제로 한 행동을 묻는 16문항.
+ * 경험 트랙 — 실제로 한 행동.
  * ============================================================================ */
 
 const EXPERIENCED: Question[] = [
-  // 매수 축
+  // 판단 축 B/M
   {
     id: "exp-1",
     axis: "buy",
     prompt: {
-      ko: "최근 크게 빠졌을 때(2025년 4월 관세 충격 등) 실제로 뭐 했어?",
-      en: "In the last big selloff (e.g. the April 2025 tariff selloff) — what did you actually do?",
+      ko: "최근에 산 종목, 살 때 주가 흐름은?",
+      en: "Your most recent buy — what was the price doing at the time?",
     },
     choices: [
       {
         id: "pos",
         delta: 1,
-        label: { ko: "더 샀다", en: "Bought more" },
+        label: { ko: "떨어지고 있었다", en: "Falling" },
       },
       {
         id: "mid",
         delta: 0,
-        label: {
-          ko: "그대로 뒀다 · 그때 투자 안 함",
-          en: "Did nothing · wasn't investing then",
-        },
+        label: { ko: "흐름은 신경 안 씀", en: "Didn't care about the trend" },
       },
       {
         id: "neg",
         delta: -1,
-        label: { ko: "팔았다", en: "Sold" },
+        label: { ko: "오르고 있었다", en: "Rising" },
       },
     ],
   },
@@ -96,24 +80,26 @@ const EXPERIENCED: Question[] = [
     id: "exp-2",
     axis: "buy",
     prompt: {
-      ko: "평소에 사는 방식은?",
-      en: "How do you usually buy?",
+      ko: "종목 고르는 방식은?",
+      en: "How do you usually pick names?",
     },
     choices: [
       {
         id: "pos",
         delta: 1,
-        label: { ko: "빠질 때 모아서", en: "Stacking on dips" },
+        label: {
+          ko: "저평가·소외된 걸 찾는다",
+          en: "Hunt for the undervalued and overlooked",
+        },
       },
-      {
-        id: "mid",
-        delta: 0,
-        label: { ko: "정해진 날 적립", en: "Scheduled DCA" },
-      },
+      { id: "mid", delta: 0, label: { ko: "섞어서", en: "A mix" } },
       {
         id: "neg",
         delta: -1,
-        label: { ko: "오를 때 따라서", en: "Chasing rallies" },
+        label: {
+          ko: "요즘 뜨는 걸 찾는다",
+          en: "Look for what's hot right now",
+        },
       },
     ],
   },
@@ -138,31 +124,27 @@ const EXPERIENCED: Question[] = [
     id: "exp-4",
     axis: "buy",
     prompt: {
-      ko: "마지막으로 산 건 언제였어?",
-      en: "When was your most recent buy?",
+      ko: "신고가 찍은 종목을 보면?",
+      en: "A stock just hit an all-time high — what do you think?",
     },
     choices: [
       {
         id: "pos",
         delta: 1,
-        label: { ko: "하락 중일 때", en: "During a drop" },
+        label: { ko: "비싸서 안 산다", en: "Too expensive — pass" },
       },
-      {
-        id: "mid",
-        delta: 0,
-        label: {
-          ko: "정기 매수라 시점 무관",
-          en: "DCA — timing doesn't matter",
-        },
-      },
+      { id: "mid", delta: 0, label: { ko: "상관없다", en: "No opinion" } },
       {
         id: "neg",
         delta: -1,
-        label: { ko: "상승 뉴스 보고", en: "After bullish news" },
+        label: {
+          ko: "더 갈 것 같아서 산다",
+          en: "Buy — looks like it keeps running",
+        },
       },
     ],
   },
-  // 배수 축
+  // 위험 축 E/O
   {
     id: "exp-5",
     axis: "lev",
@@ -178,34 +160,6 @@ const EXPERIENCED: Question[] = [
   },
   {
     id: "exp-6",
-    axis: "lev",
-    prompt: {
-      ko: "레버리지 상품 지금도 써?",
-      en: "Are you still using leveraged products?",
-    },
-    choices: [
-      {
-        id: "pos",
-        delta: 1,
-        label: { ko: "계속 쓴다", en: "Still using" },
-      },
-      {
-        id: "mid",
-        delta: 0,
-        label: { ko: "가끔", en: "Occasionally" },
-      },
-      {
-        id: "neg",
-        delta: -1,
-        label: {
-          ko: "안 쓴다 · 써보다 그만둠",
-          en: "Not using · tried and stopped",
-        },
-      },
-    ],
-  },
-  {
-    id: "exp-7",
     axis: "lev",
     prompt: {
       ko: "주로 사는 건?",
@@ -224,7 +178,27 @@ const EXPERIENCED: Question[] = [
       {
         id: "neg",
         delta: -1,
-        label: { ko: "지수 ETF", en: "Index ETFs" },
+        label: {
+          ko: "지수 ETF·배당주",
+          en: "Index ETFs · dividend stocks",
+        },
+      },
+    ],
+  },
+  {
+    id: "exp-7",
+    axis: "lev",
+    prompt: {
+      ko: "한 종목에 가장 많이 넣은 비중은?",
+      en: "The biggest share you've put into a single name?",
+    },
+    choices: [
+      { id: "pos", delta: 1, label: { ko: "50% 이상", en: "50% or more" } },
+      { id: "mid", delta: 0, label: { ko: "20~50%", en: "20–50%" } },
+      {
+        id: "neg",
+        delta: -1,
+        label: { ko: "20% 미만", en: "Under 20%" },
       },
     ],
   },
@@ -245,7 +219,7 @@ const EXPERIENCED: Question[] = [
       { id: "neg", delta: -1, label: { ko: "없다", en: "Never" } },
     ],
   },
-  // 기간 축
+  // 기간 축 H/T
   {
     id: "exp-9",
     axis: "hold",
@@ -287,10 +261,7 @@ const EXPERIENCED: Question[] = [
       {
         id: "mid",
         delta: 0,
-        label: {
-          ko: "한 달에 몇 번",
-          en: "A few per month",
-        },
+        label: { ko: "한 달에 몇 번", en: "A few per month" },
       },
       {
         id: "neg",
@@ -348,7 +319,7 @@ const EXPERIENCED: Question[] = [
       },
     ],
   },
-  // 멘탈 축
+  // 멘탈 축 I/A
   {
     id: "exp-13",
     axis: "mind",
@@ -416,8 +387,8 @@ const EXPERIENCED: Question[] = [
     id: "exp-16",
     axis: "mind",
     prompt: {
-      ko: "하락장에 뉴스나 커뮤니티는?",
-      en: "During a drop, how about news and forums?",
+      ko: "뉴스나 투자 커뮤니티는?",
+      en: "News and investing forums?",
     },
     choices: [
       {
@@ -440,51 +411,53 @@ const EXPERIENCED: Question[] = [
 ];
 
 /* ============================================================================
- * 처음 트랙 — 가정 질문, 레버리지 전제 없이 1·10번은 QQQ 실제상황.
+ * 처음 트랙 — 가정 질문.
  * ============================================================================ */
 
 const BEGINNER: Question[] = [
-  // 매수 축
+  // 판단 축 B/M
   {
     id: "beg-1",
     axis: "buy",
-    real: {
-      source: "crash2020",
-      badge: { ko: "2020년 · 실제 상황", en: "2020 · Real event" },
-    },
     prompt: {
-      ko: "2020년, 나스닥이 한 달 만에 -{dd}%. 너라면?",
-      en: "In 2020 the Nasdaq fell {dd}% in a month. What would you do?",
-    },
-    promptFallback: {
-      ko: "2020년, 나스닥이 한 달 만에 크게 빠졌다. 너라면?",
-      en: "In 2020 the Nasdaq fell sharply in a month. What would you do?",
+      ko: "둘 중 하나를 산다면?",
+      en: "If you had to pick one to buy?",
     },
     choices: [
-      { id: "pos", delta: 1, label: { ko: "더 산다", en: "Buy more" } },
-      { id: "mid", delta: 0, label: { ko: "지켜본다", en: "Watch" } },
-      { id: "neg", delta: -1, label: { ko: "판다", en: "Sell" } },
+      {
+        id: "pos",
+        delta: 1,
+        label: {
+          ko: "1년 동안 -30% 빠진 우량주",
+          en: "A blue-chip that's down 30% over a year",
+        },
+      },
+      { id: "mid", delta: 0, label: { ko: "잘 모르겠다", en: "Not sure" } },
+      {
+        id: "neg",
+        delta: -1,
+        label: {
+          ko: "1년 동안 +50% 오른 인기주",
+          en: "A popular name that's up 50% over a year",
+        },
+      },
     ],
   },
   {
     id: "beg-2",
     axis: "buy",
     prompt: {
-      ko: "월급날, 나스닥이 -10% 빠져 있다.",
-      en: "Payday, and the Nasdaq is down 10%.",
+      ko: "모두가 사는 종목이 있으면?",
+      en: "A name everyone is buying — your reaction?",
     },
     choices: [
-      { id: "pos", delta: 1, label: { ko: "바로 산다", en: "Buy today" } },
       {
-        id: "mid",
-        delta: 0,
-        label: { ko: "나눠서 산다", en: "Split into tranches" },
+        id: "pos",
+        delta: 1,
+        label: { ko: "오히려 피한다", en: "Avoid it on principle" },
       },
-      {
-        id: "neg",
-        delta: -1,
-        label: { ko: "더 기다린다", en: "Wait longer" },
-      },
+      { id: "mid", delta: 0, label: { ko: "상관없다", en: "No opinion" } },
+      { id: "neg", delta: -1, label: { ko: "나도 산다", en: "Buy it too" } },
     ],
   },
   {
@@ -504,7 +477,10 @@ const BEGINNER: Question[] = [
       {
         id: "neg",
         delta: -1,
-        label: { ko: "더 지켜본다", en: "Keep watching" },
+        label: {
+          ko: "다시 오를 때 산다",
+          en: "Wait until it's going back up",
+        },
       },
     ],
   },
@@ -512,27 +488,30 @@ const BEGINNER: Question[] = [
     id: "beg-4",
     axis: "buy",
     prompt: {
-      ko: "주변에서 \"지금이 바닥\"이라고 하면?",
-      en: "People around you say, \"this is the bottom.\"",
+      ko: "\"역대 최고가\" 뉴스가 뜨면?",
+      en: "The news reads, \"All-time high.\"",
     },
     choices: [
-      { id: "pos", delta: 1, label: { ko: "산다", en: "Buy" } },
       {
-        id: "mid",
-        delta: 0,
-        label: { ko: "반신반의", en: "Half-believe" },
+        id: "pos",
+        delta: 1,
+        label: {
+          ko: "이제 조심할 때",
+          en: "Time to get careful",
+        },
       },
+      { id: "mid", delta: 0, label: { ko: "그냥 본다", en: "Just scroll by" } },
       {
         id: "neg",
         delta: -1,
         label: {
-          ko: "더 빠질 거라 본다",
-          en: "Expecting more downside",
+          ko: "지금이라도 타야지",
+          en: "Hop on before it leaves me behind",
         },
       },
     ],
   },
-  // 배수 축
+  // 위험 축 E/O
   {
     id: "beg-5",
     axis: "lev",
@@ -568,23 +547,6 @@ const BEGINNER: Question[] = [
     id: "beg-6",
     axis: "lev",
     prompt: {
-      ko: "친구가 3배 레버리지 ETF를 추천하면?",
-      en: "A friend recommends a 3x leveraged ETF.",
-    },
-    choices: [
-      { id: "pos", delta: 1, label: { ko: "해본다", en: "Give it a shot" } },
-      {
-        id: "mid",
-        delta: 0,
-        label: { ko: "알아보고 결정", en: "Research first" },
-      },
-      { id: "neg", delta: -1, label: { ko: "안 한다", en: "Pass" } },
-    ],
-  },
-  {
-    id: "beg-7",
-    axis: "lev",
-    prompt: {
       ko: "투자금 중 잃어도 괜찮은 비율은?",
       en: "What share of your capital could you afford to lose?",
     },
@@ -599,7 +561,7 @@ const BEGINNER: Question[] = [
     ],
   },
   {
-    id: "beg-8",
+    id: "beg-7",
     axis: "lev",
     prompt: {
       ko: "더 끌리는 영상은?",
@@ -614,11 +576,7 @@ const BEGINNER: Question[] = [
           en: "\"The stock that 10x'd in a year\"",
         },
       },
-      {
-        id: "mid",
-        delta: 0,
-        label: { ko: "둘 다", en: "Both equally" },
-      },
+      { id: "mid", delta: 0, label: { ko: "둘 다", en: "Both equally" } },
       {
         id: "neg",
         delta: -1,
@@ -629,7 +587,35 @@ const BEGINNER: Question[] = [
       },
     ],
   },
-  // 기간 축
+  {
+    id: "beg-8",
+    axis: "lev",
+    prompt: {
+      ko: "처음 투자한다면?",
+      en: "Starting out, how would you build the first position?",
+    },
+    choices: [
+      {
+        id: "pos",
+        delta: 1,
+        label: {
+          ko: "한두 종목에 집중",
+          en: "Concentrate in one or two names",
+        },
+      },
+      {
+        id: "mid",
+        delta: 0,
+        label: { ko: "몇 개로 나눠서", en: "Spread across a few" },
+      },
+      {
+        id: "neg",
+        delta: -1,
+        label: { ko: "지수 ETF 하나", en: "Just one index ETF" },
+      },
+    ],
+  },
+  // 기간 축 H/T
   {
     id: "beg-9",
     axis: "hold",
@@ -654,42 +640,6 @@ const BEGINNER: Question[] = [
   {
     id: "beg-10",
     axis: "hold",
-    real: {
-      source: "crash2022",
-      badge: { ko: "2022년 · 실제 상황", en: "2022 · Real event" },
-    },
-    prompt: {
-      ko: "2022년 나스닥 -{dd}%, 회복까지 {rm}개월. 그 사이 너는?",
-      en: "2022: Nasdaq {dd}% drop, {rm} months to recover. During that stretch…",
-    },
-    promptFallback: {
-      ko: "2022년 나스닥이 크게 하락했어. 회복까지도 오래 걸렸고. 그 사이 너는?",
-      en: "In 2022 the Nasdaq fell hard and took a long time to recover. During that stretch…",
-    },
-    choices: [
-      {
-        id: "pos",
-        delta: 1,
-        label: { ko: "끝까지 버틴다", en: "Hold the whole way" },
-      },
-      {
-        id: "mid",
-        delta: 0,
-        label: { ko: "잘 모르겠다", en: "Not sure" },
-      },
-      {
-        id: "neg",
-        delta: -1,
-        label: {
-          ko: "팔고 반등할 때 다시 탄다",
-          en: "Sell, buy back on the bounce",
-        },
-      },
-    ],
-  },
-  {
-    id: "beg-11",
-    axis: "hold",
     prompt: {
       ko: "투자 목표 기간은?",
       en: "What's your investment horizon?",
@@ -705,7 +655,7 @@ const BEGINNER: Question[] = [
     ],
   },
   {
-    id: "beg-12",
+    id: "beg-11",
     axis: "hold",
     prompt: {
       ko: "매일 사고팔면 돈을 벌 수 있을 것 같아?",
@@ -717,7 +667,24 @@ const BEGINNER: Question[] = [
       { id: "neg", delta: -1, label: { ko: "그렇다", en: "Yes" } },
     ],
   },
-  // 멘탈 축
+  {
+    id: "beg-12",
+    axis: "hold",
+    prompt: {
+      ko: "\"10년 묻어두면 된다\"는 말에?",
+      en: "\"Just leave it alone for ten years\" — your take?",
+    },
+    choices: [
+      { id: "pos", delta: 1, label: { ko: "동의", en: "Agree" } },
+      { id: "mid", delta: 0, label: { ko: "반반", en: "Fifty-fifty" } },
+      {
+        id: "neg",
+        delta: -1,
+        label: { ko: "너무 길다", en: "Way too long" },
+      },
+    ],
+  },
+  // 멘탈 축 I/A
   {
     id: "beg-13",
     axis: "mind",
@@ -767,27 +734,6 @@ const BEGINNER: Question[] = [
     id: "beg-15",
     axis: "mind",
     prompt: {
-      ko: "계좌가 -30% 찍힌 날 밤.",
-      en: "The night your account hits -30%.",
-    },
-    choices: [
-      { id: "pos", delta: 1, label: { ko: "잘 잔다", en: "Sleep well" } },
-      {
-        id: "mid",
-        delta: 0,
-        label: { ko: "뒤척인다", en: "Toss and turn" },
-      },
-      {
-        id: "neg",
-        delta: -1,
-        label: { ko: "못 잔다", en: "Can't sleep" },
-      },
-    ],
-  },
-  {
-    id: "beg-16",
-    axis: "mind",
-    prompt: {
       ko: "남이 수익 자랑하면?",
       en: "Someone brags about profits.",
     },
@@ -809,89 +755,37 @@ const BEGINNER: Question[] = [
       },
     ],
   },
+  {
+    id: "beg-16",
+    axis: "mind",
+    prompt: {
+      ko: "사자마자 -5%가 되면?",
+      en: "Right after you buy, it's -5%.",
+    },
+    choices: [
+      {
+        id: "pos",
+        delta: 1,
+        label: { ko: "신경 안 씀", en: "Not bothered" },
+      },
+      {
+        id: "mid",
+        delta: 0,
+        label: {
+          ko: "좀 신경 쓰인다",
+          en: "A bit nagging",
+        },
+      },
+      {
+        id: "neg",
+        delta: -1,
+        label: { ko: "계속 생각난다", en: "Can't stop thinking about it" },
+      },
+    ],
+  },
 ];
 
 export const QUESTIONS: Record<Track, ReadonlyArray<Question>> = {
   experienced: EXPERIENCED,
   beginner: BEGINNER,
-};
-
-/* ============================================================================
- * 실제상황 공개 문구 — 처음 트랙 1·10번 전용. 선택지 id(pos/mid/neg)로 매핑.
- * ============================================================================ */
-
-export const REAL_TELLS: {
-  crash2020: Record<
-    "pos" | "mid" | "neg",
-    { withRecovery: Record<Lang, string>; recovering: Record<Lang, string> }
-  >;
-  crash2022: Record<
-    "pos" | "mid" | "neg",
-    { withRecovery: Record<Lang, string>; recovering: Record<Lang, string> }
-  >;
-} = {
-  crash2020: {
-    pos: {
-      withRecovery: {
-        ko: "바닥 근처에서 샀다면 {rm}개월 만에 전고점 회복. 하지만 그게 바닥인 줄은 아무도 몰랐어요.",
-        en: "Buying near the bottom paid off — all-time high recovered in {rm} months. But nobody knew it was the bottom.",
-      },
-      recovering: {
-        ko: "그 뒤로 많이 올랐지만, 그게 바닥인 줄은 아무도 몰랐어요.",
-        en: "It rallied hard afterward — but nobody knew it was the bottom at the time.",
-      },
-    },
-    mid: {
-      withRecovery: {
-        ko: "그대로 들고 있었다면 {rm}개월 뒤 전고점을 회복했어요.",
-        en: "If you had just held, the all-time high was back in {rm} months.",
-      },
-      recovering: {
-        ko: "그대로 들고 있었다면 결국 전고점을 회복했어요.",
-        en: "If you had just held, the all-time high eventually came back.",
-      },
-    },
-    neg: {
-      withRecovery: {
-        ko: "그때 팔았다면, {rm}개월 뒤 전고점을 회복하는 걸 지켜만 봐야 했어요.",
-        en: "If you had sold, you would have watched the all-time high recover {rm} months later from the sidelines.",
-      },
-      recovering: {
-        ko: "그때 팔았다면, 그 뒤의 회복은 남의 일이 됐어요.",
-        en: "If you had sold, the recovery after that wasn't yours.",
-      },
-    },
-  },
-  crash2022: {
-    pos: {
-      withRecovery: {
-        ko: "버텼다면 {rm}개월 만에 원금 회복. 그 사이 계좌는 최대 -{dd}%를 찍었어요.",
-        en: "Holding brought you back to even in {rm} months — but your account hit {dd}% along the way.",
-      },
-      recovering: {
-        ko: "아직 전고점을 회복하지 못했어요. 그 사이 계좌는 최대 -{dd}%였고요.",
-        en: "The all-time high hasn't recovered yet. Your account was down as much as {dd}% along the way.",
-      },
-    },
-    mid: {
-      withRecovery: {
-        ko: "{rm}개월은 생각보다 길어요. 대부분은 그 사이에 한 번쯤 흔들렸어요.",
-        en: "{rm} months is longer than it sounds. Most people wobbled at least once.",
-      },
-      recovering: {
-        ko: "아직 전고점을 회복하지 못했어요.",
-        en: "The all-time high hasn't recovered yet.",
-      },
-    },
-    neg: {
-      withRecovery: {
-        ko: "타이밍이 맞았다면 손실을 줄였겠지만, 바닥 근처 반등을 놓친 사람이 더 많았어요.",
-        en: "Right timing could have cut losses — but most people missed the bounce near the bottom.",
-      },
-      recovering: {
-        ko: "아직 전고점을 회복하지 못했어요.",
-        en: "The all-time high hasn't recovered yet.",
-      },
-    },
-  },
 };

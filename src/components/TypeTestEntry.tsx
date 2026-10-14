@@ -5,14 +5,14 @@ import type { Lang } from "@/lib/i18n";
 
 const COPY = {
   ko: {
-    headline: "나는 폭락장에서 어떤 타입일까?",
-    sub: "8문항 · 1분",
-    aria: "폭락장 성향 테스트",
+    headline: "나는 어떤 투자자일까?",
+    sub: "17문항 · 2분",
+    aria: "투자 성향 테스트",
   },
   en: {
-    headline: "What's your type in a crash?",
-    sub: "8 questions · 1 min",
-    aria: "Crash personality test",
+    headline: "What kind of investor are you?",
+    sub: "17 questions · 2 min",
+    aria: "Investor personality test",
   },
 } as const;
 

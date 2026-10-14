@@ -2,9 +2,6 @@ import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { LANG_COOKIE, SITE_URL } from "@/constants/seo";
 import type { Lang } from "@/lib/i18n";
-import { getSnapshot, loadSymbolList } from "@/lib/page-data";
-import { extractRealCrashBits } from "@/lib/investor-type-real";
-import type { RealCrashBits } from "@/lib/investor-type-real";
 import { InvestorTypeTest } from "@/components/type/InvestorTypeTest";
 
 export const dynamic = "force-dynamic";
@@ -16,14 +13,14 @@ const readLang = (): Lang => {
 
 const COPY = {
   ko: {
-    title: "폭락장 성향 테스트",
+    title: "투자 성향 테스트",
     description:
-      "폭락이 왔을 때 당신은 어떤 투자자일까? 8문항 1분, 16유형 중 하나.",
+      "나는 어떤 투자자일까? 17문항 2분, 16유형 중 하나로 결과를 알려드려요.",
   },
   en: {
-    title: "Crash Personality Test",
+    title: "Investor Personality Test",
     description:
-      "What kind of investor are you in a crash? 8 questions in a minute, 1 of 16 types.",
+      "What kind of investor are you? 17 questions in 2 minutes, 1 of 16 types.",
   },
 } as const;
 
@@ -49,18 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function TypePage() {
+export default function TypePage() {
   const lang = readLang();
-  // 처음 트랙 1·10번 실제상황 숫자용 — QQQ(나스닥) crashEpisodes 가져옴.
-  // QQQ가 아직 등록 안 됐으면 getSnapshot이 heroData.ready=false로 폴백 →
-  // crashEpisodes=[] → extractRealCrashBits가 모두 null 반환 → 1·10번은 뱃지·공개박스
-  // 숨기고 fallback 질문으로 진행.
-  const list = await loadSymbolList();
-  let realBits: RealCrashBits = { crash2020: null, crash2022: null };
-  if (list.includes("qqq")) {
-    const snap = await getSnapshot("qqq");
-    const episodes = snap.heroData.ready ? snap.heroData.crashEpisodes : [];
-    realBits = extractRealCrashBits(episodes);
-  }
-  return <InvestorTypeTest lang={lang} realBits={realBits} />;
+  return <InvestorTypeTest lang={lang} />;
 }

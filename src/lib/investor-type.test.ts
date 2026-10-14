@@ -10,7 +10,6 @@ import {
   type Answer,
 } from "./investor-type";
 
-/** 트랙의 모든 문항을 특정 선택지 id로 답한 Answer[] 생성. */
 const allChoice = (track: Track, id: "pos" | "mid" | "neg"): Answer[] =>
   QUESTIONS[track].map((q) => ({ questionId: q.id, choiceId: id }));
 
@@ -50,11 +49,11 @@ describe("codeFromScores — 극한 조합", () => {
       codeFromScores("experienced", computeScores("experienced", ans), ans),
     ).toBe("BEHI");
   });
-  it("경험 전부 neg → WOTA", () => {
+  it("경험 전부 neg → MOTA", () => {
     const ans = allChoice("experienced", "neg");
     expect(
       codeFromScores("experienced", computeScores("experienced", ans), ans),
-    ).toBe("WOTA");
+    ).toBe("MOTA");
   });
   it("처음 전부 pos → BEHI", () => {
     const ans = allChoice("beginner", "pos");
@@ -62,40 +61,37 @@ describe("codeFromScores — 극한 조합", () => {
       codeFromScores("beginner", computeScores("beginner", ans), ans),
     ).toBe("BEHI");
   });
-  it("처음 전부 neg → WOTA", () => {
+  it("처음 전부 neg → MOTA", () => {
     const ans = allChoice("beginner", "neg");
     expect(
       codeFromScores("beginner", computeScores("beginner", ans), ans),
-    ).toBe("WOTA");
+    ).toBe("MOTA");
   });
 });
 
 describe("codeFromScores — 동점 폴백", () => {
-  it("경험 전부 mid → WOHA (기간 축만 앞 글자 H로 폴백)", () => {
+  it("경험 전부 mid → BEHI (전 축 앞 글자 폴백)", () => {
     const ans = allChoice("experienced", "mid");
     const scores = computeScores("experienced", ans);
     expect(scores).toEqual({ buy: 0, lev: 0, hold: 0, mind: 0 });
-    expect(codeFromScores("experienced", scores, ans)).toBe("WOHA");
+    expect(codeFromScores("experienced", scores, ans)).toBe("BEHI");
   });
-  it("처음 전부 mid → WOHA", () => {
+  it("처음 전부 mid → BEHI", () => {
     const ans = allChoice("beginner", "mid");
     expect(
       codeFromScores("beginner", computeScores("beginner", ans), ans),
-    ).toBe("WOHA");
+    ).toBe("BEHI");
   });
 
   it("동점이지만 그 축의 첫 문항 답이 pos이면 pos 글자", () => {
-    // 경험 트랙: buy 축 첫 문항 exp-1을 pos, 나머지 buy 문항은 -1 보완 → 합 0
+    // buy 축: 첫 문항 pos(+1) + 두 번째 neg(-1) → 합 0, 첫 답 pos → B
     const answers: Answer[] = [
-      { questionId: "exp-1", choiceId: "pos" }, // +1
-      { questionId: "exp-2", choiceId: "neg" }, // -1
-      // buy 축 합 0, 첫 답이 pos → B
-      // 나머지 축은 미응답 → 모두 0, 첫 답 없음 → 뒤/앞 폴백
+      { questionId: "exp-1", choiceId: "pos" },
+      { questionId: "exp-2", choiceId: "neg" },
     ];
     const scores = computeScores("experienced", answers);
     expect(scores.buy).toBe(0);
-    const code = codeFromScores("experienced", scores, answers);
-    expect(code[0]).toBe("B");
+    expect(codeFromScores("experienced", scores, answers)[0]).toBe("B");
   });
 
   it("동점이고 그 축의 첫 문항 답이 neg이면 neg 글자", () => {
@@ -105,7 +101,7 @@ describe("codeFromScores — 동점 폴백", () => {
     ];
     const scores = computeScores("experienced", answers);
     expect(scores.buy).toBe(0);
-    expect(codeFromScores("experienced", scores, answers)[0]).toBe("W");
+    expect(codeFromScores("experienced", scores, answers)[0]).toBe("M");
   });
 });
 
@@ -133,16 +129,16 @@ describe("tolerableDrawdown", () => {
 });
 
 describe("matchCompatible / matchOpposite", () => {
-  it("잘 맞음: 매수·기간 같고 배수·멘탈 반대", () => {
+  it("잘 맞음: 판단·기간 같고 위험·멘탈 반대", () => {
     expect(matchCompatible("BETA")).toBe("BOTI");
-    expect(matchCompatible("WOHI")).toBe("WEHA");
+    expect(matchCompatible("MOHI")).toBe("MEHA");
     expect(matchCompatible("BEHI")).toBe("BOHA");
-    expect(matchCompatible("WOHA")).toBe("WEHI");
+    expect(matchCompatible("MOHA")).toBe("MEHI");
   });
   it("상극: 4글자 전부 반대", () => {
-    expect(matchOpposite("BETA")).toBe("WOHI");
-    expect(matchOpposite("BEHI")).toBe("WOTA");
-    expect(matchOpposite("WOHA")).toBe("BETI");
+    expect(matchOpposite("BETA")).toBe("MOHI");
+    expect(matchOpposite("BEHI")).toBe("MOTA");
+    expect(matchOpposite("MOHA")).toBe("BETI");
   });
   it("flip 왕복", () => {
     expect(matchCompatible(matchCompatible("BETA"))).toBe("BETA");
@@ -161,8 +157,8 @@ describe("각 트랙 극단 조합 — 보고용 요약", () => {
   ] as const)("%s 전부 %s", (track, id) => {
     const ans = allChoice(track, id);
     const code = codeFromScores(track, computeScores(track, ans), ans);
-    // 전부 pos → BEHI / 전부 mid → WOHA / 전부 neg → WOTA (양 트랙 공통)
-    const expected = id === "pos" ? "BEHI" : id === "neg" ? "WOTA" : "WOHA";
+    // 전부 pos → BEHI / 전부 mid → BEHI(앞 글자 폴백) / 전부 neg → MOTA
+    const expected = id === "neg" ? "MOTA" : "BEHI";
     expect(code).toBe(expected);
   });
 });

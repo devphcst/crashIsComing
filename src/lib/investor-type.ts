@@ -1,17 +1,16 @@
 /**
- * "폭락장 성향 테스트" 판정 로직 — 순수 함수.
+ * 투자 성향 테스트 판정 로직 — 순수 함수.
  *
  * 흐름:
  *   1. 트랙 선택 (experienced | beginner) → 그 트랙의 16문항에 응답
  *   2. 선택 → 각 축에 delta(+1/0/-1) 누적 → `AxisScores`
  *   3. 축별 합이 양수면 pos 글자, 음수면 neg 글자
  *   4. 0(동점)이면 그 트랙에서 그 축의 첫 번째 문항 답으로 결정.
- *      그 답도 0(중간)이면 뒤 글자로 폴백. 단 기간 축은 앞 글자(H)로 폴백 —
- *      "장기 보유"가 모호할 때의 안전 디폴트.
- *   5. 매수-배수-기간-멘탈 순서로 조합한 4자리 코드 반환.
+ *      그 답도 0(중간)이면 전 축 앞 글자(B·E·H·I)로 폴백.
+ *   5. 판단-위험-기간-멘탈 순서로 조합한 4자리 코드 반환.
  *   6. 축별 바 비율 (score+4)/8 → 0~1.
  *   7. 버틸 수 있는 낙폭 15 + e*25 + i*20 (5단위 반올림, 15~60 클램프).
- *   8. 궁합: 매수·기간 같고 배수·멘탈 반대 = 잘 맞음 / 4글자 전부 반대 = 상극.
+ *   8. 궁합: 판단·기간 같고 위험·멘탈 반대 = 잘 맞음 / 4글자 전부 반대 = 상극.
  */
 
 import {
@@ -63,7 +62,7 @@ const letterForAxis = (
   score: number,
   track: Track,
   answers: Answer[],
-): "B" | "W" | "E" | "O" | "H" | "T" | "I" | "A" => {
+): "B" | "M" | "E" | "O" | "H" | "T" | "I" | "A" => {
   const meta = AXES.find((x) => x.key === axis)!;
   if (score > 0) return meta.letters.pos;
   if (score < 0) return meta.letters.neg;
@@ -77,9 +76,8 @@ const letterForAxis = (
       if (c && c.delta < 0) return meta.letters.neg;
     }
   }
-  // 첫 문항도 중간/미응답 → 안전 디폴트.
-  // 기간 축만 앞 글자(H) 폴백 — "장기 보유"가 중립일 때의 안전한 선택.
-  return axis === "hold" ? meta.letters.pos : meta.letters.neg;
+  // 첫 문항도 중간/미응답 → 전 축 앞 글자(B·E·H·I) 폴백.
+  return meta.letters.pos;
 };
 
 export const codeFromScores = (

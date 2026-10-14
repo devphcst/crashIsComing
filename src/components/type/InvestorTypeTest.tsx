@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import type { Lang } from "@/lib/i18n";
 import {
@@ -13,11 +13,9 @@ import {
 import {
   INTRO_QUESTION,
   QUESTIONS,
-  REAL_TELLS,
   type Question,
   type Track,
 } from "@/data/investor-quiz";
-import type { RealCrashBits, RealCrashBit } from "@/lib/investor-type-real";
 import {
   barRatios,
   codeFromScores,
@@ -36,7 +34,6 @@ type CopyBlock = {
   heroDesc: string;
   startBtn: string;
   back: string;
-  next: string;
   stepLabel: (n: number, total: number) => string;
   resultTitle: string;
   resultCta: string;
@@ -53,14 +50,13 @@ type CopyBlock = {
 const COPY: Record<Lang, CopyBlock> = {
   ko: {
     heroLead: "폭락장은 온다 · 성향 테스트",
-    heroTitle: "폭락장에서\n나는 어떤 투자자일까?",
+    heroTitle: "나는 어떤\n투자자일까?",
     heroDesc:
-      "16문항 · 1~2분. 16유형 중 하나로 결과를 알려드려요. 답은 브라우저 밖으로 나가지 않아요.",
+      "17문항 · 2분. 16유형 중 하나로 결과를 알려드려요. 답은 브라우저 밖으로 나가지 않아요.",
     startBtn: "시작하기",
     back: "뒤로",
-    next: "다음",
     stepLabel: (n, total) => `${n} / ${total}`,
-    resultTitle: "나의 폭락장 유형",
+    resultTitle: "나의 투자 유형",
     resultCta: "결과 공유하기",
     retry: "다시 하기",
     tolerable: "버틸 수 있는 낙폭",
@@ -74,14 +70,13 @@ const COPY: Record<Lang, CopyBlock> = {
   },
   en: {
     heroLead: "Crash Is Coming · Personality Test",
-    heroTitle: "In a crash,\nwhat kind of investor are you?",
+    heroTitle: "What kind of\ninvestor are you?",
     heroDesc:
-      "16 questions, 1–2 minutes. Find your type among 16. Your answers never leave your browser.",
+      "17 questions, 2 minutes. Find your type among 16. Your answers never leave your browser.",
     startBtn: "Start",
     back: "Back",
-    next: "Next",
     stepLabel: (n, total) => `${n} / ${total}`,
-    resultTitle: "Your Crash Type",
+    resultTitle: "Your Investor Type",
     resultCta: "Share result",
     retry: "Retake",
     tolerable: "Drawdown you can stomach",
@@ -95,37 +90,22 @@ const COPY: Record<Lang, CopyBlock> = {
   },
 };
 
-export function InvestorTypeTest({
-  lang,
-  realBits,
-}: {
-  lang: Lang;
-  realBits: RealCrashBits;
-}) {
+export function InvestorTypeTest({ lang }: { lang: Lang }) {
   const copy = COPY[lang];
   const [stage, setStage] = useState<Stage>("intro");
   const [track, setTrack] = useState<Track | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
-  // 실제상황 문항: 선택 → 공개박스 노출 → "다음" 눌러야 넘어감.
-  const [revealedChoiceId, setRevealedChoiceId] = useState<string | null>(null);
 
   const list = track ? QUESTIONS[track] : [];
   const q: Question | null = track ? list[index] : null;
   const total = list.length;
-
-  const realBit = useMemo<RealCrashBit | null>(() => {
-    if (!q?.real) return null;
-    return realBits[q.real.source];
-  }, [q, realBits]);
-  const realActive = Boolean(q?.real && realBit);
 
   const start = () => {
     setStage("fork");
     setTrack(null);
     setIndex(0);
     setAnswers([]);
-    setRevealedChoiceId(null);
   };
 
   const pickTrack = (t: Track) => {
@@ -133,7 +113,6 @@ export function InvestorTypeTest({
     setStage("question");
     setIndex(0);
     setAnswers([]);
-    setRevealedChoiceId(null);
   };
 
   const retry = () => {
@@ -141,10 +120,9 @@ export function InvestorTypeTest({
     setTrack(null);
     setIndex(0);
     setAnswers([]);
-    setRevealedChoiceId(null);
   };
 
-  const commitAndAdvance = (choiceId: string) => {
+  const onPick = (choiceId: string) => {
     if (!q) return;
     const next = [
       ...answers.filter((a) => a.questionId !== q.id),
@@ -153,22 +131,9 @@ export function InvestorTypeTest({
     setAnswers(next);
     if (index + 1 < total) {
       setIndex(index + 1);
-      setRevealedChoiceId(null);
     } else {
       setStage("result");
     }
-  };
-
-  const onPick = (choiceId: string) => {
-    if (realActive) {
-      setRevealedChoiceId(choiceId);
-      return;
-    }
-    commitAndAdvance(choiceId);
-  };
-
-  const onNext = () => {
-    if (revealedChoiceId) commitAndAdvance(revealedChoiceId);
   };
 
   const onBack = () => {
@@ -176,11 +141,7 @@ export function InvestorTypeTest({
       setStage("fork");
       return;
     }
-    const prevIdx = index - 1;
-    setIndex(prevIdx);
-    const prevQ = list[prevIdx];
-    const prevAns = answers.find((a) => a.questionId === prevQ.id);
-    setRevealedChoiceId(prevAns && prevQ.real ? prevAns.choiceId : null);
+    setIndex(index - 1);
   };
 
   if (stage === "intro") {
@@ -213,7 +174,7 @@ export function InvestorTypeTest({
     );
   }
 
-  if (!q || !track) return null;
+  if (!q) return null;
 
   return (
     <QuestionView
@@ -222,11 +183,7 @@ export function InvestorTypeTest({
       q={q}
       index={index}
       total={total}
-      realBit={realBit}
-      realActive={realActive}
-      revealedChoiceId={revealedChoiceId}
       onPick={onPick}
-      onNext={onNext}
       onBack={onBack}
     />
   );
@@ -346,7 +303,7 @@ function Fork({
 }
 
 /* ============================================================================
- * 문항 — 진행바 + 뒤로가기 + 뱃지(옵션) + 질문 + 선택지 + 공개박스
+ * 문항 — 진행바 + 뒤로가기 + 질문 + 선택지
  * ============================================================================ */
 
 function QuestionView({
@@ -355,11 +312,7 @@ function QuestionView({
   q,
   index,
   total,
-  realBit,
-  realActive,
-  revealedChoiceId,
   onPick,
-  onNext,
   onBack,
 }: {
   lang: Lang;
@@ -367,24 +320,10 @@ function QuestionView({
   q: Question;
   index: number;
   total: number;
-  realBit: RealCrashBit | null;
-  realActive: boolean;
-  revealedChoiceId: string | null;
   onPick: (id: string) => void;
-  onNext: () => void;
   onBack: () => void;
 }) {
   const progress = ((index + 1) / total) * 100;
-
-  const prompt = useMemo(
-    () => fillPrompt(q, lang, realBit, realActive),
-    [q, lang, realBit, realActive],
-  );
-
-  const reveal =
-    realActive && revealedChoiceId
-      ? realTellFor(q, revealedChoiceId, realBit, lang)
-      : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-[480px] flex-col px-6 pb-10 pt-6">
@@ -424,21 +363,6 @@ function QuestionView({
       </header>
 
       <div className="flex flex-col gap-5 pt-8">
-        {realActive && q.real ? (
-          <span
-            className="inline-flex self-start items-center rounded-full"
-            style={{
-              background: "#FEE2E2",
-              color: "#B91C1C",
-              fontSize: 11,
-              fontWeight: 500,
-              padding: "4px 10px",
-            }}
-          >
-            {q.real.badge[lang]}
-          </span>
-        ) : null}
-
         <h2
           style={{
             fontSize: 19,
@@ -447,108 +371,33 @@ function QuestionView({
             color: "#191F28",
           }}
         >
-          {prompt}
+          {q.prompt[lang]}
         </h2>
 
         <div className="flex flex-col gap-3 pt-1">
-          {q.choices.map((c) => {
-            const picked = revealedChoiceId === c.id;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => onPick(c.id)}
-                className="w-full text-left transition-colors"
-                style={{
-                  background: picked ? "#191F28" : "#F2F4F8",
-                  color: picked ? "#fff" : "#191F28",
-                  borderRadius: 14,
-                  padding: "16px 18px",
-                  fontSize: 15,
-                  fontWeight: 500,
-                }}
-              >
-                {c.label[lang]}
-              </button>
-            );
-          })}
+          {q.choices.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onPick(c.id)}
+              className="w-full text-left transition-colors"
+              style={{
+                background: "#F2F4F8",
+                color: "#191F28",
+                borderRadius: 14,
+                padding: "16px 18px",
+                fontSize: 15,
+                fontWeight: 500,
+              }}
+            >
+              {c.label[lang]}
+            </button>
+          ))}
         </div>
-
-        {reveal ? (
-          <div
-            style={{
-              background: "#E6F6EF",
-              color: "#065F46",
-              borderRadius: 14,
-              padding: "14px 16px",
-              fontSize: 13,
-              lineHeight: 1.6,
-            }}
-          >
-            {reveal}
-          </div>
-        ) : null}
-
-        {realActive && revealedChoiceId ? (
-          <button
-            type="button"
-            onClick={onNext}
-            className="mt-2 w-full rounded-full py-4 text-base font-medium"
-            style={{ background: "#191F28", color: "#fff" }}
-          >
-            {copy.next}
-          </button>
-        ) : null}
       </div>
     </main>
   );
 }
-
-const roundPct = (pct: number): number => Math.abs(Math.round(pct));
-
-/** 질문 prompt에서 {dd}·{rm} 치환. realActive 아니면 promptFallback 또는 원문. */
-const fillPrompt = (
-  q: Question,
-  lang: Lang,
-  bit: RealCrashBit | null,
-  realActive: boolean,
-): string => {
-  if (!realActive) {
-    // 실제상황 비활성(real 플래그 없음 or crash 데이터 없음) → fallback 질문.
-    return q.promptFallback?.[lang] ?? q.prompt[lang];
-  }
-  const template = q.prompt[lang];
-  if (!bit) return template;
-  return template
-    .replace(/\{dd\}/g, String(roundPct(bit.drawdownPct)))
-    .replace(
-      /\{rm\}/g,
-      bit.recoveryMonths !== null ? String(bit.recoveryMonths) : "—",
-    );
-};
-
-const realTellFor = (
-  q: Question,
-  choiceId: string,
-  bit: RealCrashBit | null,
-  lang: Lang,
-): string | null => {
-  if (!q.real || !bit) return null;
-  const bundle =
-    q.real.source === "crash2020"
-      ? REAL_TELLS.crash2020
-      : REAL_TELLS.crash2022;
-  const slot = bundle[choiceId as "pos" | "mid" | "neg"];
-  if (!slot) return null;
-  const tpl =
-    bit.recoveryMonths !== null ? slot.withRecovery[lang] : slot.recovering[lang];
-  return tpl
-    .replace(
-      /\{rm\}/g,
-      bit.recoveryMonths !== null ? String(bit.recoveryMonths) : "—",
-    )
-    .replace(/\{dd\}/g, String(roundPct(bit.drawdownPct)));
-};
 
 /* ============================================================================
  * 결과
@@ -581,8 +430,8 @@ function Result({
     const url = `${window.location.origin}/type/${code}`;
     const text =
       lang === "ko"
-        ? `나의 폭락장 유형: ${type.reading.ko}(${code}) · ${type.nickname.ko}`
-        : `My crash type: ${type.reading.en}(${code}) · ${type.nickname.en}`;
+        ? `나의 투자 유형: ${type.reading.ko}(${code}) · ${type.nickname.ko}`
+        : `My investor type: ${type.reading.en}(${code}) · ${type.nickname.en}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: text, url });

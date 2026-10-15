@@ -488,7 +488,7 @@ const ko: Dict = {
   },
   menu: {
     title: '메뉴',
-    typeTest: '성향 테스트',
+    typeTest: '투자유형 테스트',
     about: '서비스 소개',
     history: '역사적 폭락',
     allInWarning: '올인 경고',
@@ -829,7 +829,7 @@ const en: Dict = {
   },
   menu: {
     title: 'Menu',
-    typeTest: 'Personality test',
+    typeTest: 'Investor type',
     about: 'About',
     history: 'Historical crashes',
     allInWarning: 'All-in warning',

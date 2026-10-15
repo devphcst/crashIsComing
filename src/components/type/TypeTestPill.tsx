@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import type { Lang } from "@/lib/i18n";
 
 const COPY: Record<Lang, { label: string; aria: string }> = {
-  ko: { label: "성향 테스트", aria: "성향 테스트" },
-  en: { label: "My type", aria: "Investor personality test" },
+  ko: { label: "투자유형 테스트", aria: "투자유형 테스트" },
+  en: { label: "Investor type", aria: "Investor type test" },
 };
 
 function SparklesIcon({ color }: { color: string }) {
@@ -55,8 +55,10 @@ export function TypeTestPill({ lang }: { lang: Lang }) {
       }}
     >
       <SparklesIcon color={fg} />
-      {/* ≤360px 폭에선 라벨 숨김 (aria-label은 Link에 유지). */}
-      <span className="hidden min-[361px]:inline">{copy.label}</span>
+      {/* ≤390px 폭에선 라벨 숨김 (aria-label은 Link에 유지).
+          "투자유형 테스트"/"Investor type"로 라벨이 늘어나 좁은 폰에서 헤더가
+          한 줄을 넘길 수 있어 breakpoint를 min-[391px]로 올렸다. */}
+      <span className="hidden min-[391px]:inline">{copy.label}</span>
     </Link>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Lang } from "@/lib/i18n";
 import {
@@ -191,19 +191,14 @@ export function ResultView({
         ) : null}
       </div>
 
-      {/* 4축 2×2 카드 */}
-      <div className="grid grid-cols-2" style={{ gap: 8 }}>
-        {AXIS_ORDER.map((axis) => (
-          <AxisCard
-            key={axis}
-            axis={axis}
-            score={scores[axis]}
-            code={code}
-            texts={texts}
-            showStrength={mode === "test"}
-          />
-        ))}
-      </div>
+      {/* 4축 2×2 카드 — 눌러서 펼치기 */}
+      <AxisGrid
+        code={code}
+        scores={scores}
+        texts={texts}
+        showStrength={mode === "test"}
+      />
+
 
       {/* 의외의 모습 — mode="test"에서만 전달. 공유 페이지엔 답변 정보가 없음. */}
       {surprises !== undefined ? (
@@ -469,7 +464,7 @@ function PointRow({
 }
 
 /* ============================================================================
- * 4축 2×2 카드 — 질문/답/점/배경 숫자. 공유 페이지(mode="static")는 숫자·점 숨김.
+ * 4축 2×2 카드 — 눌러서 펼치기(FLIP 애니메이션). 공유 페이지는 숫자·점 숨김.
  * ============================================================================ */
 
 type AxisCardConfig = {
@@ -486,18 +481,184 @@ const AXIS_CARD_CFG: Record<AxisKey, AxisCardConfig> = {
   mind: { bg: "#FFF6E8", qColor: "#B08A4E", numColor: "#F59E0B", numOpacity: 0.16 },
 };
 
-function AxisCard({
+const CARD_MIN_HEIGHT = 100;
+const GRID_GAP = 8;
+const GRID_MIN_HEIGHT = CARD_MIN_HEIGHT * 2 + GRID_GAP;
+const EXPAND_MS = 350;
+const DESC_DELAY_MS = 180;
+
+type Rect = { left: number; top: number; width: number; height: number };
+
+function AxisGrid({
+  code,
+  scores,
+  texts,
+  showStrength,
+}: {
+  code: TypeCode;
+  scores: AxisScores;
+  texts: FlatTexts;
+  showStrength: boolean;
+}) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<Record<AxisKey, HTMLButtonElement | null>>({
+    buy: null,
+    lev: null,
+    hold: null,
+    mind: null,
+  });
+  const [expanded, setExpanded] = useState<AxisKey | null>(null);
+  const [startRect, setStartRect] = useState<Rect | null>(null);
+  const [fullRect, setFullRect] = useState<Rect | null>(null);
+  const [phase, setPhase] = useState<"idle" | "opening" | "open" | "closing">(
+    "idle",
+  );
+  const [reduced] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch {
+      return false;
+    }
+  });
+
+  const close = useCallback(() => {
+    if (!expanded) return;
+    if (reduced) {
+      const toFocus = cardRefs.current[expanded];
+      setExpanded(null);
+      setPhase("idle");
+      setTimeout(() => toFocus?.focus(), 0);
+      return;
+    }
+    const cardEl = cardRefs.current[expanded];
+    const gridEl = gridRef.current;
+    if (!cardEl || !gridEl) {
+      setExpanded(null);
+      setPhase("idle");
+      return;
+    }
+    const gRect = gridEl.getBoundingClientRect();
+    const cRect = cardEl.getBoundingClientRect();
+    setStartRect({
+      left: cRect.left - gRect.left,
+      top: cRect.top - gRect.top,
+      width: cRect.width,
+      height: cRect.height,
+    });
+    setPhase("closing");
+    const axisToFocus = expanded;
+    setTimeout(() => {
+      setExpanded(null);
+      setPhase("idle");
+      cardRefs.current[axisToFocus]?.focus();
+    }, EXPAND_MS);
+  }, [expanded, reduced]);
+
+  const open = (axis: AxisKey) => {
+    const gridEl = gridRef.current;
+    const cardEl = cardRefs.current[axis];
+    if (!gridEl || !cardEl) return;
+    const gRect = gridEl.getBoundingClientRect();
+    const cRect = cardEl.getBoundingClientRect();
+    const start: Rect = {
+      left: cRect.left - gRect.left,
+      top: cRect.top - gRect.top,
+      width: cRect.width,
+      height: cRect.height,
+    };
+    const full: Rect = { left: 0, top: 0, width: gRect.width, height: gRect.height };
+    setStartRect(start);
+    setFullRect(full);
+    setExpanded(axis);
+    if (reduced) {
+      setPhase("open");
+    } else {
+      setPhase("opening");
+      // 2 rAF로 초기 rect 반영 후 full rect로 transition 발동
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          setStartRect(full);
+          setPhase("open");
+        }),
+      );
+    }
+  };
+
+  // ESC 닫기
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expanded, close]);
+
+  const currentRect =
+    phase === "opening" || phase === "closing" ? startRect : fullRect;
+
+  return (
+    <div
+      ref={gridRef}
+      className="relative grid grid-cols-2"
+      style={{
+        gap: GRID_GAP,
+        minHeight: GRID_MIN_HEIGHT,
+      }}
+    >
+      {AXIS_ORDER.map((axis) => (
+        <AxisCardButton
+          key={axis}
+          axis={axis}
+          score={scores[axis]}
+          code={code}
+          texts={texts}
+          showStrength={showStrength}
+          onOpen={() => open(axis)}
+          isExpanded={expanded === axis}
+          buttonRef={(el) => {
+            cardRefs.current[axis] = el;
+          }}
+        />
+      ))}
+      {expanded && currentRect ? (
+        <ExpandedCard
+          axis={expanded}
+          score={scores[expanded]}
+          code={code}
+          texts={texts}
+          showStrength={showStrength}
+          rect={currentRect}
+          phase={phase}
+          reduced={reduced}
+          onClose={close}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/* ----------------------------- 기본 카드 (버튼) --------------------------- */
+
+function AxisCardButton({
   axis,
   score,
   code,
   texts,
   showStrength,
+  onOpen,
+  isExpanded,
+  buttonRef,
 }: {
   axis: AxisKey;
   score: number;
   code: TypeCode;
   texts: FlatTexts;
   showStrength: boolean;
+  onOpen: () => void;
+  isExpanded: boolean;
+  buttonRef: (el: HTMLButtonElement | null) => void;
 }) {
   const meta = AXES.find((x) => x.key === axis)!;
   const idx = AXIS_ORDER.indexOf(axis);
@@ -513,7 +674,6 @@ function AxisCard({
   const pct = Math.round(((abs + 4) / 8) * 100);
   const isTie = score === 0;
 
-  // 답 overflow 체크 → 16 → 14px로 축소.
   const ansRef = useRef<HTMLDivElement | null>(null);
   const [small, setSmall] = useState(false);
   useLayoutEffect(() => {
@@ -522,24 +682,32 @@ function AxisCard({
     setSmall(el.scrollWidth > el.clientWidth);
   }, [answer]);
 
-  // SR 전용 요약 문구
-  const srText = showStrength ? `${answer} ${pct}%` : answer;
+  const ariaLabel = showStrength
+    ? `${q} ${answer} ${pct}%. 자세히 보기`
+    : `${q} ${answer}. 자세히 보기`;
 
   return (
-    <div
-      className="axis-card relative overflow-hidden"
+    <button
+      ref={buttonRef}
+      type="button"
+      onClick={onOpen}
+      aria-expanded={isExpanded}
+      aria-label={ariaLabel}
+      className="axis-card relative overflow-hidden text-left"
       data-axis={axis}
       style={{
         background: cfg.bg,
         borderRadius: 16,
         padding: "14px 14px 16px",
-        minHeight: 92,
+        minHeight: CARD_MIN_HEIGHT,
+        // 펼친 카드가 위로 그려지므로 원본은 가려짐. 가시성 유지 (레이아웃 공간용).
+        visibility: isExpanded ? "hidden" : "visible",
       }}
     >
-      {/* 배경 숫자 — 공유 페이지(showStrength=false)엔 생략 */}
       {showStrength ? (
         <div
           aria-hidden
+          className="axis-card-num"
           style={{
             position: "absolute",
             right: -6,
@@ -554,7 +722,6 @@ function AxisCard({
             userSelect: "none",
             whiteSpace: "nowrap",
           }}
-          className="axis-card-num"
         >
           {isTie ? (
             even
@@ -567,7 +734,6 @@ function AxisCard({
         </div>
       ) : null}
 
-      {/* 내용 (숫자보다 위) */}
       <div className="relative" style={{ zIndex: 1 }}>
         <div style={{ fontSize: 12, color: cfg.qColor }}>{q}</div>
         <div
@@ -607,8 +773,223 @@ function AxisCard({
           </div>
         ) : null}
       </div>
+    </button>
+  );
+}
 
-      <span className="sr-only">{srText}</span>
+/* --------------------------- 펼친 카드 (오버레이) ------------------------- */
+
+function ExpandedCard({
+  axis,
+  score,
+  code,
+  texts,
+  showStrength,
+  rect,
+  phase,
+  reduced,
+  onClose,
+}: {
+  axis: AxisKey;
+  score: number;
+  code: TypeCode;
+  texts: FlatTexts;
+  showStrength: boolean;
+  rect: Rect;
+  phase: "idle" | "opening" | "open" | "closing";
+  reduced: boolean;
+  onClose: () => void;
+}) {
+  const meta = AXES.find((x) => x.key === axis)!;
+  const idx = AXIS_ORDER.indexOf(axis);
+  const letter = code[idx];
+  const isPos = letter === meta.letters.pos;
+  const side = isPos ? "pos" : "neg";
+  const q = texts[`axes.${axis}.q`] ?? "";
+  const answer = texts[`axes.${axis}.${side}`] ?? "";
+  const even = texts["axes.even"] ?? "";
+  const cfg = AXIS_CARD_CFG[axis];
+
+  const abs = Math.abs(score);
+  const pct = Math.round(((abs + 4) / 8) * 100);
+  const isTie = score === 0;
+
+  const prefix = isTie ? texts["axes.evenPrefix"] ?? "" : "";
+  const desc = texts[`axes.${axis}.${side}.desc`] ?? "";
+  const opposite = texts[`axes.${axis}.${side}.opposite`] ?? "";
+
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const isOpenPhase = phase === "open" || phase === "opening";
+  const showDescNow = phase === "open";
+
+  // 열림 완료 시 닫기 버튼으로 포커스 이동
+  useEffect(() => {
+    if (phase === "open") {
+      closeBtnRef.current?.focus();
+    }
+  }, [phase]);
+
+  const transitionBase = reduced
+    ? "none"
+    : `all ${EXPAND_MS}ms cubic-bezier(.2,.8,.2,1)`;
+
+  return (
+    <div
+      aria-hidden={false}
+      className="axis-card overflow-hidden"
+      data-axis={axis}
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{
+        position: "absolute",
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        background: cfg.bg,
+        borderRadius: 16,
+        padding: "14px 14px 16px",
+        zIndex: 5,
+        transition: transitionBase,
+        cursor: "pointer",
+      }}
+    >
+      {/* 배경 숫자 (showStrength만) */}
+      {showStrength ? (
+        <div
+          aria-hidden
+          className="axis-card-num"
+          style={{
+            position: "absolute",
+            right: -6,
+            bottom: isOpenPhase && !reduced ? -38 : -22,
+            fontSize: isOpenPhase && !reduced ? 120 : 72,
+            fontWeight: 500,
+            letterSpacing: -3,
+            lineHeight: 1,
+            color: cfg.numColor,
+            opacity: cfg.numOpacity,
+            pointerEvents: "none",
+            userSelect: "none",
+            whiteSpace: "nowrap",
+            transition: reduced
+              ? "none"
+              : `font-size ${EXPAND_MS}ms cubic-bezier(.2,.8,.2,1), bottom ${EXPAND_MS}ms cubic-bezier(.2,.8,.2,1)`,
+          }}
+        >
+          {isTie ? (
+            even
+          ) : (
+            <>
+              {pct}
+              <span style={{ fontSize: isOpenPhase && !reduced ? 50 : 30 }}>
+                %
+              </span>
+            </>
+          )}
+        </div>
+      ) : null}
+
+      {/* 닫기 버튼 */}
+      <button
+        ref={closeBtnRef}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        aria-label="닫기"
+        className="absolute flex items-center justify-center"
+        style={{
+          top: 12,
+          right: 12,
+          width: 28,
+          height: 28,
+          borderRadius: 999,
+          background: "rgba(255, 255, 255, 0.65)",
+          color: "#191F28",
+          zIndex: 2,
+          fontSize: 14,
+          lineHeight: 1,
+        }}
+      >
+        ✕
+      </button>
+
+      {/* 내용 */}
+      <div
+        className="relative flex flex-col"
+        style={{ zIndex: 1, height: "100%" }}
+      >
+        <div style={{ fontSize: 12, color: cfg.qColor }}>{q}</div>
+        <div
+          style={{
+            fontSize: 16,
+            fontWeight: 500,
+            color: "#191F28",
+            whiteSpace: "nowrap",
+            marginTop: 2,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {answer}
+        </div>
+        {showStrength ? (
+          <div className="flex" style={{ marginTop: 10, gap: 3 }} aria-hidden>
+            {[0, 1, 2, 3].map((i) => {
+              const filled = i < abs;
+              return (
+                <span
+                  key={i}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: filled ? cfg.numColor : "rgba(0,0,0,0.08)",
+                  }}
+                />
+              );
+            })}
+          </div>
+        ) : null}
+
+        {/* 설명 + 반대편 */}
+        <div
+          style={{
+            marginTop: 16,
+            opacity: showDescNow ? 1 : 0,
+            transform: showDescNow ? "translateY(0)" : "translateY(6px)",
+            transition: reduced
+              ? "none"
+              : `opacity 220ms ease ${DESC_DELAY_MS}ms, transform 220ms ease ${DESC_DELAY_MS}ms`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 13,
+              color: "#4E5968",
+              lineHeight: 1.55,
+            }}
+          >
+            {prefix}
+            {desc}
+          </div>
+          <div
+            style={{
+              marginTop: 10,
+              paddingTop: 10,
+              borderTop: "1px solid rgba(0,0,0,0.06)",
+              fontSize: 12,
+              color: cfg.qColor,
+              lineHeight: 1.55,
+            }}
+          >
+            {opposite}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

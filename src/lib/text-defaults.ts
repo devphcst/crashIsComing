@@ -43,6 +43,75 @@ const buildAxes = (lang: Lang): FlatTexts => ({
   "axes.mind.neg": lang === "ko" ? "불안해요" : "Get anxious",
   // 동점 라벨
   "axes.even": lang === "ko" ? "반반" : "50/50",
+  "axes.evenPrefix":
+    lang === "ko"
+      ? "두 쪽이 비슷하게 나왔어요. "
+      : "The two sides came out close. ",
+  // 펼친 카드 설명 (결과 글자별 — 축의 pos/neg 쪽)
+  "axes.buy.pos.desc":
+    lang === "ko"
+      ? "가격이 내려갔을 때 사는 게 더 편해요. 남들이 외면할 때 기회를 보는 편이에요."
+      : "You're more comfortable buying after a drop. You tend to see chances when others look away.",
+  "axes.buy.pos.opposite":
+    lang === "ko"
+      ? "반대편은 오를 때 사요 · 오르는 흐름을 확인하고 올라타는 쪽"
+      : "Opposite: Buy rising · join after the trend is confirmed",
+  "axes.buy.neg.desc":
+    lang === "ko"
+      ? "오르는 흐름을 확인하고 사는 게 더 편해요. 시장이 가는 방향에 올라타는 편이에요."
+      : "You're more comfortable buying once a rally is confirmed. You tend to ride where the market is going.",
+  "axes.buy.neg.opposite":
+    lang === "ko"
+      ? "반대편은 쌀 때 사요 · 내려갔을 때 기회를 보는 쪽"
+      : "Opposite: Buy low · look for chances after a drop",
+  "axes.lev.pos.desc":
+    lang === "ko"
+      ? "기회라고 보면 크게 걸어요. 한두 종목이나 레버리지도 마다하지 않아요."
+      : "When you see a chance you size up. Concentration or leverage doesn't scare you off.",
+  "axes.lev.pos.opposite":
+    lang === "ko"
+      ? "반대편은 안전하게 · 크게 잃지 않는 걸 먼저 생각하는 쪽"
+      : "Opposite: Play safe · put avoiding big losses first",
+  "axes.lev.neg.desc":
+    lang === "ko"
+      ? "큰 수익보다 크게 잃지 않는 걸 먼저 생각해요. 지수나 분산된 상품이 편해요."
+      : "You put avoiding big losses before chasing big wins. Indexes and diversified products feel right.",
+  "axes.lev.neg.opposite":
+    lang === "ko"
+      ? "반대편은 크게 걸어요 · 한두 종목이나 레버리지로 승부하는 쪽"
+      : "Opposite: Go big · bet with concentration or leverage",
+  "axes.hold.pos.desc":
+    lang === "ko"
+      ? "한 번 사면 길게 가져가요. 짧은 등락보다 몇 년 뒤를 보고 투자해요."
+      : "Once you buy, you hold a long time. You look years out rather than reacting to short swings.",
+  "axes.hold.pos.opposite":
+    lang === "ko"
+      ? "반대편은 짧게 사고팔아요 · 수익이 나면 바로 챙기는 쪽"
+      : "Opposite: Trade short · lock in gains as soon as they appear",
+  "axes.hold.neg.desc":
+    lang === "ko"
+      ? "수익이 나면 바로 챙기는 편이에요. 길게 묶어두기보다 자주 사고팔아요."
+      : "You lock in gains fast. You'd rather trade often than tie money up for years.",
+  "axes.hold.neg.opposite":
+    lang === "ko"
+      ? "반대편은 오래 들고 · 몇 년 뒤를 보고 기다리는 쪽"
+      : "Opposite: Hold long · wait with a multi-year view",
+  "axes.mind.pos.desc":
+    lang === "ko"
+      ? "계좌가 빠져도 일상이 크게 흔들리지 않아요. 하락을 지나가는 일로 받아들여요."
+      : "A red account doesn't shake your day. You take drops as something to pass through.",
+  "axes.mind.pos.opposite":
+    lang === "ko"
+      ? "반대편은 불안해요 · 하락하면 자꾸 확인하고 신경 쓰이는 쪽"
+      : "Opposite: Get anxious · check often and feel every drop",
+  "axes.mind.neg.desc":
+    lang === "ko"
+      ? "계좌가 빠지면 자꾸 확인하게 되고 마음이 쓰여요. 그만큼 위험에 민감한 편이에요."
+      : "When the account falls you can't help checking in and feeling it. You're more sensitive to risk.",
+  "axes.mind.neg.opposite":
+    lang === "ko"
+      ? "반대편은 덤덤해요 · 하락을 지나가는 일로 받아들이는 쪽"
+      : "Opposite: Stay calm · take drops as something to pass through",
 });
 
 const buildEntryCommon = (lang: Lang): FlatTexts => ({

@@ -470,6 +470,79 @@ const ENTRY_KEYS: Array<{
   { k: "axes.mind.pos", label: "4축 카드 — 멘탈 답 (I)" },
   { k: "axes.mind.neg", label: "4축 카드 — 멘탈 답 (A)" },
   { k: "axes.even", label: "4축 카드 — 동점 표시" },
+  { k: "axes.evenPrefix", label: "펼친 카드 — 동점 서두" },
+  {
+    k: "axes.buy.pos.desc",
+    label: "펼친 카드 설명 — 판단 B (쌀 때)",
+    multiline: true,
+  },
+  {
+    k: "axes.buy.pos.opposite",
+    label: "펼친 카드 반대편 — 판단 B",
+  },
+  {
+    k: "axes.buy.neg.desc",
+    label: "펼친 카드 설명 — 판단 M (오를 때)",
+    multiline: true,
+  },
+  {
+    k: "axes.buy.neg.opposite",
+    label: "펼친 카드 반대편 — 판단 M",
+  },
+  {
+    k: "axes.lev.pos.desc",
+    label: "펼친 카드 설명 — 위험 E (공격)",
+    multiline: true,
+  },
+  {
+    k: "axes.lev.pos.opposite",
+    label: "펼친 카드 반대편 — 위험 E",
+  },
+  {
+    k: "axes.lev.neg.desc",
+    label: "펼친 카드 설명 — 위험 O (안정)",
+    multiline: true,
+  },
+  {
+    k: "axes.lev.neg.opposite",
+    label: "펼친 카드 반대편 — 위험 O",
+  },
+  {
+    k: "axes.hold.pos.desc",
+    label: "펼친 카드 설명 — 기간 H (존버)",
+    multiline: true,
+  },
+  {
+    k: "axes.hold.pos.opposite",
+    label: "펼친 카드 반대편 — 기간 H",
+  },
+  {
+    k: "axes.hold.neg.desc",
+    label: "펼친 카드 설명 — 기간 T (단타)",
+    multiline: true,
+  },
+  {
+    k: "axes.hold.neg.opposite",
+    label: "펼친 카드 반대편 — 기간 T",
+  },
+  {
+    k: "axes.mind.pos.desc",
+    label: "펼친 카드 설명 — 멘탈 I (강철)",
+    multiline: true,
+  },
+  {
+    k: "axes.mind.pos.opposite",
+    label: "펼친 카드 반대편 — 멘탈 I",
+  },
+  {
+    k: "axes.mind.neg.desc",
+    label: "펼친 카드 설명 — 멘탈 A (쫄보)",
+    multiline: true,
+  },
+  {
+    k: "axes.mind.neg.opposite",
+    label: "펼친 카드 반대편 — 멘탈 A",
+  },
 ];
 
 function EntryGroup(props: {

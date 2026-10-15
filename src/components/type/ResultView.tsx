@@ -819,7 +819,10 @@ function ExpandedCard({
   const opposite = texts[`axes.${axis}.${side}.opposite`] ?? "";
 
   const closeBtnRef = useRef<HTMLButtonElement>(null);
-  const isOpenPhase = phase === "open" || phase === "opening";
+  // 숫자 애니메이션은 "open" 단계에서만 펼침 값 적용 — opening/closing은 접힘 값으로.
+  // 그래야 ExpandedCard 마운트 즉시(opening) 접힘 → 2 rAF 후 open 전환으로 transition이
+  // 발동한다. closing 단계도 접힘 값으로 돌아가며 자연스럽게 역방향 애니메이션.
+  const isNumberOpen = phase === "open";
   const showDescNow = phase === "open";
 
   // 열림 완료 시 닫기 버튼으로 포커스 이동
@@ -855,18 +858,18 @@ function ExpandedCard({
         cursor: "pointer",
       }}
     >
-      {/* 배경 숫자 (showStrength만) */}
+      {/* 배경 숫자 (showStrength만) — 접힘은 잘리는 위치, 펼침은 카드 안으로. */}
       {showStrength ? (
         <div
           aria-hidden
           className="axis-card-num"
           style={{
             position: "absolute",
-            right: -6,
-            bottom: isOpenPhase && !reduced ? -38 : -22,
-            fontSize: isOpenPhase && !reduced ? 120 : 72,
+            right: isNumberOpen && !reduced ? 12 : -6,
+            bottom: isNumberOpen && !reduced ? 6 : -22,
+            fontSize: isNumberOpen && !reduced ? 96 : 72,
             fontWeight: 500,
-            letterSpacing: -3,
+            letterSpacing: isNumberOpen && !reduced ? -4 : -3,
             lineHeight: 1,
             color: cfg.numColor,
             opacity: cfg.numOpacity,
@@ -875,7 +878,7 @@ function ExpandedCard({
             whiteSpace: "nowrap",
             transition: reduced
               ? "none"
-              : `font-size ${EXPAND_MS}ms cubic-bezier(.2,.8,.2,1), bottom ${EXPAND_MS}ms cubic-bezier(.2,.8,.2,1)`,
+              : `font-size ${EXPAND_MS}ms cubic-bezier(.2,.8,.2,1), bottom ${EXPAND_MS}ms cubic-bezier(.2,.8,.2,1), right ${EXPAND_MS}ms cubic-bezier(.2,.8,.2,1), letter-spacing ${EXPAND_MS}ms cubic-bezier(.2,.8,.2,1)`,
           }}
         >
           {isTie ? (
@@ -883,7 +886,7 @@ function ExpandedCard({
           ) : (
             <>
               {pct}
-              <span style={{ fontSize: isOpenPhase && !reduced ? 50 : 30 }}>
+              <span style={{ fontSize: isNumberOpen && !reduced ? 40 : 30 }}>
                 %
               </span>
             </>
@@ -955,10 +958,11 @@ function ExpandedCard({
           </div>
         ) : null}
 
-        {/* 설명 + 반대편 */}
+        {/* 설명 + 반대편 — 배경 숫자와 겹침 최소화를 위해 78% 폭. */}
         <div
           style={{
             marginTop: 16,
+            maxWidth: "78%",
             opacity: showDescNow ? 1 : 0,
             transform: showDescNow ? "translateY(0)" : "translateY(6px)",
             transition: reduced

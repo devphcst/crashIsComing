@@ -27,23 +27,19 @@ const prefixFor = (t: Track) => (t === "experienced" ? "exp" : "beg");
 type CopyBlock = {
   heroLead: string;
   heroTitle: string;
-  heroDesc: string;
   startBtn: string;
   back: string;
   stepLabel: (n: number, total: number) => string;
-  disclaimer: string;
 };
 
 /**
- * heroTitle/heroDesc/startBtn/back 등 범위 외 문구는 하드코딩 유지.
- * disclaimer는 texts["result.disclaimer"]에서 가져옴.
+ * heroTitle/startBtn/back 등 범위 외 문구는 하드코딩 유지.
+ * 안내 3줄(intro.line1~3)과 면책(result.disclaimer)은 texts에서 가져옴.
  */
-const HERO_COPY: Record<Lang, Omit<CopyBlock, "disclaimer">> = {
+const HERO_COPY: Record<Lang, CopyBlock> = {
   ko: {
     heroLead: "폭락장은 온다 · 투자유형 테스트",
     heroTitle: "나는 어떤\n투자자일까?",
-    heroDesc:
-      "17문항 · 2분. 16유형 중 하나로 결과를 알려드려요. 답은 브라우저 밖으로 나가지 않아요.",
     startBtn: "시작하기",
     back: "뒤로",
     stepLabel: (n, total) => `${n} / ${total}`,
@@ -51,8 +47,6 @@ const HERO_COPY: Record<Lang, Omit<CopyBlock, "disclaimer">> = {
   en: {
     heroLead: "Crash Is Coming · Investor type",
     heroTitle: "What kind of\ninvestor are you?",
-    heroDesc:
-      "17 questions, 2 minutes. Find your type among 16. Your answers never leave your browser.",
     startBtn: "Start",
     back: "Back",
     stepLabel: (n, total) => `${n} / ${total}`,
@@ -139,8 +133,18 @@ export function InvestorTypeTest({
   };
 
   if (stage === "intro") {
+    const lines: [string, string, string] = [
+      texts["intro.line1"] ?? "",
+      texts["intro.line2"] ?? "",
+      texts["intro.line3"] ?? "",
+    ];
     return (
-      <Intro hero={hero} disclaimer={disclaimer} onStart={start} />
+      <Intro
+        hero={hero}
+        lines={lines}
+        disclaimer={disclaimer}
+        onStart={start}
+      />
     );
   }
 
@@ -211,10 +215,12 @@ export function InvestorTypeTest({
 
 function Intro({
   hero,
+  lines,
   disclaimer,
   onStart,
 }: {
-  hero: Omit<CopyBlock, "disclaimer">;
+  hero: CopyBlock;
+  lines: [string, string, string];
   disclaimer: string;
   onStart: () => void;
 }) {
@@ -234,7 +240,12 @@ function Intro({
         >
           {hero.heroTitle}
         </h1>
-        <p className="text-sm text-muted">{hero.heroDesc}</p>
+        {/* 3줄 안내 — 각 줄 별도 요소, 줄 간격 4px. */}
+        <div className="flex flex-col text-sm text-muted" style={{ gap: 4 }}>
+          {lines.map((line, i) => (
+            <span key={i}>{line}</span>
+          ))}
+        </div>
       </div>
       <div className="pt-10">
         <button
@@ -266,7 +277,7 @@ function Fork({
   onPick,
   onBack,
 }: {
-  hero: Omit<CopyBlock, "disclaimer">;
+  hero: CopyBlock;
   texts: FlatTexts;
   onPick: (t: Track) => void;
   onBack: () => void;
@@ -348,7 +359,7 @@ function QuestionView({
   onPick,
   onBack,
 }: {
-  hero: Omit<CopyBlock, "disclaimer">;
+  hero: CopyBlock;
   prompt: string;
   choices: Array<{ id: string; label: string }>;
   index: number;

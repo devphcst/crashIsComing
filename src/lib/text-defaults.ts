@@ -66,6 +66,15 @@ const buildIntro = (lang: Lang): FlatTexts => ({
   "intro.question": INTRO_QUESTION.prompt[lang],
   "intro.option.experienced": INTRO_QUESTION.choices[0].label[lang],
   "intro.option.beginner": INTRO_QUESTION.choices[1].label[lang],
+  "intro.line1": lang === "ko" ? "17문항 · 2분" : "17 questions · 2 min",
+  "intro.line2":
+    lang === "ko"
+      ? "16가지 유형 중 하나로 알려드려요."
+      : "You'll get one of 16 types.",
+  "intro.line3":
+    lang === "ko"
+      ? "테스트 내용은 저장되지 않아요."
+      : "Your answers aren't saved.",
 });
 
 const buildResult = (lang: Lang): FlatTexts => ({

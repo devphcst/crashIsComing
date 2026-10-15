@@ -11,6 +11,7 @@ import { decodeHistorySnapshot } from "@/lib/history-codec";
 import { getExchange, isHidden } from "@/lib/symbols";
 import { HistoryPageClient } from "@/components/HistoryPageClient";
 import { LANG_COOKIE } from "@/constants/seo";
+import { isTypeBannerVisible } from "@/lib/type-banner";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
 
@@ -80,6 +81,7 @@ export default async function TickerHistoryPage({
         closes: closesForClient,
         crashes: hist.historyCrashes,
         tabs,
+        showTypeBanner: isTypeBannerVisible(),
       }}
     />
   );

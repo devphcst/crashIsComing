@@ -12,10 +12,12 @@ export function HeroSkeleton() {
   return (
     <main className="flex min-h-screen flex-col bg-bg">
       <div className="mx-auto w-full max-w-[480px] px-4">
-        {/* 헤더 자리 — 브랜드 + 아이콘 2개 placeholder */}
+        {/* 헤더 자리 — 브랜드 + 성향 테스트 pill + 아이콘 2개 placeholder */}
         <header className="flex items-center justify-between pb-3 pt-5">
           <div className="h-5 w-24 animate-pulse rounded-md bg-[var(--bento-gray)]" />
           <div className="flex items-center gap-2">
+            {/* 성향 테스트 pill 자리 (좁은 화면에선 아이콘만 → 폭 가변 ≈ 24~84) */}
+            <div className="h-6 w-[84px] animate-pulse rounded-full bg-[var(--bento-gray)]" />
             <div className="h-[34px] w-[34px] animate-pulse rounded-full bg-[var(--bento-gray)]" />
             <div className="h-9 w-9 animate-pulse rounded-md bg-[var(--bento-gray)]" />
           </div>

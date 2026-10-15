@@ -15,6 +15,7 @@ import {
   type Answer,
 } from "@/lib/investor-type";
 import { ResultView, type NasdaqSnap } from "./ResultView";
+import { dismissBannerCookie } from "./TypeTestBanner";
 
 type Stage = "intro" | "fork" | "question" | "result";
 
@@ -99,6 +100,8 @@ export function InvestorTypeTest({
     if (index + 1 < total) {
       setIndex(index + 1);
     } else {
+      // 테스트 완료 — 띠 배너 더 이상 노출 안 함 (같은 180일 쿠키).
+      dismissBannerCookie();
       setStage("result");
     }
   };

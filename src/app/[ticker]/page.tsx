@@ -15,6 +15,7 @@ import { buildJsonLd, buildSymbolMetadata } from "@/lib/seo-builder";
 import { DEFAULT_SYMBOL, isHidden } from "@/lib/symbols";
 import type { Lang } from "@/lib/i18n";
 import { LANG_COOKIE } from "@/constants/seo";
+import { isTypeBannerVisible } from "@/lib/type-banner";
 
 // force-dynamic 제거 — page-data.ts의 unstable_cache (TTL 60s, tag 'symbols')에
 // 의존해 데이터 fetch를 캐시. cookie 읽기로 페이지 자체는 dynamic 유지.
@@ -68,6 +69,7 @@ export default async function TickerPage({
     loadFearGreed(),
   ]);
   const teaser = pickSeasonalityTeaser(snap.seasonality, currentKstMonth());
+  const showTypeBanner = isTypeBannerVisible();
   return (
     <>
       <script
@@ -83,6 +85,7 @@ export default async function TickerPage({
         current={ticker}
         fearGreed={fearGreed}
         seasonalityTeaser={teaser}
+        showTypeBanner={showTypeBanner}
       />
     </>
   );

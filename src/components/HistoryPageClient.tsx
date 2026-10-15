@@ -31,6 +31,7 @@ export type HistoryPagePayload = {
   closes: ReadonlyArray<{ date: string; price: number }>;
   crashes: CrashCandidate[];
   tabs: SymbolMeta[];
+  showTypeBanner: boolean;
 };
 
 const yearsBetween = (fromISO: string, toISO: string): number => {
@@ -42,7 +43,7 @@ const yearsBetween = (fromISO: string, toISO: string): number => {
 };
 
 export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) {
-  const { ticker, displayName, exchange, closes, crashes, tabs } = payload;
+  const { ticker, displayName, exchange, closes, crashes, tabs, showTypeBanner } = payload;
   const [lang, setLang] = useState<Lang>("ko");
   const [hydrated, setHydrated] = useState(false);
 
@@ -78,6 +79,7 @@ export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) 
         tabs={tabs}
         current={ticker}
         anchorBase={backHref}
+        showTypeBanner={showTypeBanner}
       />
 
       <div

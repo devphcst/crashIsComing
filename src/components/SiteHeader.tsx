@@ -5,6 +5,8 @@ import type { SymbolMeta } from "@/lib/symbols";
 import { LangToggle } from "./LangToggle";
 import { MobileMenu } from "./MobileMenu";
 import { MainSymbolTabs } from "./MainSymbolTabs";
+import { TypeTestPill } from "./type/TypeTestPill";
+import { TypeTestBanner } from "./type/TypeTestBanner";
 
 /**
  * 요약(/[ticker])과 서브 페이지가 공유하는 헤더.
@@ -23,6 +25,7 @@ export function SiteHeader({
   tabs,
   current,
   anchorBase,
+  showTypeBanner = false,
 }: {
   lang: Lang;
   onChangeLang: (l: Lang) => void;
@@ -31,26 +34,36 @@ export function SiteHeader({
   current: string;
   /** MobileMenu 앵커 링크 접두어. 서브 페이지에서 요약 페이지 앵커로 이동시킬 때 사용. */
   anchorBase?: string;
+  /** 서버에서 type_banner_dismissed 쿠키 체크 후 전달. 헤더 아래 띠 배너 노출. */
+  showTypeBanner?: boolean;
 }) {
   return (
     <>
       <div className="sticky top-0 z-30 bg-bg/90 backdrop-blur lg:relative lg:bg-transparent lg:backdrop-blur-none">
-        <header className="flex items-center justify-between px-6 pb-3 pt-6 lg:pb-0">
+        <header className="flex items-center justify-between gap-2 px-6 pb-3 pt-6 lg:pb-0">
           <span className="text-sm text-muted">{dict.brand}</span>
-          <div className="hidden lg:block">
-            <LangToggle
+          <div className="flex items-center gap-2">
+            <TypeTestPill lang={lang} />
+            <div className="hidden lg:block">
+              <LangToggle
+                lang={lang}
+                onChange={onChangeLang}
+                ariaLabel={dict.langToggleAria}
+              />
+            </div>
+            <MobileMenu
               lang={lang}
-              onChange={onChangeLang}
-              ariaLabel={dict.langToggleAria}
+              onChangeLang={onChangeLang}
+              dict={dict}
+              anchorBase={anchorBase}
             />
           </div>
-          <MobileMenu
-            lang={lang}
-            onChangeLang={onChangeLang}
-            dict={dict}
-            anchorBase={anchorBase}
-          />
         </header>
+        {showTypeBanner ? (
+          <div className="px-6 pb-3">
+            <TypeTestBanner lang={lang} />
+          </div>
+        ) : null}
       </div>
 
       {tabs.length > 1 ? (

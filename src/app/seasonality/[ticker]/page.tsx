@@ -5,6 +5,7 @@ import { getSnapshot, loadSymbolList, loadVisibleMetas } from "@/lib/page-data";
 import { getLeverage, isHidden } from "@/lib/symbols";
 import { SeasonalityPageClient } from "@/components/SeasonalityPageClient";
 import { LANG_COOKIE, SITE_URL } from "@/constants/seo";
+import { isTypeBannerVisible } from "@/lib/type-banner";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
 
@@ -131,6 +132,7 @@ export default async function SeasonalityPage({
         initialMonth,
         seasonality: sea,
         tabs,
+        showTypeBanner: isTypeBannerVisible(),
       }}
     />
   );

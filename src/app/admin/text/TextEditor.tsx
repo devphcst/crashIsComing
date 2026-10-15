@@ -57,12 +57,23 @@ export function TextEditor({
   const defaultsLang = defaults[lang];
   const savedLang = saved[lang];
 
-  // 현 그룹에 속하면서 draft와 saved가 다른 키 수
+  // 현 그룹에서 draft와 saved가 "실제 KV에 들어갈 값" 기준으로 다른 키 수.
+  // defaults와 똑같이 입력하거나 비우면 override에서 제거되므로 undefined 취급.
   const unsavedKeys = useMemo(() => {
     const keys = Object.keys(defaultsLang).filter(
       (k) => keyGroup(k) === group,
     );
-    return keys.filter((k) => (draftLang[k] ?? "") !== (savedLang[k] ?? ""));
+    const effective = (raw: string | undefined, def: string) => {
+      if (raw === undefined) return undefined;
+      const t = raw.trim();
+      if (!t || t === def) return undefined;
+      return t;
+    };
+    return keys.filter(
+      (k) =>
+        effective(draftLang[k], defaultsLang[k]) !==
+        effective(savedLang[k], defaultsLang[k]),
+    );
   }, [defaultsLang, draftLang, savedLang, group]);
 
   const hasUnsaved = unsavedKeys.length > 0;
@@ -319,9 +330,13 @@ function Field({
 }: FieldProps) {
   const def = defaults[k] ?? "";
   const cur = draft[k];
-  const modified = cur !== undefined && cur.trim() !== "" && cur.trim() !== def;
+  // 입력창에는 항상 "현재 저장될 값"을 표시 — override 있으면 그 값, 없으면 기본값.
+  // 사용자는 그 위에서 일부만 수정할 수 있다. 전체를 지우면 빈 input이 되고,
+  // 저장 시 서버가 defaults로 되돌림. "기본값으로" 버튼으로도 복원 가능.
+  const value = cur !== undefined ? cur : def;
+  const touched = cur !== undefined;
+  const modified = touched && cur.trim() !== "" && cur.trim() !== def;
   const limit = limitForKey(k);
-  const value = cur ?? "";
 
   return (
     <div className="space-y-1.5">
@@ -357,7 +372,7 @@ function Field({
           >
             {value.length}/{limit}
           </span>
-          {modified ? (
+          {touched ? (
             <button
               type="button"
               onClick={() => resetKey(k)}
@@ -372,7 +387,6 @@ function Field({
         <textarea
           id={`fld-${k}`}
           value={value}
-          placeholder={def}
           maxLength={limit}
           onChange={(e) => setValue(k, e.target.value)}
           className="w-full rounded-md border border-line bg-bg px-3 py-2 text-sm"
@@ -383,7 +397,6 @@ function Field({
           id={`fld-${k}`}
           type="text"
           value={value}
-          placeholder={def}
           maxLength={limit}
           onChange={(e) => setValue(k, e.target.value)}
           className="w-full rounded-md border border-line bg-bg px-3 py-2 text-sm"

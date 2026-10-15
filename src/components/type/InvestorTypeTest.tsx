@@ -13,10 +13,13 @@ import {
   type Answer,
 } from "@/lib/investor-type";
 import { ResultView, type NasdaqSnap } from "./ResultView";
+import { FindingView } from "./FindingView";
 import { dismissBannerCookie } from "./TypeTestBanner";
+import type { TypeCode } from "@/data/investor-types";
+import type { AxisScores } from "@/lib/investor-type";
 import type { FlatTexts } from "@/lib/text-defaults";
 
-type Stage = "intro" | "fork" | "question" | "result";
+type Stage = "intro" | "fork" | "question" | "finding" | "result";
 
 /** 트랙별 prefix (키 조회용). */
 const prefixFor = (t: Track) => (t === "experienced" ? "exp" : "beg");
@@ -72,6 +75,9 @@ export function InvestorTypeTest({
   const [track, setTrack] = useState<Track | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
+  // 마지막 문항 선택 직후 미리 계산해 FindingView로 넘김 (ResultView도 재사용).
+  const [finalCode, setFinalCode] = useState<TypeCode | null>(null);
+  const [finalScores, setFinalScores] = useState<AxisScores | null>(null);
 
   const list = track ? QUESTIONS[track] : [];
   const total = list.length;
@@ -82,6 +88,8 @@ export function InvestorTypeTest({
     setTrack(null);
     setIndex(0);
     setAnswers([]);
+    setFinalCode(null);
+    setFinalScores(null);
   };
 
   const pickTrack = (t: Track) => {
@@ -89,6 +97,8 @@ export function InvestorTypeTest({
     setStage("question");
     setIndex(0);
     setAnswers([]);
+    setFinalCode(null);
+    setFinalScores(null);
   };
 
   const retry = () => {
@@ -96,10 +106,12 @@ export function InvestorTypeTest({
     setTrack(null);
     setIndex(0);
     setAnswers([]);
+    setFinalCode(null);
+    setFinalScores(null);
   };
 
   const onPick = (choiceId: string) => {
-    if (!currentQ) return;
+    if (!currentQ || !track) return;
     const next = [
       ...answers.filter((a) => a.questionId !== currentQ.id),
       { questionId: currentQ.id, choiceId },
@@ -108,8 +120,13 @@ export function InvestorTypeTest({
     if (index + 1 < total) {
       setIndex(index + 1);
     } else {
+      // 마지막 문항 — 결과 코드 미리 계산 후 5초 로딩 화면으로.
       dismissBannerCookie();
-      setStage("result");
+      const scores = computeScores(track, next);
+      const code = codeFromScores(track, scores, next);
+      setFinalScores(scores);
+      setFinalCode(code);
+      setStage("finding");
     }
   };
 
@@ -138,14 +155,23 @@ export function InvestorTypeTest({
     );
   }
 
-  if (stage === "result" && track) {
-    const scores = computeScores(track, answers);
-    const code = codeFromScores(track, scores, answers);
+  if (stage === "finding" && track && finalCode) {
+    return (
+      <FindingView
+        code={finalCode}
+        lang={lang}
+        texts={texts}
+        onDone={() => setStage("result")}
+      />
+    );
+  }
+
+  if (stage === "result" && track && finalCode && finalScores) {
     return (
       <ResultView
         lang={lang}
-        code={code}
-        scores={scores}
+        code={finalCode}
+        scores={finalScores}
         nasdaq={nasdaq}
         mode="test"
         beginner={track === "beginner"}

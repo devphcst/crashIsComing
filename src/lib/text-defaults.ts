@@ -34,6 +34,32 @@ const buildEntryCommon = (lang: Lang): FlatTexts => ({
   "entry.banner.sub": lang === "ko" ? "2분" : "2 min",
   "entry.menuItem":
     lang === "ko" ? "투자유형 테스트" : "Investor type",
+  "loading.done": lang === "ko" ? "17문항 완료" : "17 questions done",
+  "loading.title":
+    lang === "ko"
+      ? "당신의 투자유형을 찾는 중"
+      : "Finding your investor type",
+  "loading.status.buy":
+    lang === "ko"
+      ? "판단 스타일을 보고 있어요"
+      : "Reading your call style",
+  "loading.status.lev":
+    lang === "ko"
+      ? "위험 성향을 계산하고 있어요"
+      : "Measuring risk appetite",
+  "loading.status.hold":
+    lang === "ko"
+      ? "보유 습관을 확인하고 있어요"
+      : "Checking your holding habits",
+  "loading.status.mind":
+    lang === "ko"
+      ? "멘탈을 측정하고 있어요"
+      : "Gauging your head space",
+  "loading.found": lang === "ko" ? "찾았어요!" : "Found it!",
+  "loading.axesHint":
+    lang === "ko"
+      ? "판단 · 위험 · 기간 · 멘탈"
+      : "Call · Risk · Term · Mind",
 });
 
 const buildIntro = (lang: Lang): FlatTexts => ({

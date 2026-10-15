@@ -208,12 +208,22 @@ export function HeroDrawdown({
 
         {data.ready ? (
           <div className="flex flex-col gap-7 pb-10 pt-3">
-            {/* 섹션 간격 28px (gap-7) */}
-            <HeroCard
-              data={data}
-              ticker={current}
-              displayName={currentDisplayName}
-            />
+            {/* 섹션 간격 28px (gap-7). 메인 카드 + 방문자 라인은 한 블록으로
+                묶어 사이 간격만 6px로 좁힌다. */}
+            <div className="flex flex-col gap-1.5">
+              <HeroCard
+                data={data}
+                ticker={current}
+                displayName={currentDisplayName}
+              />
+              {visitor.show ? (
+                <VisitorInline
+                  today={visitorState.today}
+                  total={visitorState.total}
+                  lang={lang}
+                />
+              ) : null}
+            </div>
             <BentoGrid
               data={data}
               fearGreed={fearGreed}
@@ -244,7 +254,7 @@ export function HeroDrawdown({
         )}
       </div>
 
-      {/* 푸터 — 좌측 2줄, 상단 1px --bento-gray 라인 */}
+      {/* 푸터 — 면책 문구만. 방문자 수는 메인 카드 아래로 이동(VisitorInline). */}
       <footer
         className="mt-auto"
         style={{ borderTop: "1px solid var(--bento-gray)" }}
@@ -255,13 +265,6 @@ export function HeroDrawdown({
             style={{ color: "var(--ath-dash)" }}
           >
             <div>{d.disclaimer}</div>
-            {visitor.show ? (
-              <VisitorLine
-                today={visitorState.today}
-                total={visitorState.total}
-                dict={d}
-              />
-            ) : null}
           </div>
         </div>
       </footer>
@@ -1266,24 +1269,47 @@ function AdCard({ lang }: { lang: Lang }) {
 }
 
 /* ============================================================================
- * 방문자 라인 (푸터) + 공유 버튼
+ * 방문자 인라인 — 메인 카드 바로 아래 한 줄 양쪽 정렬
  * ============================================================================ */
 
-function VisitorLine({
+const fmtK = (n: number): string => n.toLocaleString("en-US");
+
+function VisitorInline({
   today,
   total,
-  dict,
+  lang,
 }: {
   today: number;
   total: number;
-  dict: ReturnType<typeof getDict>;
+  lang: Lang;
 }) {
-  const parts = dict.visitorInline(today || null, total);
+  const leftText =
+    lang === "ko" ? `오늘 ${fmtK(today)}명` : `${fmtK(today)} today`;
+  const rightText =
+    lang === "ko" ? `누적 ${fmtK(total)}명` : `${fmtK(total)} total`;
   return (
-    <div>
-      {parts.map((p, i) => (
-        <span key={i}>{p.text}</span>
-      ))}
+    <div
+      className="flex items-center justify-between"
+      style={{
+        fontSize: 11,
+        color: "#8B95A1",
+        padding: "0 4px",
+      }}
+    >
+      <span className="flex items-center gap-1.5">
+        <span
+          aria-hidden
+          style={{
+            display: "inline-block",
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: "#1E9E6A",
+          }}
+        />
+        {leftText}
+      </span>
+      <span>{rightText}</span>
     </div>
   );
 }

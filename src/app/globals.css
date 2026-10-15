@@ -181,3 +181,12 @@ body {
     column-gap: var(--sidebar-gap);
   }
 }
+
+/* 투자유형 결과 4축 카드 — 다크모드에서는 축 색 12% 투명 배경 + 숫자 opacity 0.18. */
+@media (prefers-color-scheme: dark) {
+  .axis-card[data-axis="buy"] { background: rgba(49, 130, 246, 0.12) !important; }
+  .axis-card[data-axis="lev"] { background: rgba(240, 68, 82, 0.12) !important; }
+  .axis-card[data-axis="hold"] { background: rgba(109, 91, 208, 0.12) !important; }
+  .axis-card[data-axis="mind"] { background: rgba(245, 158, 11, 0.12) !important; }
+  .axis-card .axis-card-num { opacity: 0.18 !important; }
+}

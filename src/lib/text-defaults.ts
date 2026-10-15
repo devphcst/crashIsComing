@@ -24,6 +24,27 @@ import type { Lang } from "./i18n";
 
 export type FlatTexts = Record<string, string>;
 
+const buildAxes = (lang: Lang): FlatTexts => ({
+  // 판단 B/M — "살 때"
+  "axes.buy.q": lang === "ko" ? "살 때" : "When buying",
+  "axes.buy.pos": lang === "ko" ? "쌀 때 사요" : "Buy low",
+  "axes.buy.neg": lang === "ko" ? "오를 때 사요" : "Buy rising",
+  // 위험 E/O — "위험은"
+  "axes.lev.q": lang === "ko" ? "위험은" : "Risk",
+  "axes.lev.pos": lang === "ko" ? "크게 걸어요" : "Go big",
+  "axes.lev.neg": lang === "ko" ? "안전하게" : "Play safe",
+  // 기간 H/T — "보유는"
+  "axes.hold.q": lang === "ko" ? "보유는" : "Holding",
+  "axes.hold.pos": lang === "ko" ? "오래 들고" : "Hold long",
+  "axes.hold.neg": lang === "ko" ? "짧게 사고팔아요" : "Trade short",
+  // 멘탈 I/A — "떨어지면"
+  "axes.mind.q": lang === "ko" ? "떨어지면" : "When it drops",
+  "axes.mind.pos": lang === "ko" ? "덤덤해요" : "Stay calm",
+  "axes.mind.neg": lang === "ko" ? "불안해요" : "Get anxious",
+  // 동점 라벨
+  "axes.even": lang === "ko" ? "반반" : "50/50",
+});
+
 const buildEntryCommon = (lang: Lang): FlatTexts => ({
   "entry.headerPill":
     lang === "ko" ? "투자유형 테스트" : "Investor type",
@@ -147,6 +168,7 @@ const buildTypes = (lang: Lang): FlatTexts => {
 };
 
 const buildFlat = (lang: Lang): FlatTexts => ({
+  ...buildAxes(lang),
   ...buildEntryCommon(lang),
   ...buildIntro(lang),
   ...buildResult(lang),

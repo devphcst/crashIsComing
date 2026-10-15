@@ -457,6 +457,19 @@ const ENTRY_KEYS: Array<{
     label: "의외의 모습 — 모든 답 한 방향일 때 ({reading})",
     multiline: true,
   },
+  { k: "axes.buy.q", label: "4축 카드 — 판단 질문" },
+  { k: "axes.buy.pos", label: "4축 카드 — 판단 답 (B)" },
+  { k: "axes.buy.neg", label: "4축 카드 — 판단 답 (M)" },
+  { k: "axes.lev.q", label: "4축 카드 — 위험 질문" },
+  { k: "axes.lev.pos", label: "4축 카드 — 위험 답 (E)" },
+  { k: "axes.lev.neg", label: "4축 카드 — 위험 답 (O)" },
+  { k: "axes.hold.q", label: "4축 카드 — 기간 질문" },
+  { k: "axes.hold.pos", label: "4축 카드 — 기간 답 (H)" },
+  { k: "axes.hold.neg", label: "4축 카드 — 기간 답 (T)" },
+  { k: "axes.mind.q", label: "4축 카드 — 멘탈 질문" },
+  { k: "axes.mind.pos", label: "4축 카드 — 멘탈 답 (I)" },
+  { k: "axes.mind.neg", label: "4축 카드 — 멘탈 답 (A)" },
+  { k: "axes.even", label: "4축 카드 — 동점 표시" },
 ];
 
 function EntryGroup(props: {

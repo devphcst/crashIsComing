@@ -124,7 +124,10 @@ export const typeFor = (code: TypeCode) => INVESTOR_TYPES[code];
 
 export type Surprise = {
   axis: AxisKey;
+  /** 결과 축 레이블(EN 자연): "Bargain" / "Iron" 등. 영문 SurpriseCard용. */
   axisLabel: string;
+  /** 결과 축의 답 문구: "쌀 때 사요" / "덤덤해요" 등. ko SurpriseCard용. */
+  axisAnswer: string;
   axisColor: string;
   questionLabel: string;
   choiceText: string;
@@ -166,6 +169,8 @@ export const findSurprises = (
     const idx = AXIS_ORDER.indexOf(q.axis);
     const isPos = code[idx] === meta.letters.pos;
     const axisLabel = isPos ? meta.labels[lang].pos : meta.labels[lang].neg;
+    const axisAnswer =
+      texts[`axes.${q.axis}.${isPos ? "pos" : "neg"}`] ?? axisLabel;
     const posRatio = (scores[q.axis] + 4) / 8;
     const winRatio = isPos ? posRatio : 1 - posRatio;
 
@@ -178,6 +183,7 @@ export const findSurprises = (
     found.set(q.axis, {
       axis: q.axis,
       axisLabel,
+      axisAnswer,
       axisColor: meta.color,
       questionLabel: texts[labelKey] ?? "",
       choiceText: texts[optKey] ?? "",

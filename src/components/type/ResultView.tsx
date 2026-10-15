@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Lang } from "@/lib/i18n";
 import {
@@ -12,7 +12,6 @@ import {
 } from "@/data/investor-types";
 import type { AxisScores, Surprise } from "@/lib/investor-type";
 import {
-  barRatios,
   matchCompatible,
   matchOpposite,
 } from "@/lib/investor-type";
@@ -97,7 +96,6 @@ export function ResultView({
   surprises?: Surprise[];
 }) {
   const type = INVESTOR_TYPES[code];
-  const ratios = barRatios(scores);
   const compatible = matchCompatible(code);
   const opposite = matchOpposite(code);
 
@@ -193,15 +191,16 @@ export function ResultView({
         ) : null}
       </div>
 
-      {/* 4축 바 */}
-      <div className="flex flex-col gap-4">
+      {/* 4축 2×2 카드 */}
+      <div className="grid grid-cols-2" style={{ gap: 8 }}>
         {AXIS_ORDER.map((axis) => (
-          <AxisBar
+          <AxisCard
             key={axis}
             axis={axis}
-            ratio={ratios[axis]}
+            score={scores[axis]}
             code={code}
-            lang={lang}
+            texts={texts}
+            showStrength={mode === "test"}
           />
         ))}
       </div>
@@ -402,9 +401,9 @@ function SurprisesCard({
                   <span
                     style={{ color: s.axisColor, fontWeight: 600 }}
                   >
-                    {s.axisLabel}
-                  </span>
-                  인데 의외로 · {s.questionLabel}: {s.choiceText}
+                    {s.axisAnswer}
+                  </span>{" "}
+                  쪽인데 의외로 · {s.questionLabel}: {s.choiceText}
                 </>
               ) : (
                 <>
@@ -469,53 +468,147 @@ function PointRow({
   );
 }
 
-function AxisBar({
+/* ============================================================================
+ * 4축 2×2 카드 — 질문/답/점/배경 숫자. 공유 페이지(mode="static")는 숫자·점 숨김.
+ * ============================================================================ */
+
+type AxisCardConfig = {
+  bg: string;
+  qColor: string;
+  numColor: string;
+  numOpacity: number;
+};
+
+const AXIS_CARD_CFG: Record<AxisKey, AxisCardConfig> = {
+  buy: { bg: "#EEF5FE", qColor: "#5A83B8", numColor: "#3182F6", numOpacity: 0.14 },
+  lev: { bg: "#FEF1F2", qColor: "#B86A70", numColor: "#F04452", numOpacity: 0.14 },
+  hold: { bg: "#F3F1FD", qColor: "#7E74B5", numColor: "#6D5BD0", numOpacity: 0.14 },
+  mind: { bg: "#FFF6E8", qColor: "#B08A4E", numColor: "#F59E0B", numOpacity: 0.16 },
+};
+
+function AxisCard({
   axis,
-  ratio,
+  score,
   code,
-  lang,
+  texts,
+  showStrength,
 }: {
   axis: AxisKey;
-  ratio: number;
+  score: number;
   code: TypeCode;
-  lang: Lang;
+  texts: FlatTexts;
+  showStrength: boolean;
 }) {
   const meta = AXES.find((x) => x.key === axis)!;
   const idx = AXIS_ORDER.indexOf(axis);
   const letter = code[idx];
   const isPos = letter === meta.letters.pos;
-  const label = isPos ? meta.labels[lang].pos : meta.labels[lang].neg;
-  const pct = Math.round((isPos ? ratio : 1 - ratio) * 100);
-  const posColor = meta.color;
-  const negGray = "#D1D6DB";
+  const q = texts[`axes.${axis}.q`] ?? "";
+  const answer =
+    texts[`axes.${axis}.${isPos ? "pos" : "neg"}`] ?? "";
+  const even = texts["axes.even"] ?? "";
+  const cfg = AXIS_CARD_CFG[axis];
+
+  const abs = Math.abs(score);
+  const pct = Math.round(((abs + 4) / 8) * 100);
+  const isTie = score === 0;
+
+  // 답 overflow 체크 → 16 → 14px로 축소.
+  const ansRef = useRef<HTMLDivElement | null>(null);
+  const [small, setSmall] = useState(false);
+  useLayoutEffect(() => {
+    const el = ansRef.current;
+    if (!el) return;
+    setSmall(el.scrollWidth > el.clientWidth);
+  }, [answer]);
+
+  // SR 전용 요약 문구
+  const srText = showStrength ? `${answer} ${pct}%` : answer;
+
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between">
-        <div style={{ fontSize: 13, color: "#191F28", fontWeight: 500 }}>
-          <span style={{ color: posColor, fontWeight: 600 }}>{letter}</span>
-          <span style={{ marginLeft: 6 }}>{label}</span>
+    <div
+      className="axis-card relative overflow-hidden"
+      data-axis={axis}
+      style={{
+        background: cfg.bg,
+        borderRadius: 16,
+        padding: "14px 14px 16px",
+        minHeight: 92,
+      }}
+    >
+      {/* 배경 숫자 — 공유 페이지(showStrength=false)엔 생략 */}
+      {showStrength ? (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            right: -6,
+            bottom: -22,
+            fontSize: 72,
+            fontWeight: 500,
+            letterSpacing: -3,
+            lineHeight: 1,
+            color: cfg.numColor,
+            opacity: cfg.numOpacity,
+            pointerEvents: "none",
+            userSelect: "none",
+            whiteSpace: "nowrap",
+          }}
+          className="axis-card-num"
+        >
+          {isTie ? (
+            even
+          ) : (
+            <>
+              {pct}
+              <span style={{ fontSize: 30 }}>%</span>
+            </>
+          )}
         </div>
-        <div style={{ fontSize: 12, color: "#8B95A1" }}>{pct}%</div>
-      </div>
-      <div
-        className="relative h-2 overflow-hidden rounded-full"
-        style={{ background: "#F2F4F8" }}
-      >
+      ) : null}
+
+      {/* 내용 (숫자보다 위) */}
+      <div className="relative" style={{ zIndex: 1 }}>
+        <div style={{ fontSize: 12, color: cfg.qColor }}>{q}</div>
         <div
-          className="absolute inset-y-0 left-0"
+          ref={ansRef}
           style={{
-            width: `${ratio * 100}%`,
-            background: isPos ? posColor : negGray,
+            fontSize: small ? 14 : 16,
+            fontWeight: 500,
+            color: "#191F28",
+            whiteSpace: "nowrap",
+            marginTop: 2,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
-        />
-        <div
-          className="absolute inset-y-0 right-0"
-          style={{
-            width: `${(1 - ratio) * 100}%`,
-            background: isPos ? negGray : posColor,
-          }}
-        />
+        >
+          {answer}
+        </div>
+        {showStrength ? (
+          <div
+            className="flex"
+            style={{ marginTop: 10, gap: 3 }}
+            aria-hidden
+          >
+            {[0, 1, 2, 3].map((i) => {
+              const filled = i < abs;
+              return (
+                <span
+                  key={i}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: filled ? cfg.numColor : "rgba(0,0,0,0.08)",
+                  }}
+                />
+              );
+            })}
+          </div>
+        ) : null}
       </div>
+
+      <span className="sr-only">{srText}</span>
     </div>
   );
 }

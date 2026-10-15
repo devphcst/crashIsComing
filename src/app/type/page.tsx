@@ -4,6 +4,7 @@ import { LANG_COOKIE, SITE_URL } from "@/constants/seo";
 import type { Lang } from "@/lib/i18n";
 import { InvestorTypeTest } from "@/components/type/InvestorTypeTest";
 import { getNasdaqSnap } from "@/lib/nasdaq-snap";
+import { getResolvedTexts } from "@/lib/text-overrides";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +15,12 @@ const readLang = (): Lang => {
 
 const COPY = {
   ko: {
-    title: "투자 성향 테스트",
+    title: "투자유형 테스트",
     description:
       "나는 어떤 투자자일까? 17문항 2분, 16유형 중 하나로 결과를 알려드려요.",
   },
   en: {
-    title: "Investor Personality Test",
+    title: "Investor Type Test",
     description:
       "What kind of investor are you? 17 questions in 2 minutes, 1 of 16 types.",
   },
@@ -49,6 +50,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function TypePage() {
   const lang = readLang();
-  const nasdaq = await getNasdaqSnap();
-  return <InvestorTypeTest lang={lang} nasdaq={nasdaq} />;
+  const [nasdaq, texts] = await Promise.all([
+    getNasdaqSnap(),
+    getResolvedTexts(lang),
+  ]);
+  return <InvestorTypeTest lang={lang} nasdaq={nasdaq} texts={texts} />;
 }

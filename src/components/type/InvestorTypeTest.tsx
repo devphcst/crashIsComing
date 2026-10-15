@@ -4,9 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { Lang } from "@/lib/i18n";
 import {
-  INTRO_QUESTION,
   QUESTIONS,
-  type Question,
   type Track,
 } from "@/data/investor-quiz";
 import {
@@ -16,8 +14,12 @@ import {
 } from "@/lib/investor-type";
 import { ResultView, type NasdaqSnap } from "./ResultView";
 import { dismissBannerCookie } from "./TypeTestBanner";
+import type { FlatTexts } from "@/lib/text-defaults";
 
 type Stage = "intro" | "fork" | "question" | "result";
+
+/** 트랙별 prefix (키 조회용). */
+const prefixFor = (t: Track) => (t === "experienced" ? "exp" : "beg");
 
 type CopyBlock = {
   heroLead: string;
@@ -29,45 +31,51 @@ type CopyBlock = {
   disclaimer: string;
 };
 
-const COPY: Record<Lang, CopyBlock> = {
+/**
+ * heroTitle/heroDesc/startBtn/back 등 범위 외 문구는 하드코딩 유지.
+ * disclaimer는 texts["result.disclaimer"]에서 가져옴.
+ */
+const HERO_COPY: Record<Lang, Omit<CopyBlock, "disclaimer">> = {
   ko: {
-    heroLead: "폭락장은 온다 · 성향 테스트",
+    heroLead: "폭락장은 온다 · 투자유형 테스트",
     heroTitle: "나는 어떤\n투자자일까?",
     heroDesc:
       "17문항 · 2분. 16유형 중 하나로 결과를 알려드려요. 답은 브라우저 밖으로 나가지 않아요.",
     startBtn: "시작하기",
     back: "뒤로",
     stepLabel: (n, total) => `${n} / ${total}`,
-    disclaimer: "재미로 보는 테스트예요. 투자 자문이 아닙니다.",
   },
   en: {
-    heroLead: "Crash Is Coming · Personality Test",
+    heroLead: "Crash Is Coming · Investor type",
     heroTitle: "What kind of\ninvestor are you?",
     heroDesc:
       "17 questions, 2 minutes. Find your type among 16. Your answers never leave your browser.",
     startBtn: "Start",
     back: "Back",
     stepLabel: (n, total) => `${n} / ${total}`,
-    disclaimer: "Just for fun — not investment advice.",
   },
 };
 
 export function InvestorTypeTest({
   lang,
   nasdaq,
+  texts,
 }: {
   lang: Lang;
   nasdaq: NasdaqSnap;
+  texts: FlatTexts;
 }) {
-  const copy = COPY[lang];
+  const hero = HERO_COPY[lang];
+  const disclaimer = texts["result.disclaimer"] ?? "";
+
   const [stage, setStage] = useState<Stage>("intro");
   const [track, setTrack] = useState<Track | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
 
   const list = track ? QUESTIONS[track] : [];
-  const q: Question | null = track ? list[index] : null;
   const total = list.length;
+  const currentQ = track ? list[index] : null;
 
   const start = () => {
     setStage("fork");
@@ -91,16 +99,15 @@ export function InvestorTypeTest({
   };
 
   const onPick = (choiceId: string) => {
-    if (!q) return;
+    if (!currentQ) return;
     const next = [
-      ...answers.filter((a) => a.questionId !== q.id),
-      { questionId: q.id, choiceId },
+      ...answers.filter((a) => a.questionId !== currentQ.id),
+      { questionId: currentQ.id, choiceId },
     ];
     setAnswers(next);
     if (index + 1 < total) {
       setIndex(index + 1);
     } else {
-      // 테스트 완료 — 띠 배너 더 이상 노출 안 함 (같은 180일 쿠키).
       dismissBannerCookie();
       setStage("result");
     }
@@ -115,14 +122,16 @@ export function InvestorTypeTest({
   };
 
   if (stage === "intro") {
-    return <Intro copy={copy} onStart={start} />;
+    return (
+      <Intro hero={hero} disclaimer={disclaimer} onStart={start} />
+    );
   }
 
   if (stage === "fork") {
     return (
       <Fork
-        lang={lang}
-        copy={copy}
+        hero={hero}
+        texts={texts}
         onPick={pickTrack}
         onBack={() => setStage("intro")}
       />
@@ -141,17 +150,27 @@ export function InvestorTypeTest({
         mode="test"
         beginner={track === "beginner"}
         onRetry={retry}
+        texts={texts}
       />
     );
   }
 
-  if (!q) return null;
+  if (!currentQ || !track) return null;
+
+  // 질문·선택지 문구는 texts에서. 매핑: exp/beg + qN(1-based) + opt0/1/2
+  const prefix = prefixFor(track);
+  const qIdx = index + 1;
+  const prompt = texts[`${prefix}.q${qIdx}.text`] ?? "";
+  const choices = currentQ.choices.map((c, j) => ({
+    id: c.id,
+    label: texts[`${prefix}.q${qIdx}.opt${j}`] ?? "",
+  }));
 
   return (
     <QuestionView
-      lang={lang}
-      copy={copy}
-      q={q}
+      hero={hero}
+      prompt={prompt}
+      choices={choices}
       index={index}
       total={total}
       onPick={onPick}
@@ -165,17 +184,19 @@ export function InvestorTypeTest({
  * ============================================================================ */
 
 function Intro({
-  copy,
+  hero,
+  disclaimer,
   onStart,
 }: {
-  copy: CopyBlock;
+  hero: Omit<CopyBlock, "disclaimer">;
+  disclaimer: string;
   onStart: () => void;
 }) {
   return (
     <main className="mx-auto flex min-h-screen max-w-[480px] flex-col justify-between px-6 pb-10 pt-12">
       <div className="flex flex-col gap-5">
         <Link href="/" className="text-xs text-muted hover:text-fg">
-          ← {copy.heroLead}
+          ← {hero.heroLead}
         </Link>
         <h1
           style={{
@@ -185,9 +206,9 @@ function Intro({
             whiteSpace: "pre-line",
           }}
         >
-          {copy.heroTitle}
+          {hero.heroTitle}
         </h1>
-        <p className="text-sm text-muted">{copy.heroDesc}</p>
+        <p className="text-sm text-muted">{hero.heroDesc}</p>
       </div>
       <div className="pt-10">
         <button
@@ -196,13 +217,13 @@ function Intro({
           className="w-full rounded-full py-4 text-base font-medium"
           style={{ background: "#191F28", color: "#fff" }}
         >
-          {copy.startBtn}
+          {hero.startBtn}
         </button>
         <p
           className="pt-4 text-center"
           style={{ fontSize: 11, color: "#B0B8C1" }}
         >
-          {copy.disclaimer}
+          {disclaimer}
         </p>
       </div>
     </main>
@@ -214,23 +235,26 @@ function Intro({
  * ============================================================================ */
 
 function Fork({
-  lang,
-  copy,
+  hero,
+  texts,
   onPick,
   onBack,
 }: {
-  lang: Lang;
-  copy: CopyBlock;
+  hero: Omit<CopyBlock, "disclaimer">;
+  texts: FlatTexts;
   onPick: (t: Track) => void;
   onBack: () => void;
 }) {
+  const question = texts["intro.question"] ?? "";
+  const expLabel = texts["intro.option.experienced"] ?? "";
+  const begLabel = texts["intro.option.beginner"] ?? "";
   return (
     <main className="mx-auto flex min-h-screen max-w-[480px] flex-col px-6 pb-10 pt-6">
       <header className="flex items-center">
         <button
           type="button"
           onClick={onBack}
-          aria-label={copy.back}
+          aria-label={hero.back}
           className="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:text-fg"
         >
           ←
@@ -246,27 +270,39 @@ function Fork({
             color: "#191F28",
           }}
         >
-          {INTRO_QUESTION.prompt[lang]}
+          {question}
         </h2>
         <div className="flex flex-col gap-3 pt-1">
-          {INTRO_QUESTION.choices.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => onPick(c.id)}
-              className="w-full text-left transition-colors"
-              style={{
-                background: "#F2F4F8",
-                color: "#191F28",
-                borderRadius: 14,
-                padding: "16px 18px",
-                fontSize: 15,
-                fontWeight: 500,
-              }}
-            >
-              {c.label[lang]}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => onPick("experienced")}
+            className="w-full text-left transition-colors"
+            style={{
+              background: "#F2F4F8",
+              color: "#191F28",
+              borderRadius: 14,
+              padding: "16px 18px",
+              fontSize: 15,
+              fontWeight: 500,
+            }}
+          >
+            {expLabel}
+          </button>
+          <button
+            type="button"
+            onClick={() => onPick("beginner")}
+            className="w-full text-left transition-colors"
+            style={{
+              background: "#F2F4F8",
+              color: "#191F28",
+              borderRadius: 14,
+              padding: "16px 18px",
+              fontSize: 15,
+              fontWeight: 500,
+            }}
+          >
+            {begLabel}
+          </button>
         </div>
       </div>
     </main>
@@ -274,21 +310,21 @@ function Fork({
 }
 
 /* ============================================================================
- * 문항 — 진행바 + 뒤로가기 + 질문 + 선택지
+ * 문항
  * ============================================================================ */
 
 function QuestionView({
-  lang,
-  copy,
-  q,
+  hero,
+  prompt,
+  choices,
   index,
   total,
   onPick,
   onBack,
 }: {
-  lang: Lang;
-  copy: CopyBlock;
-  q: Question;
+  hero: Omit<CopyBlock, "disclaimer">;
+  prompt: string;
+  choices: Array<{ id: string; label: string }>;
   index: number;
   total: number;
   onPick: (id: string) => void;
@@ -302,7 +338,7 @@ function QuestionView({
         <button
           type="button"
           onClick={onBack}
-          aria-label={copy.back}
+          aria-label={hero.back}
           className="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:text-fg"
         >
           ←
@@ -315,7 +351,7 @@ function QuestionView({
               marginBottom: 4,
             }}
           >
-            {copy.stepLabel(index + 1, total)}
+            {hero.stepLabel(index + 1, total)}
           </div>
           <div
             className="h-1 w-full overflow-hidden rounded-full"
@@ -342,11 +378,11 @@ function QuestionView({
             color: "#191F28",
           }}
         >
-          {q.prompt[lang]}
+          {prompt}
         </h2>
 
         <div className="flex flex-col gap-3 pt-1">
-          {q.choices.map((c) => (
+          {choices.map((c) => (
             <button
               key={c.id}
               type="button"
@@ -361,7 +397,7 @@ function QuestionView({
                 fontWeight: 500,
               }}
             >
-              {c.label[lang]}
+              {c.label}
             </button>
           ))}
         </div>

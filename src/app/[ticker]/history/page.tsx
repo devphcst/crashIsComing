@@ -12,6 +12,7 @@ import { getExchange, isHidden } from "@/lib/symbols";
 import { HistoryPageClient } from "@/components/HistoryPageClient";
 import { LANG_COOKIE } from "@/constants/seo";
 import { isTypeBannerVisible } from "@/lib/type-banner";
+import { getResolvedTexts } from "@/lib/text-overrides";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
 
@@ -58,14 +59,16 @@ export default async function TickerHistoryPage({
   params: { ticker: string };
 }) {
   const ticker = normalize(params.ticker);
+  const lang = readLangFromCookie();
   const list = await loadSymbolList();
   if (!list.includes(ticker)) notFound();
 
   // snapshot: 메타(hidden 체크), historySnapshot: 전체 종가 + top-5 crashes.
-  const [snap, hist, tabs] = await Promise.all([
+  const [snap, hist, tabs, typeTexts] = await Promise.all([
     getSnapshot(ticker),
     getHistorySnapshot(ticker),
     loadVisibleMetas(),
+    getResolvedTexts(lang),
   ]);
   if (isHidden(snap.meta)) notFound();
 
@@ -82,6 +85,7 @@ export default async function TickerHistoryPage({
         crashes: hist.historyCrashes,
         tabs,
         showTypeBanner: isTypeBannerVisible(),
+        typeTexts,
       }}
     />
   );

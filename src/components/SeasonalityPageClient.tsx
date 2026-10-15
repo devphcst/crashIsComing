@@ -28,6 +28,7 @@ export type SeasonalityPagePayload = {
   seasonality: SeasonalityData;
   tabs: SymbolMeta[];
   showTypeBanner: boolean;
+  typeTexts: import("@/lib/text-defaults").FlatTexts;
 };
 
 /** 월 수익률 → "+3.4%" / "−1.2%" / "0.0%" (소수 1자리). */
@@ -46,6 +47,7 @@ export function SeasonalityPageClient({
     seasonality,
     tabs,
     showTypeBanner,
+    typeTexts,
   } = payload;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -140,6 +142,7 @@ export function SeasonalityPageClient({
         current={ticker}
         anchorBase={backHref}
         showTypeBanner={showTypeBanner}
+        typeTexts={typeTexts}
       />
 
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 pb-8 pt-6 lg:pt-[6vh]">

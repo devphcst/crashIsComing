@@ -32,6 +32,7 @@ export type HistoryPagePayload = {
   crashes: CrashCandidate[];
   tabs: SymbolMeta[];
   showTypeBanner: boolean;
+  typeTexts: import("@/lib/text-defaults").FlatTexts;
 };
 
 const yearsBetween = (fromISO: string, toISO: string): number => {
@@ -43,7 +44,16 @@ const yearsBetween = (fromISO: string, toISO: string): number => {
 };
 
 export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) {
-  const { ticker, displayName, exchange, closes, crashes, tabs, showTypeBanner } = payload;
+  const {
+    ticker,
+    displayName,
+    exchange,
+    closes,
+    crashes,
+    tabs,
+    showTypeBanner,
+    typeTexts,
+  } = payload;
   const [lang, setLang] = useState<Lang>("ko");
   const [hydrated, setHydrated] = useState(false);
 
@@ -80,6 +90,7 @@ export function HistoryPageClient({ payload }: { payload: HistoryPagePayload }) 
         current={ticker}
         anchorBase={backHref}
         showTypeBanner={showTypeBanner}
+        typeTexts={typeTexts}
       />
 
       <div

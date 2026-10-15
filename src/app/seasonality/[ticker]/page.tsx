@@ -6,6 +6,7 @@ import { getLeverage, isHidden } from "@/lib/symbols";
 import { SeasonalityPageClient } from "@/components/SeasonalityPageClient";
 import { LANG_COOKIE, SITE_URL } from "@/constants/seo";
 import { isTypeBannerVisible } from "@/lib/type-banner";
+import { getResolvedTexts } from "@/lib/text-overrides";
 import type { Lang } from "@/lib/i18n";
 import { getDict } from "@/lib/i18n";
 
@@ -110,6 +111,7 @@ export default async function SeasonalityPage({
   searchParams?: { m?: string };
 }) {
   const ticker = await resolveOr404(params.ticker);
+  const lang = readLangFromCookie();
   const [snap, tabs] = await Promise.all([
     getSnapshot(ticker),
     loadVisibleMetas(),
@@ -123,6 +125,7 @@ export default async function SeasonalityPage({
   const initialMonth =
     parseMonth(searchParams?.m) ?? defaultMonth(sea.lastCloseDate, available);
 
+  const typeTexts = await getResolvedTexts(lang);
   return (
     <SeasonalityPageClient
       payload={{
@@ -133,6 +136,7 @@ export default async function SeasonalityPage({
         seasonality: sea,
         tabs,
         showTypeBanner: isTypeBannerVisible(),
+        typeTexts,
       }}
     />
   );

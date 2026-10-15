@@ -17,6 +17,7 @@ import { MobileMenu } from "./MobileMenu";
 import { ProductAdMobile } from "./ProductAd";
 import { TypeTestPill } from "./type/TypeTestPill";
 import { TypeTestBanner } from "./type/TypeTestBanner";
+import type { FlatTexts } from "@/lib/text-defaults";
 import { SIDEBAR_AD } from "@/constants/ads";
 import type { Exchange, SymbolMeta } from "@/lib/symbols";
 import { DEFAULT_SYMBOL, getLeverage } from "@/lib/symbols";
@@ -103,6 +104,7 @@ export function HeroDrawdown({
   fearGreed,
   seasonalityTeaser = null,
   showTypeBanner = false,
+  typeTexts,
 }: {
   data: HeroData;
   visitor: VisitorInfo;
@@ -112,6 +114,8 @@ export function HeroDrawdown({
   seasonalityTeaser?: SeasonalityTeaser | null;
   /** 서버에서 type_banner_dismissed 쿠키 체크 후 전달. true면 띠 배너 노출. */
   showTypeBanner?: boolean;
+  /** 서버에서 getResolvedTexts(lang) 결과. pill/banner/menu 라벨에 사용. */
+  typeTexts: FlatTexts;
 }) {
   const [lang, setLang] = useState<Lang>("ko");
   const [hydrated, setHydrated] = useState(false);
@@ -174,13 +178,13 @@ export function HeroDrawdown({
     <main className="flex min-h-screen flex-col bg-bg">
       {/* 전역 wrapper — 헤더/탭/섹션/푸터 전부 같은 max-w, mx-auto, px-inline. */}
       <div className="mx-auto w-full max-w-[480px] px-4">
-        {/* 헤더 — 좌 브랜드, 우 성향 테스트 pill + 공유 아이콘 + 햄버거 */}
+        {/* 헤더 — 좌 브랜드, 우 투자유형 테스트 pill + 공유 아이콘 + 햄버거 */}
         <header className="flex items-center justify-between pb-3 pt-5">
           <span className="text-[15px] font-bold tracking-tight text-fg">
             {d.brand}
           </span>
           <div className="flex items-center gap-2">
-            <TypeTestPill lang={lang} />
+            <TypeTestPill label={typeTexts["entry.headerPill"] ?? ""} />
             <HeaderShareButton
               ticker={current}
               onCopied={() => setToast(d.share.copied)}
@@ -190,14 +194,20 @@ export function HeroDrawdown({
               onChangeLang={handleLang}
               dict={d}
               showHistory={showHistory}
+              typeTestLabel={typeTexts["entry.menuItem"]}
             />
           </div>
         </header>
 
-        {/* 성향 테스트 띠 배너 — 서버에서 쿠키 체크 후 전달. 탭 위. */}
+        {/* 투자유형 테스트 띠 배너 — 서버에서 쿠키 체크 후 전달. 탭 위. */}
         {showTypeBanner ? (
           <div className="pb-3">
-            <TypeTestBanner lang={lang} />
+            <TypeTestBanner
+              title={typeTexts["entry.banner.title"] ?? ""}
+              sub={typeTexts["entry.banner.sub"] ?? ""}
+              ariaBanner={typeTexts["entry.banner.title"] ?? ""}
+              dismissAria={lang === "ko" ? "배너 닫기" : "Dismiss banner"}
+            />
           </div>
         ) : null}
 

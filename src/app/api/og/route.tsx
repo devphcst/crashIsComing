@@ -12,6 +12,7 @@ import {
   type SymbolMeta,
 } from "@/lib/symbols";
 import { INVESTOR_TYPES, isValidCode, type TypeCode } from "@/data/investor-types";
+import { getResolvedTexts } from "@/lib/text-overrides";
 
 /**
  * 종목별 동적 OG 이미지. /api/og?ticker=soxl[&lang=en]
@@ -287,11 +288,13 @@ export async function GET(req: Request) {
  * 결과 페이지(/type/[CODE])의 메타데이터가 이 URL을 가리킨다.
  */
 async function renderTypeOg(code: TypeCode, lang: Lang) {
-  const fontData = await loadFont();
+  const [fontData, texts] = await Promise.all([loadFont(), getResolvedTexts(lang)]);
   const type = INVESTOR_TYPES[code];
   const brand = COPY[lang].brand;
   const subLabel =
-    lang === "ko" ? "폭락장 성향 테스트" : "Crash Personality Test";
+    lang === "ko" ? "투자유형 테스트" : "Investor Type Test";
+  const nickname = texts[`type.${code}.nickname`] ?? type.nickname[lang];
+  const quote = texts[`type.${code}.quotes.0`] ?? type.quotes[lang][0];
 
   const image = new ImageResponse(
     (
@@ -354,7 +357,7 @@ async function renderTypeOg(code: TypeCode, lang: Lang) {
               textAlign: "center",
             }}
           >
-            {type.reading[lang]} · {type.nickname[lang]}
+            {type.reading[lang]} · {nickname}
           </div>
           <div
             style={{
@@ -365,7 +368,7 @@ async function renderTypeOg(code: TypeCode, lang: Lang) {
               maxWidth: 980,
             }}
           >
-            &ldquo;{type.quotes[lang][0]}&rdquo;
+            &ldquo;{quote}&rdquo;
           </div>
         </div>
 

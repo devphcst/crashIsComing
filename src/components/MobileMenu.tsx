@@ -21,10 +21,13 @@ export function MobileMenu({
   dict,
   anchorBase,
   showHistory = true,
+  typeTestLabel,
 }: {
   lang: Lang;
   onChangeLang: (l: Lang) => void;
   dict: Dict;
+  /** 투자유형 테스트 메뉴 항목 override (어드민 텍스트 수정). 없으면 dict.menu.typeTest. */
+  typeTestLabel?: string;
   /**
    * 앵커 링크 접두어. 기본 "" — 같은 페이지 앵커(#about 등)로 부드러운 스크롤.
    * 요약 페이지 외 서브 페이지에서 "/qqq" 등을 전달하면 각 링크는 "/qqq#about" 처럼
@@ -168,6 +171,10 @@ export function MobileMenu({
                 anchorBase && isAnchor
                   ? `${anchorBase}${item.href}`
                   : item.href;
+              const label =
+                item.key === "typeTest" && typeTestLabel
+                  ? typeTestLabel
+                  : dict.menu[item.key];
               return (
                 <li key={item.key}>
                   <a
@@ -175,7 +182,7 @@ export function MobileMenu({
                     onClick={(e) => handleAnchorClick(e, href)}
                     className="block py-3 text-base text-fg hover:text-muted"
                   >
-                    {dict.menu[item.key]}
+                    {label}
                   </a>
                 </li>
               );

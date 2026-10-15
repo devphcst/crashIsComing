@@ -14,6 +14,7 @@ import { DEFAULT_SYMBOL } from "@/lib/symbols";
 import type { Lang } from "@/lib/i18n";
 import { LANG_COOKIE } from "@/constants/seo";
 import { isTypeBannerVisible } from "@/lib/type-banner";
+import { getResolvedTexts } from "@/lib/text-overrides";
 
 // force-dynamic 제거 — cookie 읽기로 자동 dynamic이 되되, 데이터 fetch는
 // page-data.ts의 unstable_cache가 처리 (TTL 60s, tag 'symbols').
@@ -59,11 +60,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page() {
   const lang = readLangFromCookie();
-  const [snap, visitor, metas, fearGreed] = await Promise.all([
+  const [snap, visitor, metas, fearGreed, typeTexts] = await Promise.all([
     getSnapshot(DEFAULT_SYMBOL),
     loadVisitorInfo(),
     loadVisibleMetas(),
     loadFearGreed(),
+    getResolvedTexts(lang),
   ]);
   const teaser = pickSeasonalityTeaser(snap.seasonality, currentKstMonth());
   const showTypeBanner = isTypeBannerVisible();
@@ -83,6 +85,7 @@ export default async function Page() {
         fearGreed={fearGreed}
         seasonalityTeaser={teaser}
         showTypeBanner={showTypeBanner}
+        typeTexts={typeTexts}
       />
     </>
   );

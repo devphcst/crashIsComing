@@ -229,6 +229,21 @@ export default async function AdminPage({
       ) : null}
 
       <section className="space-y-3 rounded-lg border border-line p-5">
+        <h2 className="text-sm font-medium text-fg">투자유형 테스트 — 텍스트</h2>
+        <p className="text-xs text-muted">
+          /type 전체 텍스트(진입 pill·배너, 0번 갈림길, 두 트랙 32문항, 16유형,
+          결과 화면 라벨·면책)를 ko/en 각각 수정할 수 있어요. 빈 값은 기본값으로
+          돌아갑니다.
+        </p>
+        <Link
+          href="/admin/text"
+          className="inline-block rounded-md border border-line bg-bg px-4 py-2 text-sm font-medium text-fg hover:bg-surface-hover"
+        >
+          텍스트 수정 →
+        </Link>
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-line p-5">
         <h2 className="text-sm font-medium text-fg">스냅샷</h2>
         <p className="text-xs text-muted">
           전 종목의 사전 계산 스냅샷(snapshot:{"{ticker}"} + history:{"{ticker}"})을

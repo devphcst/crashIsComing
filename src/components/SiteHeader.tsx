@@ -7,6 +7,7 @@ import { MobileMenu } from "./MobileMenu";
 import { MainSymbolTabs } from "./MainSymbolTabs";
 import { TypeTestPill } from "./type/TypeTestPill";
 import { TypeTestBanner } from "./type/TypeTestBanner";
+import type { FlatTexts } from "@/lib/text-defaults";
 
 /**
  * 요약(/[ticker])과 서브 페이지가 공유하는 헤더.
@@ -26,6 +27,7 @@ export function SiteHeader({
   current,
   anchorBase,
   showTypeBanner = false,
+  typeTexts,
 }: {
   lang: Lang;
   onChangeLang: (l: Lang) => void;
@@ -36,6 +38,8 @@ export function SiteHeader({
   anchorBase?: string;
   /** 서버에서 type_banner_dismissed 쿠키 체크 후 전달. 헤더 아래 띠 배너 노출. */
   showTypeBanner?: boolean;
+  /** 서버에서 getResolvedTexts(lang) 결과. pill/banner/menu 라벨에 사용. */
+  typeTexts: FlatTexts;
 }) {
   return (
     <>
@@ -43,7 +47,7 @@ export function SiteHeader({
         <header className="flex items-center justify-between gap-2 px-6 pb-3 pt-6 lg:pb-0">
           <span className="text-sm text-muted">{dict.brand}</span>
           <div className="flex items-center gap-2">
-            <TypeTestPill lang={lang} />
+            <TypeTestPill label={typeTexts["entry.headerPill"] ?? ""} />
             <div className="hidden lg:block">
               <LangToggle
                 lang={lang}
@@ -56,12 +60,18 @@ export function SiteHeader({
               onChangeLang={onChangeLang}
               dict={dict}
               anchorBase={anchorBase}
+              typeTestLabel={typeTexts["entry.menuItem"]}
             />
           </div>
         </header>
         {showTypeBanner ? (
           <div className="px-6 pb-3">
-            <TypeTestBanner lang={lang} />
+            <TypeTestBanner
+              title={typeTexts["entry.banner.title"] ?? ""}
+              sub={typeTexts["entry.banner.sub"] ?? ""}
+              ariaBanner={typeTexts["entry.banner.title"] ?? ""}
+              dismissAria={lang === "ko" ? "배너 닫기" : "Dismiss banner"}
+            />
           </div>
         ) : null}
       </div>

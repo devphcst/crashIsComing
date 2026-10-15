@@ -14,6 +14,7 @@ import {
 import type { AxisScores } from "@/lib/investor-type";
 import { ResultView } from "@/components/type/ResultView";
 import { getNasdaqSnap } from "@/lib/nasdaq-snap";
+import { getResolvedTexts } from "@/lib/text-overrides";
 
 export const dynamicParams = false;
 
@@ -26,16 +27,10 @@ const readLang = (): Lang => {
   return v === "en" ? "en" : "ko";
 };
 
-const COPY = {
-  ko: {
-    titleFor: (reading: string, code: string, nickname: string) =>
-      `나는 ${reading}(${code}) · ${nickname} | 폭락장은 온다`,
-  },
-  en: {
-    titleFor: (reading: string, code: string, nickname: string) =>
-      `${reading}(${code}) · ${nickname} | Crash Is Coming`,
-  },
-} as const;
+const BRAND_SUFFIX: Record<Lang, string> = {
+  ko: "폭락장은 온다",
+  en: "Crash Is Coming",
+};
 
 export async function generateMetadata({
   params,
@@ -47,34 +42,34 @@ export async function generateMetadata({
   const code = raw as TypeCode;
   const lang = readLang();
   const type = INVESTOR_TYPES[code];
-  const copy = COPY[lang];
-  const title = copy.titleFor(type.reading[lang], code, type.nickname[lang]);
-  const desc = type.description[lang];
+  const texts = await getResolvedTexts(lang);
+  const nickname = texts[`type.${code}.nickname`] ?? type.nickname[lang];
+  const description =
+    texts[`type.${code}.description`] ?? type.description[lang];
+  const title =
+    lang === "ko"
+      ? `나는 ${type.reading.ko}(${code}) · ${nickname} | ${BRAND_SUFFIX.ko}`
+      : `${type.reading.en}(${code}) · ${nickname} | ${BRAND_SUFFIX.en}`;
   const ogImage = `${SITE_URL}/api/og?type=${code}&lang=${lang}`;
   return {
     title,
-    description: desc,
+    description,
     alternates: { canonical: `${SITE_URL}/type/${code}` },
     openGraph: {
       title,
-      description: desc,
+      description,
       url: `${SITE_URL}/type/${code}`,
       images: [{ url: ogImage, width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title,
-      description: desc,
+      description,
       images: [ogImage],
     },
   };
 }
 
-/**
- * /type/[CODE]는 사용자 답변 없이 유형 코드만으로 결과를 보여준다. 축 바를 그리려면
- * AxisScores가 필요한데, 코드만 알고 있을 땐 "그 글자 쪽의 중간 확신(+2)"으로 가정해
- * 바가 75%로 채워지도록 설정. 공유 받은 사람이 축의 뉘앙스를 바로 읽을 수 있게.
- */
 const scoresFromCode = (code: TypeCode): AxisScores => {
   const result = { buy: 0, lev: 0, hold: 0, mind: 0 } as AxisScores;
   const axisToKey: Record<number, AxisKey> = {
@@ -89,7 +84,6 @@ const scoresFromCode = (code: TypeCode): AxisScores => {
     const letter = code[i];
     result[axis] = posSet.has(letter) ? 2 : -2;
   }
-  // 알림: AXIS_ORDER 순서가 buy·lev·hold·mind라는 가정에 의존.
   void AXIS_ORDER;
   return result;
 };
@@ -103,7 +97,10 @@ export default async function TypeCodePage({
   if (!isValidCode(raw)) redirect("/type");
   const code = raw as TypeCode;
   const lang = readLang();
-  const nasdaq = await getNasdaqSnap();
+  const [nasdaq, texts] = await Promise.all([
+    getNasdaqSnap(),
+    getResolvedTexts(lang),
+  ]);
   const scores = scoresFromCode(code);
   return (
     <ResultView
@@ -112,6 +109,7 @@ export default async function TypeCodePage({
       scores={scores}
       nasdaq={nasdaq}
       mode="static"
+      texts={texts}
     />
   );
 }

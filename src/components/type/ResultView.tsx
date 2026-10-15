@@ -16,12 +16,8 @@ import {
   matchCompatible,
   matchOpposite,
 } from "@/lib/investor-type";
+import type { FlatTexts } from "@/lib/text-defaults";
 
-/**
- * 폭락장 코너 — 서버에서 getSnapshot("qqq")로 읽어 전달. 성공 시 drawdownPct(≤0),
- * ath 갱신/신고가면 isAtHigh true. KV 미연결·QQQ 미등록·오류면 전부 null로 전달
- * (아랫줄 숨김).
- */
 export type NasdaqSnap = {
   drawdownPct: number | null;
   isAtHigh: boolean;
@@ -29,52 +25,18 @@ export type NasdaqSnap = {
 
 type Mode = "test" | "static";
 
-const COPY = {
-  ko: {
-    resultTitle: "나의 투자 유형",
-    strengthLabel: "강점",
-    cautionLabel: "조심할 점",
-    quotesLabel: "이 유형이 자주 하는 말",
-    match: "잘 맞는 유형",
-    opposite: "상극 유형",
-    resultCta: "결과 공유하기",
-    retry: "다시 하기",
-    tryTest: "나도 해보기",
-    inCrashLabelFor: (reading: string) => `${reading}에게 폭락장이 오면`,
-    nasdaqLine: (pct: string) => `지금 나스닥은 전고점 대비 ${pct}`,
-    atHighLine: "지금 나스닥은 신고가예요. 폭락장은… 아직.",
-    goCheck: "보러 가기",
-    disclaimer: "재미로 보는 테스트예요. 투자 자문이 아닙니다.",
-    beginnerDisclaimer:
-      "가정으로 답한 결과예요. 실제로 투자해보면 달라질 수 있어요.",
-    sharedToast: "링크를 복사했어요",
-    shareText: (reading: string, code: string, nickname: string) =>
-      `나의 투자 유형: ${reading}(${code}) · ${nickname}`,
-  },
-  en: {
-    resultTitle: "Your Investor Type",
-    strengthLabel: "Strength",
-    cautionLabel: "Watch out",
-    quotesLabel: "Things this type says",
-    match: "You click with",
-    opposite: "Clash with",
-    resultCta: "Share result",
-    retry: "Retake",
-    tryTest: "Take the test",
-    inCrashLabelFor: (reading: string) => `When a crash finds ${reading}`,
-    nasdaqLine: (pct: string) => `Nasdaq is now ${pct} from its all-time high`,
-    atHighLine: "Nasdaq is at an all-time high. The crash — not yet.",
-    goCheck: "See more",
-    disclaimer: "Just for fun — not investment advice.",
-    beginnerDisclaimer:
-      "This is a hypothetical result. Real investing can change the answer.",
-    sharedToast: "Link copied",
-    shareText: (reading: string, code: string, nickname: string) =>
-      `My investor type: ${reading}(${code}) · ${nickname}`,
-  },
-} as const;
+/** FlatTexts에서 code별 유형 필드 뽑기. 오버라이드 또는 defaults. */
+const typeField = (
+  texts: FlatTexts,
+  code: TypeCode,
+  field: "nickname" | "description" | "strength" | "caution" | "inCrash",
+): string => texts[`type.${code}.${field}`] ?? "";
 
-/* 아이콘 — Tabler SVG 인라인. 원형 배경 안 흰 글리프. */
+const typeQuotes = (texts: FlatTexts, code: TypeCode): [string, string] => [
+  texts[`type.${code}.quotes.0`] ?? "",
+  texts[`type.${code}.quotes.1`] ?? "",
+];
+
 function ThumbUpIcon() {
   return (
     <svg
@@ -120,6 +82,7 @@ export function ResultView({
   mode,
   beginner = false,
   onRetry,
+  texts,
 }: {
   lang: Lang;
   code: TypeCode;
@@ -128,22 +91,28 @@ export function ResultView({
   mode: Mode;
   beginner?: boolean;
   onRetry?: () => void;
+  texts: FlatTexts;
 }) {
-  const copy = COPY[lang];
   const type = INVESTOR_TYPES[code];
   const ratios = barRatios(scores);
   const compatible = matchCompatible(code);
   const opposite = matchOpposite(code);
 
+  const nickname = typeField(texts, code, "nickname");
+  const description = typeField(texts, code, "description");
+  const strength = typeField(texts, code, "strength");
+  const caution = typeField(texts, code, "caution");
+  const inCrash = typeField(texts, code, "inCrash");
+  const quotes = typeQuotes(texts, code);
+
   const [toast, setToast] = useState<string | null>(null);
 
   const onShare = async () => {
     const url = `${window.location.origin}/type/${code}`;
-    const text = copy.shareText(
-      type.reading[lang],
-      code,
-      type.nickname[lang],
-    );
+    const text =
+      lang === "ko"
+        ? `나의 투자 유형: ${type.reading.ko}(${code}) · ${nickname}`
+        : `My investor type: ${type.reading.en}(${code}) · ${nickname}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: text, url });
@@ -154,7 +123,7 @@ export function ResultView({
     }
     try {
       await navigator.clipboard.writeText(url);
-      setToast(copy.sharedToast);
+      setToast(texts["result.sharedToast"] ?? "");
       setTimeout(() => setToast(null), 1800);
     } catch {
       /* no-op */
@@ -166,6 +135,15 @@ export function ResultView({
       ? `−${Math.abs(nasdaq.drawdownPct).toFixed(1)}%`
       : null;
 
+  const inCrashLabel = (texts["result.inCrashLabel"] ?? "").replace(
+    "{reading}",
+    type.reading[lang],
+  );
+  const nasdaqLine = (texts["result.nasdaqLine"] ?? "").replace(
+    "{pct}",
+    pctText ?? "",
+  );
+
   return (
     <main className="mx-auto flex min-h-screen max-w-[480px] flex-col gap-7 px-6 pb-16 pt-10">
       <div className="flex flex-col items-center text-center">
@@ -173,7 +151,7 @@ export function ResultView({
           className="text-xs"
           style={{ color: "#8B95A1", marginBottom: 10 }}
         >
-          {copy.resultTitle}
+          {texts["result.title"]}
         </p>
         <div
           style={{
@@ -186,7 +164,7 @@ export function ResultView({
           {code}
         </div>
         <div style={{ marginTop: 10, fontSize: 15, color: "#191F28" }}>
-          {type.reading[lang]} · {type.nickname[lang]}
+          {type.reading[lang]} · {nickname}
         </div>
         <p
           style={{
@@ -196,7 +174,7 @@ export function ResultView({
             lineHeight: 1.6,
           }}
         >
-          {type.description[lang]}
+          {description}
         </p>
         {beginner ? (
           <p
@@ -207,7 +185,7 @@ export function ResultView({
               lineHeight: 1.6,
             }}
           >
-            {copy.beginnerDisclaimer}
+            {texts["result.beginnerDisclaimer"]}
           </p>
         ) : null}
       </div>
@@ -225,7 +203,7 @@ export function ResultView({
         ))}
       </div>
 
-      {/* 강점 / 조심 카드 — 두 줄 */}
+      {/* 강점 / 조심 카드 */}
       <div
         className="flex flex-col gap-3"
         style={{
@@ -234,23 +212,17 @@ export function ResultView({
           padding: "16px 18px",
         }}
       >
-        <PointRow
-          color="#1E9E6A"
-          icon={<ThumbUpIcon />}
-          text={type.strength[lang]}
-        />
-        <PointRow
-          color="#F59E0B"
-          icon={<AlertIcon />}
-          text={type.caution[lang]}
-        />
+        <PointRow color="#1E9E6A" icon={<ThumbUpIcon />} text={strength} />
+        <PointRow color="#F59E0B" icon={<AlertIcon />} text={caution} />
       </div>
 
       {/* 자주 하는 말 */}
       <div className="flex flex-col gap-3">
-        <div style={{ fontSize: 12, color: "#8B95A1" }}>{copy.quotesLabel}</div>
+        <div style={{ fontSize: 12, color: "#8B95A1" }}>
+          {texts["result.quotesLabel"]}
+        </div>
         <div className="flex flex-col gap-2">
-          {type.quotes[lang].map((q, i) => (
+          {quotes.map((q, i) => (
             <div
               key={i}
               style={{
@@ -272,8 +244,18 @@ export function ResultView({
 
       {/* 잘 맞음/상극 2열 */}
       <div className="grid grid-cols-2 gap-3">
-        <MatchCard label={copy.match} code={compatible} lang={lang} />
-        <MatchCard label={copy.opposite} code={opposite} lang={lang} />
+        <MatchCard
+          label={texts["result.match"] ?? ""}
+          code={compatible}
+          lang={lang}
+          texts={texts}
+        />
+        <MatchCard
+          label={texts["result.opposite"] ?? ""}
+          code={opposite}
+          lang={lang}
+          texts={texts}
+        />
       </div>
 
       {/* 공유 / 다시 하기 or 나도 해보기 */}
@@ -284,7 +266,7 @@ export function ResultView({
           className="w-full rounded-full py-4 text-base font-medium"
           style={{ background: "#191F28", color: "#fff" }}
         >
-          {copy.resultCta}
+          {texts["result.resultCta"]}
         </button>
         {mode === "test" ? (
           <button
@@ -293,7 +275,7 @@ export function ResultView({
             className="w-full rounded-full py-4 text-base font-medium"
             style={{ background: "#F2F4F8", color: "#191F28" }}
           >
-            {copy.retry}
+            {texts["result.retry"]}
           </button>
         ) : (
           <Link
@@ -301,7 +283,7 @@ export function ResultView({
             className="w-full rounded-full py-4 text-center text-base font-medium"
             style={{ background: "#F2F4F8", color: "#191F28" }}
           >
-            {copy.tryTest}
+            {texts["result.tryTest"]}
           </Link>
         )}
       </div>
@@ -315,9 +297,7 @@ export function ResultView({
           padding: "18px 20px",
         }}
       >
-        <div style={{ fontSize: 12, color: "#8A5A5E" }}>
-          {copy.inCrashLabelFor(type.reading[lang])}
-        </div>
+        <div style={{ fontSize: 12, color: "#8A5A5E" }}>{inCrashLabel}</div>
         <div
           style={{
             fontSize: 14,
@@ -325,7 +305,7 @@ export function ResultView({
             lineHeight: 1.6,
           }}
         >
-          {type.inCrash[lang]}
+          {inCrash}
         </div>
 
         {nasdaq.drawdownPct !== null ? (
@@ -333,7 +313,7 @@ export function ResultView({
             <div style={{ height: 1, background: "#F5CFD2" }} />
             {nasdaq.isAtHigh ? (
               <div style={{ fontSize: 13, color: "#8A5A5E" }}>
-                {copy.atHighLine}
+                {texts["result.atHighLine"]}
               </div>
             ) : (
               <Link
@@ -341,8 +321,10 @@ export function ResultView({
                 className="flex items-center justify-between"
                 style={{ fontSize: 13, color: "#8A5A5E" }}
               >
-                <span>{copy.nasdaqLine(pctText ?? "")}</span>
-                <span style={{ color: "#B91C1C" }}>{copy.goCheck} ›</span>
+                <span>{nasdaqLine}</span>
+                <span style={{ color: "#B91C1C" }}>
+                  {texts["result.goCheck"]} ›
+                </span>
               </Link>
             )}
           </>
@@ -353,7 +335,7 @@ export function ResultView({
         className="text-center"
         style={{ fontSize: 11, color: "#B0B8C1", marginTop: 4 }}
       >
-        {copy.disclaimer}
+        {texts["result.disclaimer"]}
       </p>
 
       {toast ? (
@@ -454,12 +436,15 @@ function MatchCard({
   label,
   code,
   lang,
+  texts,
 }: {
   label: string;
   code: TypeCode;
   lang: Lang;
+  texts: FlatTexts;
 }) {
   const type = INVESTOR_TYPES[code];
+  const nickname = typeField(texts, code, "nickname");
   return (
     <Link
       href={`/type/${code}`}
@@ -478,7 +463,7 @@ function MatchCard({
         {code}
       </div>
       <div style={{ fontSize: 12, color: "#4E5968" }}>
-        {type.reading[lang]} · {type.nickname[lang]}
+        {type.reading[lang]} · {nickname}
       </div>
     </Link>
   );

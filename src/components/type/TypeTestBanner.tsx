@@ -2,25 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { Lang } from "@/lib/i18n";
-
-const COPY: Record<
-  Lang,
-  { title: string; sub: string; dismiss: string; ariaBanner: string }
-> = {
-  ko: {
-    title: "나는 어떤 투자자일까?",
-    sub: "2분",
-    dismiss: "배너 닫기",
-    ariaBanner: "투자 성향 테스트로 이동",
-  },
-  en: {
-    title: "What kind of investor are you?",
-    sub: "2 min",
-    dismiss: "Dismiss banner",
-    ariaBanner: "Open investor personality test",
-  },
-};
 
 function Sparkles() {
   return (
@@ -79,7 +60,6 @@ function Close() {
   );
 }
 
-/** 쿠키 180일. 운영 설정은 Secure 자동(https). dev에선 http라서 Secure 안 붙임. */
 export const dismissBannerCookie = () => {
   if (typeof document === "undefined") return;
   const maxAge = 60 * 60 * 24 * 180;
@@ -88,11 +68,20 @@ export const dismissBannerCookie = () => {
 };
 
 /**
- * 헤더 아래 띠 배너 — 서버에서 쿠키 체크 후 노출 여부 결정 (깜빡임 방지).
- * 클라이언트 상태는 "지금 닫기 클릭" 시만 숨기면 됨.
+ * 헤더 아래 띠 배너 — 서버에서 title/sub prop으로 전달 (오버라이드 반영).
+ * 쿠키로 dismiss 상태 보존. /type, /type/[CODE], /admin에선 렌더 안 함.
  */
-export function TypeTestBanner({ lang }: { lang: Lang }) {
-  const copy = COPY[lang];
+export function TypeTestBanner({
+  title,
+  sub,
+  ariaBanner,
+  dismissAria,
+}: {
+  title: string;
+  sub: string;
+  ariaBanner: string;
+  dismissAria: string;
+}) {
   const router = useRouter();
   const [hidden, setHidden] = useState(false);
   if (hidden) return null;
@@ -112,7 +101,7 @@ export function TypeTestBanner({ lang }: { lang: Lang }) {
     <div
       role="link"
       tabIndex={0}
-      aria-label={copy.ariaBanner}
+      aria-label={ariaBanner}
       onClick={onBannerClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -132,16 +121,14 @@ export function TypeTestBanner({ lang }: { lang: Lang }) {
         className="min-w-0 flex-1 truncate"
         style={{ fontSize: 13, lineHeight: 1.4 }}
       >
-        <span style={{ color: "#3C3489", fontWeight: 500 }}>
-          {copy.title}
-        </span>
-        <span style={{ color: "#8C86B8" }}> · {copy.sub}</span>
+        <span style={{ color: "#3C3489", fontWeight: 500 }}>{title}</span>
+        <span style={{ color: "#8C86B8" }}> · {sub}</span>
       </span>
       <Chevron />
       <button
         type="button"
         onClick={onDismiss}
-        aria-label={copy.dismiss}
+        aria-label={dismissAria}
         className="flex shrink-0 items-center justify-center"
         style={{ width: 32, height: 32 }}
       >

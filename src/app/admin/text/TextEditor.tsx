@@ -451,6 +451,12 @@ const ENTRY_KEYS: Array<{
   },
   { k: "result.disclaimer", label: "면책 문구", multiline: true },
   { k: "result.sharedToast", label: "링크 복사 토스트" },
+  { k: "result.surprisesLabel", label: "의외의 모습 라벨" },
+  {
+    k: "result.surprisesConsistent",
+    label: "의외의 모습 — 모든 답 한 방향일 때 ({reading})",
+    multiline: true,
+  },
 ];
 
 function EntryGroup(props: {
@@ -548,6 +554,14 @@ function QuestionGroup({
                 <Field
                   k={textKey}
                   label="질문"
+                  defaults={defaults}
+                  draft={draft}
+                  setValue={setValue}
+                  resetKey={resetKey}
+                />
+                <Field
+                  k={`${track}.q${idx}.label`}
+                  label="문항 라벨 (의외의 모습 카드용)"
                   defaults={defaults}
                   draft={draft}
                   setValue={setValue}

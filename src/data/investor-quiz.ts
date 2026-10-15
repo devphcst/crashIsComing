@@ -26,6 +26,8 @@ export type Question = {
   id: string;
   axis: AxisKey;
   prompt: Record<Lang, string>;
+  /** "의외의 모습" 카드에 쓰는 짧은 라벨 (예: "증권 앱 확인"). */
+  label: Record<Lang, string>;
   choices: QuestionChoice[];
 };
 
@@ -58,6 +60,7 @@ const EXPERIENCED: Question[] = [
       ko: "최근에 산 종목이나 ETF, 살 때 가격 흐름은?",
       en: "Your most recent stock or ETF buy — what was the price doing?",
     },
+    label: { ko: "최근 매수 시점", en: "Recent buy" },
     choices: [
       {
         id: "pos",
@@ -83,6 +86,7 @@ const EXPERIENCED: Question[] = [
       ko: "살 때 타이밍은 어떻게 정해?",
       en: "How do you time your buys?",
     },
+    label: { ko: "매수 타이밍", en: "Buy timing" },
     choices: [
       {
         id: "pos",
@@ -117,6 +121,7 @@ const EXPERIENCED: Question[] = [
       ko: "들고 있는 종목이나 ETF가 -10% 빠지면 보통?",
       en: "A holding (stock or ETF) drops 10% — your usual move?",
     },
+    label: { ko: "-10% 하락 대응", en: "−10% response" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "더 산다", en: "Buy more" } },
       {
@@ -134,6 +139,7 @@ const EXPERIENCED: Question[] = [
       ko: "신고가를 찍은 종목이나 ETF를 보면?",
       en: "A stock or ETF just hit an all-time high — what do you think?",
     },
+    label: { ko: "신고가 종목", en: "All-time high" },
     choices: [
       {
         id: "pos",
@@ -159,6 +165,7 @@ const EXPERIENCED: Question[] = [
       ko: "지금 계좌에서 레버리지 ETF 비중은?",
       en: "What share of your account is in leveraged ETFs?",
     },
+    label: { ko: "레버리지 비중", en: "Leverage share" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "30% 이상", en: "30% or more" } },
       { id: "mid", delta: 0, label: { ko: "30% 미만", en: "Under 30%" } },
@@ -172,6 +179,7 @@ const EXPERIENCED: Question[] = [
       ko: "주로 사는 건?",
       en: "What do you mostly buy?",
     },
+    label: { ko: "주로 사는 것", en: "What you buy" },
     choices: [
       {
         id: "pos",
@@ -199,6 +207,7 @@ const EXPERIENCED: Question[] = [
       ko: "개별 종목 하나에 가장 많이 넣은 비중은? (지수 ETF 제외)",
       en: "Biggest share in a single stock? (Index ETFs don't count)",
     },
+    label: { ko: "개별 종목 최대 비중", en: "Max single-stock weight" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "50% 이상", en: "50% or more" } },
       { id: "mid", delta: 0, label: { ko: "20~50%", en: "20–50%" } },
@@ -219,6 +228,7 @@ const EXPERIENCED: Question[] = [
       ko: "신용이나 미수 써본 적 있어?",
       en: "Have you ever used margin or short credit?",
     },
+    label: { ko: "신용·미수", en: "Margin use" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "자주", en: "Often" } },
       {
@@ -237,6 +247,7 @@ const EXPERIENCED: Question[] = [
       ko: "평균 보유 기간은?",
       en: "Average holding period?",
     },
+    label: { ko: "평균 보유 기간", en: "Avg hold time" },
     choices: [
       {
         id: "pos",
@@ -262,6 +273,7 @@ const EXPERIENCED: Question[] = [
       ko: "지난 1년 매매 횟수는?",
       en: "How many trades in the last year?",
     },
+    label: { ko: "1년 매매 횟수", en: "Yearly trades" },
     choices: [
       {
         id: "pos",
@@ -287,6 +299,7 @@ const EXPERIENCED: Question[] = [
       ko: "+20% 난 종목, 실제로 어떻게 했어?",
       en: "A holding is up 20% — what did you actually do?",
     },
+    label: { ko: "+20% 수익 대응", en: "+20% response" },
     choices: [
       {
         id: "pos",
@@ -312,6 +325,7 @@ const EXPERIENCED: Question[] = [
       ko: "손절 기준 정해두고 지켜?",
       en: "Do you set stops and stick to them?",
     },
+    label: { ko: "손절 기준", en: "Stop rule" },
     choices: [
       {
         id: "pos",
@@ -337,6 +351,7 @@ const EXPERIENCED: Question[] = [
       ko: "계좌가 가장 크게 빠졌을 때 어디까지 버텼어?",
       en: "How deep a drawdown have you ridden out?",
     },
+    label: { ko: "최대 하락 때", en: "Deepest drawdown" },
     choices: [
       {
         id: "pos",
@@ -362,6 +377,7 @@ const EXPERIENCED: Question[] = [
       ko: "증권 앱 하루에 몇 번 열어봐?",
       en: "How often do you open the brokerage app?",
     },
+    label: { ko: "증권 앱 확인", en: "App check" },
     choices: [
       {
         id: "pos",
@@ -387,6 +403,7 @@ const EXPERIENCED: Question[] = [
       ko: "계좌가 빠진 날, 일이나 잠에 영향 있어?",
       en: "On a bad day, does it hit your work or sleep?",
     },
+    label: { ko: "하락한 날 일·잠", en: "Bad-day impact" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "전혀", en: "Not at all" } },
       { id: "mid", delta: 0, label: { ko: "조금", en: "A little" } },
@@ -400,6 +417,7 @@ const EXPERIENCED: Question[] = [
       ko: "뉴스나 투자 커뮤니티는?",
       en: "News and investing forums?",
     },
+    label: { ko: "뉴스·커뮤니티", en: "News & forums" },
     choices: [
       {
         id: "pos",
@@ -433,6 +451,7 @@ const BEGINNER: Question[] = [
       ko: "둘 중 하나를 산다면?",
       en: "If you had to pick one to buy?",
     },
+    label: { ko: "우량주 vs 인기주", en: "Blue-chip vs hot" },
     choices: [
       {
         id: "pos",
@@ -460,6 +479,7 @@ const BEGINNER: Question[] = [
       ko: "모두가 사는 종목이 있으면?",
       en: "A name everyone is buying — your reaction?",
     },
+    label: { ko: "모두가 사는 종목", en: "Crowd favorite" },
     choices: [
       {
         id: "pos",
@@ -477,6 +497,7 @@ const BEGINNER: Question[] = [
       ko: "사고 싶던 종목이나 ETF가 -20% 빠졌다.",
       en: "A stock or ETF you wanted just dropped 20%.",
     },
+    label: { ko: "-20% 하락 시", en: "−20% drop" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "바로 산다", en: "Buy today" } },
       {
@@ -501,6 +522,7 @@ const BEGINNER: Question[] = [
       ko: "\"역대 최고가\" 뉴스가 뜨면?",
       en: "The news reads, \"All-time high.\"",
     },
+    label: { ko: "역대 최고가 뉴스", en: "ATH news" },
     choices: [
       {
         id: "pos",
@@ -529,6 +551,7 @@ const BEGINNER: Question[] = [
       ko: "1년 뒤 결과를 고른다면?",
       en: "Which 1-year outcome would you pick?",
     },
+    label: { ko: "1년 뒤 결과 선택", en: "1-year outcome" },
     choices: [
       {
         id: "pos",
@@ -560,6 +583,7 @@ const BEGINNER: Question[] = [
       ko: "투자금 중 잃어도 괜찮은 비율은?",
       en: "What share of your capital could you afford to lose?",
     },
+    label: { ko: "잃어도 되는 비율", en: "Affordable loss" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "50% 이상", en: "50% or more" } },
       { id: "mid", delta: 0, label: { ko: "20~50%", en: "20–50%" } },
@@ -577,6 +601,7 @@ const BEGINNER: Question[] = [
       ko: "더 끌리는 영상은?",
       en: "Which video grabs you more?",
     },
+    label: { ko: "끌리는 영상", en: "Tempting video" },
     choices: [
       {
         id: "pos",
@@ -604,6 +629,7 @@ const BEGINNER: Question[] = [
       ko: "처음 투자한다면?",
       en: "Starting out, how would you build the first position?",
     },
+    label: { ko: "첫 투자 방식", en: "First position" },
     choices: [
       {
         id: "pos",
@@ -633,6 +659,7 @@ const BEGINNER: Question[] = [
       ko: "산 지 한 달, +20% 수익.",
       en: "A month in, you're up 20%.",
     },
+    label: { ko: "한 달 +20%", en: "+20% in a month" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "더 간다", en: "Let it ride" } },
       {
@@ -654,6 +681,7 @@ const BEGINNER: Question[] = [
       ko: "투자 목표 기간은?",
       en: "What's your investment horizon?",
     },
+    label: { ko: "목표 기간", en: "Investment horizon" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "5년 이상", en: "5+ years" } },
       { id: "mid", delta: 0, label: { ko: "1~3년", en: "1–3 years" } },
@@ -671,6 +699,7 @@ const BEGINNER: Question[] = [
       ko: "매일 사고팔면 돈을 벌 수 있을 것 같아?",
       en: "Think you could make money day-trading?",
     },
+    label: { ko: "매일 매매", en: "Day-trading" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "아니", en: "No" } },
       { id: "mid", delta: 0, label: { ko: "모르겠다", en: "Not sure" } },
@@ -684,6 +713,7 @@ const BEGINNER: Question[] = [
       ko: "\"10년 묻어두면 된다\"는 말에?",
       en: "\"Just leave it alone for ten years\" — your take?",
     },
+    label: { ko: "10년 묻어두기", en: "10-year hold" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "동의", en: "Agree" } },
       { id: "mid", delta: 0, label: { ko: "반반", en: "Fifty-fifty" } },
@@ -702,6 +732,7 @@ const BEGINNER: Question[] = [
       ko: "넣은 돈이 -30%가 되면?",
       en: "Your deposit shows -30%.",
     },
+    label: { ko: "-30%가 되면", en: "−30% drop" },
     choices: [
       {
         id: "pos",
@@ -730,6 +761,7 @@ const BEGINNER: Question[] = [
       ko: "증권 앱 하루에 몇 번 열 것 같아?",
       en: "How often would you check the brokerage app?",
     },
+    label: { ko: "앱 확인", en: "App check" },
     choices: [
       { id: "pos", delta: 1, label: { ko: "거의 안 봄", en: "Barely" } },
       {
@@ -747,6 +779,7 @@ const BEGINNER: Question[] = [
       ko: "남이 수익 자랑하면?",
       en: "Someone brags about profits.",
     },
+    label: { ko: "남의 수익 자랑", en: "Others bragging" },
     choices: [
       {
         id: "pos",
@@ -772,6 +805,7 @@ const BEGINNER: Question[] = [
       ko: "사자마자 -5%가 되면?",
       en: "Right after you buy, it's -5%.",
     },
+    label: { ko: "사자마자 -5%", en: "−5% right after buy" },
     choices: [
       {
         id: "pos",

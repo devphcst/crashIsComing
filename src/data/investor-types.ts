@@ -144,8 +144,8 @@ export const INVESTOR_TYPES: Record<TypeCode, InvestorType> = {
     reading: { ko: "베하", en: "Beha" },
     nickname: { ko: "손 떨며 줍는 사람", en: "The Trembling Bidder" },
     description: {
-      ko: "싸게 크게 사긴 하는데, 매일 계좌를 확인해요.",
-      en: "You buy cheap and in size — then watch the account every single day.",
+      ko: "싸게 크게 사는 배짱은 있는데, 마음은 늘 조마조마해요.",
+      en: "You have the nerve to buy cheap in size — but your mind stays on edge.",
     },
     strength: {
       ko: "무서워도 결국 싸게 사요",
@@ -219,8 +219,8 @@ export const INVESTOR_TYPES: Record<TypeCode, InvestorType> = {
     reading: { ko: "보히", en: "Bohi" },
     nickname: { ko: "묵묵한 적립왕", en: "Quiet DCA Monarch" },
     description: {
-      ko: "싸질 때마다 조금씩 모아요. 차트는 가끔만 봐요.",
-      en: "Stack a bit more every time it dips. Chart check only occasionally.",
+      ko: "싸질 때마다 조금씩 모아요. 시장이 흔들려도 페이스를 지켜요.",
+      en: "Stack a bit more every time it dips. The market shakes, your pace doesn't.",
     },
     strength: {
       ko: "시장이 뭘 하든 꾸준해요",
@@ -344,8 +344,8 @@ export const INVESTOR_TYPES: Record<TypeCode, InvestorType> = {
     reading: { ko: "메하", en: "Meha" },
     nickname: { ko: "FOMO 야수", en: "FOMO Beast" },
     description: {
-      ko: "뜨는 걸 크게 따라 사고, 떨어질까 봐 밤잠을 설쳐요.",
-      en: "Chase the hot names in size — and lie awake fearing the drop.",
+      ko: "뜨는 걸 크게 따라 사고, 떨어질까 봐 늘 마음이 급해요.",
+      en: "Chase the hot names in size — always one step ahead of a worry.",
     },
     strength: {
       ko: "시장 흐름에 누구보다 빨리 반응해요",
@@ -419,8 +419,8 @@ export const INVESTOR_TYPES: Record<TypeCode, InvestorType> = {
     reading: { ko: "모히", en: "Mohi" },
     nickname: { ko: "인덱스 수도승", en: "Index Monk" },
     description: {
-      ko: "시장 전체를 사서 잊어버려요. 계좌 비밀번호도 가물가물.",
-      en: "Buy the whole market and forget. You barely remember the account password.",
+      ko: "시장 전체를 사서 오래 들고 가요. 웬만한 소식엔 흔들리지 않아요.",
+      en: "Buy the whole market and hold a long time. Most headlines don't move you.",
     },
     strength: {
       ko: "흔들림 없이 시장 평균을 가져가요",
@@ -431,8 +431,8 @@ export const INVESTOR_TYPES: Record<TypeCode, InvestorType> = {
       en: "The indifference goes so far you don't even check in",
     },
     quotes: {
-      ko: ["그냥 지수 사", "앱? 몇 달째 안 열었는데"],
-      en: ["Just buy the index", "App? Haven't opened it in months"],
+      ko: ["그냥 지수 사", "시장은 결국 오르더라"],
+      en: ["Just buy the index", "The market goes up in the end"],
     },
     inCrash: {
       ko: "폭락한 줄도 모르고 지나가요.",
@@ -494,8 +494,8 @@ export const INVESTOR_TYPES: Record<TypeCode, InvestorType> = {
     reading: { ko: "모타", en: "Mota" },
     nickname: { ko: "쫄보 단타러", en: "Nervous Daytrader" },
     description: {
-      ko: "−5%면 이미 손절 완료. 작게 자주 사고팔아요.",
-      en: "At −5% you're already out. Small size, often.",
+      ko: "작은 손실도 오래 못 참아요. 작게, 자주 사고팔아요.",
+      en: "Even small losses don't sit well. Small size, often.",
     },
     strength: {
       ko: "크게 잃는 일은 없어요",

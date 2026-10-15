@@ -10,6 +10,7 @@ import {
 import {
   codeFromScores,
   computeScores,
+  findSurprises,
   type Answer,
 } from "@/lib/investor-type";
 import { ResultView, type NasdaqSnap } from "./ResultView";
@@ -171,6 +172,14 @@ export function InvestorTypeTest({
   }
 
   if (stage === "result" && track && finalCode && finalScores) {
+    const surprises = findSurprises(
+      track,
+      finalCode,
+      finalScores,
+      answers,
+      texts,
+      lang,
+    );
     return (
       <ResultView
         lang={lang}
@@ -181,6 +190,7 @@ export function InvestorTypeTest({
         beginner={track === "beginner"}
         onRetry={retry}
         texts={texts}
+        surprises={surprises}
       />
     );
   }

@@ -108,6 +108,11 @@ const buildResult = (lang: Lang): FlatTexts => ({
       ? "재미로 보는 테스트예요. 투자 자문이 아닙니다."
       : "Just for fun — not investment advice.",
   "result.sharedToast": lang === "ko" ? "링크를 복사했어요" : "Link copied",
+  "result.surprisesLabel": lang === "ko" ? "의외의 모습" : "Not quite",
+  "result.surprisesConsistent":
+    lang === "ko"
+      ? "모든 답이 한 방향이에요. 아주 일관된 {reading}예요."
+      : "All answers point one way. A very consistent {reading}.",
 });
 
 const buildQuestions = (lang: Lang): FlatTexts => {
@@ -117,6 +122,7 @@ const buildQuestions = (lang: Lang): FlatTexts => {
     QUESTIONS[t].forEach((q, i) => {
       const idx = i + 1;
       out[`${prefix}.q${idx}.text`] = q.prompt[lang];
+      out[`${prefix}.q${idx}.label`] = q.label[lang];
       q.choices.forEach((c, j) => {
         out[`${prefix}.q${idx}.opt${j}`] = c.label[lang];
       });

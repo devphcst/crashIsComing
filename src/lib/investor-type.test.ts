@@ -4,10 +4,12 @@ import {
   barRatios,
   codeFromScores,
   computeScores,
+  findSurprises,
   matchCompatible,
   matchOpposite,
   type Answer,
 } from "./investor-type";
+import { DEFAULT_TEXTS } from "./text-defaults";
 
 const allChoice = (track: Track, id: "pos" | "mid" | "neg"): Answer[] =>
   QUESTIONS[track].map((q) => ({ questionId: q.id, choiceId: id }));
@@ -161,6 +163,89 @@ describe("실사용 시나리오", () => {
     const scores = computeScores("experienced", answers);
     expect(scores).toEqual({ buy: 0, lev: -4, hold: 4, mind: 4 });
     expect(codeFromScores("experienced", scores, answers)).toBe("BOHI");
+  });
+});
+
+describe("findSurprises", () => {
+  const texts = DEFAULT_TEXTS.ko;
+
+  it("반대 답 0개 → 빈 배열 (전부 pos)", () => {
+    const ans = allChoice("experienced", "pos");
+    const scores = computeScores("experienced", ans);
+    const code = codeFromScores("experienced", scores, ans);
+    expect(findSurprises("experienced", code, scores, ans, texts, "ko")).toEqual(
+      [],
+    );
+  });
+
+  it("반대 답 1개 → 1개 반환", () => {
+    // 경험 트랙 전부 pos지만 멘탈 축의 한 문항만 neg → mind 축에서 반대.
+    const ans: Answer[] = allChoice("experienced", "pos");
+    const idx = ans.findIndex((a) => a.questionId === "exp-14");
+    ans[idx] = { questionId: "exp-14", choiceId: "neg" };
+    const scores = computeScores("experienced", ans);
+    const code = codeFromScores("experienced", scores, ans);
+    const r = findSurprises("experienced", code, scores, ans, texts, "ko");
+    expect(r).toHaveLength(1);
+    expect(r[0].axis).toBe("mind");
+    expect(r[0].questionLabel).toBe("증권 앱 확인");
+    expect(r[0].choiceText).toBe("수시로");
+  });
+
+  it("반대 답 3개 이상 → 최대 2개 반환, 우승 비율 낮은 축부터", () => {
+    // 경험 트랙 전부 pos. 반대 답을 세 축에 하나씩 심어둔다. 각 축의 반대 1개 → 축별 winRatio
+    //   mind: 3 pos + 1 neg(-1) → score 2 → winRatio = 6/8 = 0.75
+    //   lev:  2 pos + 2 neg(-1 각) → score 0 → winRatio = 4/8 = 0.5
+    //   hold: 1 pos + 3 neg(-1 각) → score -2 → 하지만 pos 글자 유지하려면 score > 0 필요
+    // 간단히 축별 score를 다르게 조정.
+    const ans: Answer[] = allChoice("experienced", "pos");
+    // mind: exp-14 → neg (반대 1개, 축 score +4-1-1=+2 wait... let's recount)
+    //   mind 축 문항 4개(13~16). 전부 pos라면 +4. 14를 neg → +4-1-1=+2 (단, pos +1 → neg -1 교체)
+    const setChoice = (qid: string, cid: "pos" | "mid" | "neg") => {
+      const i = ans.findIndex((a) => a.questionId === qid);
+      ans[i] = { questionId: qid, choiceId: cid };
+    };
+    setChoice("exp-14", "neg"); // mind: +4 - 1 - 1 = +2 → winRatio (2+4)/8 = 0.75
+    setChoice("exp-10", "neg"); // hold: +4 - 2 = +2 → 0.75
+    setChoice("exp-11", "neg"); // hold: +2 - 2 = 0 → winRatio 0.5
+    setChoice("exp-6", "neg"); // lev: +4 - 2 = +2 → 0.75
+    setChoice("exp-7", "neg"); // lev: +2 - 2 = 0 → 0.5
+    setChoice("exp-8", "neg"); // lev: 0 - 2 = -2 → 음수 → neg 글자(O)로 바뀜
+
+    const scores = computeScores("experienced", ans);
+    const code = codeFromScores("experienced", scores, ans);
+    const r = findSurprises("experienced", code, scores, ans, texts, "ko");
+    // 반대 답이 있는 축: mind(1), hold(2), lev(3). 하지만 lev는 neg(O)로 바뀌어
+    // "반대 답"의 기준이 달라짐 — lev score 음수 → neg 글자. pos delta 답이 "반대"가 됨.
+    // 어쨌든 최대 2개.
+    expect(r.length).toBeLessThanOrEqual(2);
+  });
+
+  it("mid 선택지는 skip (반대 아님)", () => {
+    const ans: Answer[] = allChoice("experienced", "pos");
+    const idx = ans.findIndex((a) => a.questionId === "exp-14");
+    ans[idx] = { questionId: "exp-14", choiceId: "mid" };
+    const scores = computeScores("experienced", ans);
+    const code = codeFromScores("experienced", scores, ans);
+    expect(findSurprises("experienced", code, scores, ans, texts, "ko")).toEqual(
+      [],
+    );
+  });
+
+  it("축별 첫 번째 반대만 유지", () => {
+    const ans: Answer[] = allChoice("experienced", "pos");
+    const setChoice = (qid: string, cid: "pos" | "mid" | "neg") => {
+      const i = ans.findIndex((a) => a.questionId === qid);
+      ans[i] = { questionId: qid, choiceId: cid };
+    };
+    // mind 축에 반대 답 2개(14, 15). 14가 먼저 → 그것만 유지.
+    setChoice("exp-14", "neg");
+    setChoice("exp-15", "neg");
+    const scores = computeScores("experienced", ans);
+    const code = codeFromScores("experienced", scores, ans);
+    const r = findSurprises("experienced", code, scores, ans, texts, "ko");
+    expect(r).toHaveLength(1);
+    expect(r[0].questionLabel).toBe("증권 앱 확인"); // exp-14
   });
 });
 

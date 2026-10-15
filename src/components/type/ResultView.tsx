@@ -10,7 +10,7 @@ import {
   type AxisKey,
   type TypeCode,
 } from "@/data/investor-types";
-import type { AxisScores } from "@/lib/investor-type";
+import type { AxisScores, Surprise } from "@/lib/investor-type";
 import {
   barRatios,
   matchCompatible,
@@ -83,6 +83,7 @@ export function ResultView({
   beginner = false,
   onRetry,
   texts,
+  surprises,
 }: {
   lang: Lang;
   code: TypeCode;
@@ -92,6 +93,8 @@ export function ResultView({
   beginner?: boolean;
   onRetry?: () => void;
   texts: FlatTexts;
+  /** 답변 기반 "의외의 모습" — mode="test"에서만 전달. 공유 페이지엔 없음. */
+  surprises?: Surprise[];
 }) {
   const type = INVESTOR_TYPES[code];
   const ratios = barRatios(scores);
@@ -202,6 +205,16 @@ export function ResultView({
           />
         ))}
       </div>
+
+      {/* 의외의 모습 — mode="test"에서만 전달. 공유 페이지엔 답변 정보가 없음. */}
+      {surprises !== undefined ? (
+        <SurprisesCard
+          surprises={surprises}
+          reading={type.reading[lang]}
+          lang={lang}
+          texts={texts}
+        />
+      ) : null}
 
       {/* 강점 / 조심 카드 */}
       <div
@@ -347,6 +360,81 @@ export function ResultView({
         </div>
       ) : null}
     </main>
+  );
+}
+
+function SurprisesCard({
+  surprises,
+  reading,
+  lang,
+  texts,
+}: {
+  surprises: Surprise[];
+  reading: string;
+  lang: Lang;
+  texts: FlatTexts;
+}) {
+  const label = texts["result.surprisesLabel"] ?? "";
+  return (
+    <div
+      style={{
+        background: "#F7F8FA",
+        borderRadius: 16,
+        padding: "12px 14px",
+      }}
+    >
+      <div style={{ fontSize: 12, color: "#8B95A1", marginBottom: 6 }}>
+        {label}
+      </div>
+      {surprises.length > 0 ? (
+        <div className="flex flex-col" style={{ gap: 6 }}>
+          {surprises.map((s, i) => (
+            <div
+              key={i}
+              style={{
+                fontSize: 14,
+                color: "#4E5968",
+                lineHeight: 1.55,
+              }}
+            >
+              {lang === "ko" ? (
+                <>
+                  <span
+                    style={{ color: s.axisColor, fontWeight: 600 }}
+                  >
+                    {s.axisLabel}
+                  </span>
+                  인데 의외로 · {s.questionLabel}: {s.choiceText}
+                </>
+              ) : (
+                <>
+                  Not quite{" "}
+                  <span
+                    style={{ color: s.axisColor, fontWeight: 600 }}
+                  >
+                    {s.axisLabel}
+                  </span>{" "}
+                  · {s.questionLabel}: {s.choiceText}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          style={{
+            fontSize: 14,
+            color: "#4E5968",
+            lineHeight: 1.55,
+          }}
+        >
+          {(texts["result.surprisesConsistent"] ?? "").replace(
+            "{reading}",
+            reading,
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

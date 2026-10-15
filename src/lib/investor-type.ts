@@ -20,6 +20,8 @@ import {
   type TypeCode,
 } from "@/data/investor-types";
 import { QUESTIONS, type Track } from "@/data/investor-quiz";
+import type { Lang } from "./i18n";
+import type { FlatTexts } from "./text-defaults";
 
 export type Answer = {
   questionId: string;
@@ -115,3 +117,76 @@ export const matchOpposite = (code: TypeCode): TypeCode => {
 };
 
 export const typeFor = (code: TypeCode) => INVESTOR_TYPES[code];
+
+/* ============================================================================
+ * "의외의 모습" — 결과 글자와 반대 방향 답변.
+ * ============================================================================ */
+
+export type Surprise = {
+  axis: AxisKey;
+  axisLabel: string;
+  axisColor: string;
+  questionLabel: string;
+  choiceText: string;
+};
+
+/**
+ * 결과 코드의 각 글자(앞/뒤)와 반대 부호 답변만 추출.
+ *   - 각 축에서 첫 번째 반대 답(문항 순서 기준) 1개씩 유지
+ *   - 축의 "우승 비율" 낮은 순 정렬 (가장 덜 일관된 축이 앞)
+ *   - 최대 2개 반환
+ */
+export const findSurprises = (
+  track: Track,
+  code: TypeCode,
+  scores: AxisScores,
+  answers: Answer[],
+  texts: FlatTexts,
+  lang: Lang,
+): Surprise[] => {
+  const list = QUESTIONS[track];
+  const prefix = track === "experienced" ? "exp" : "beg";
+  const polarity = (axis: AxisKey): 1 | -1 => {
+    const meta = AXES.find((a) => a.key === axis)!;
+    const idx = AXIS_ORDER.indexOf(axis);
+    return code[idx] === meta.letters.pos ? 1 : -1;
+  };
+
+  const found = new Map<AxisKey, Surprise & { winRatio: number }>();
+
+  for (const a of answers) {
+    const q = list.find((x) => x.id === a.questionId);
+    if (!q) continue;
+    const c = q.choices.find((ch) => ch.id === a.choiceId);
+    if (!c || c.delta === 0) continue;
+    if (Math.sign(c.delta) === polarity(q.axis)) continue;
+    if (found.has(q.axis)) continue; // 축별 첫 번째만
+
+    const meta = AXES.find((x) => x.key === q.axis)!;
+    const idx = AXIS_ORDER.indexOf(q.axis);
+    const isPos = code[idx] === meta.letters.pos;
+    const axisLabel = isPos ? meta.labels[lang].pos : meta.labels[lang].neg;
+    const posRatio = (scores[q.axis] + 4) / 8;
+    const winRatio = isPos ? posRatio : 1 - posRatio;
+
+    const qNum = Number(q.id.split("-")[1]);
+    const labelKey = `${prefix}.q${qNum}.label`;
+    const choiceIndex =
+      c.id === "pos" ? 0 : c.id === "mid" ? 1 : 2;
+    const optKey = `${prefix}.q${qNum}.opt${choiceIndex}`;
+
+    found.set(q.axis, {
+      axis: q.axis,
+      axisLabel,
+      axisColor: meta.color,
+      questionLabel: texts[labelKey] ?? "",
+      choiceText: texts[optKey] ?? "",
+      winRatio,
+    });
+  }
+
+  return Array.from(found.values())
+    .sort((a, b) => a.winRatio - b.winRatio)
+    .slice(0, 2)
+    .map(({ winRatio: _r, ...rest }) => rest);
+};
